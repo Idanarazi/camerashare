@@ -4,8 +4,8 @@
   "description": "Direct the perfect shot — see through their lens in real time.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#ff375f",
+  "background_color": "#0A0A0A",
+  "theme_color": "#00A8FF",
   "orientation": "portrait-primary",
   "icons": [
     {

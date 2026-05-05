@@ -5,77 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#ff375f">
+<meta name="theme-color" content="#00A8FF">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>CameraShare — Director</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
   body {
-    background: #000;
+    background: #0A0A0A;
     color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     height: 100dvh;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
   }
 
+  /* ── Logo ── */
+  .logo-text   { font-size: 24px; font-weight: 800; line-height: 1; }
+  .logo-camera { color: #fff; }
+  .logo-share  { color: #00A8FF; }
+
   /* ── Join screen ── */
   #join-screen {
     height: 100dvh;
-    background: #0d0d0d;
+    background: #0A0A0A;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 48px 28px;
-    gap: 18px;
+    gap: 20px;
     text-align: center;
   }
-  #join-screen .icon { font-size: 56px; }
-  #join-screen h1 { font-size: 28px; font-weight: 800; }
-  #join-screen p  { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.6; max-width: 280px; }
+  .join-logo { margin-bottom: 4px; }
+  .join-subtitle { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; }
+  #join-screen p { color: rgba(255,255,255,0.4); font-size: 14px; line-height: 1.65; max-width: 270px; }
 
   /* Join form */
   #join-form { display: contents; }
   #code-input {
     width: 100%;
     max-width: 300px;
-    background: rgba(255,255,255,0.09);
-    border: 1.5px solid rgba(255,255,255,0.18);
+    background: #1A1A1A;
+    border: 1.5px solid rgba(255,255,255,0.1);
     border-radius: 16px;
     color: #fff;
+    font-family: inherit;
     font-size: 26px;
     font-weight: 800;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     padding: 16px;
     text-align: center;
     text-transform: uppercase;
     outline: none;
     transition: border-color 0.2s;
   }
-  #code-input:focus { border-color: rgba(255,255,255,0.45); }
-  #code-input::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; font-weight: 400; font-size: 18px; }
+  #code-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.15); }
+  #code-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 2px; font-weight: 400; font-size: 18px; }
   #join-btn {
-    background: #fff;
-    color: #000;
+    background: #00A8FF;
+    color: #fff;
     border: none;
     border-radius: 16px;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
+    font-family: inherit;
     padding: 18px 32px;
     cursor: pointer;
     width: 100%;
     max-width: 300px;
     touch-action: manipulation;
-    transition: opacity 0.15s;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 0 4px 24px rgba(0,168,255,0.4);
   }
-  #join-btn:active   { opacity: 0.8; }
-  #join-btn:disabled { opacity: 0.45; }
-  #join-error { color: #ff375f; font-size: 14px; display: none; max-width: 300px; }
+  #join-btn:active   { background: #0096e0; transform: scale(0.97); }
+  #join-btn:disabled { background: rgba(0,168,255,0.35); box-shadow: none; }
+  #join-error { color: #FF375F; font-size: 13px; display: none; max-width: 300px; }
 
-  /* Waiting-for-approval sub-state */
+  /* Approval wait sub-state */
   #approval-wait {
     display: flex;
     flex-direction: column;
@@ -84,28 +96,27 @@
     width: 100%;
     max-width: 300px;
   }
-  .approval-spinner {
-    font-size: 44px;
-    animation: spin-slow 2s linear infinite;
-  }
+  .approval-spinner { font-size: 44px; animation: spin-slow 2.5s linear infinite; }
   @keyframes spin-slow { to { transform: rotate(360deg); } }
   .approval-title { font-size: 18px; font-weight: 700; }
-  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; max-width: 260px; }
+  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.6; max-width: 260px; }
   #cancel-knock-btn {
-    background: rgba(255,255,255,0.1);
-    border: none;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 14px;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.6);
     font-size: 15px;
     font-weight: 600;
+    font-family: inherit;
     padding: 13px 28px;
     cursor: pointer;
     touch-action: manipulation;
     margin-top: 4px;
+    transition: background 0.15s;
   }
-  #cancel-knock-btn:active { background: rgba(255,255,255,0.18); }
+  #cancel-knock-btn:active { background: rgba(255,255,255,0.14); }
 
-  /* Denied state */
+  /* Denied sub-state */
   #denied-msg {
     display: flex;
     flex-direction: column;
@@ -116,36 +127,38 @@
   }
   .denied-icon  { font-size: 44px; }
   .denied-title { font-size: 18px; font-weight: 700; }
-  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; max-width: 260px; }
+  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.6; max-width: 260px; }
   #try-again-btn {
-    background: #fff;
-    color: #000;
-    border: none;
+    background: #1A1A1A;
+    border: 1.5px solid rgba(255,255,255,0.12);
     border-radius: 14px;
-    font-size: 16px;
+    color: #fff;
+    font-size: 15px;
     font-weight: 700;
+    font-family: inherit;
     padding: 14px 28px;
     cursor: pointer;
     touch-action: manipulation;
     margin-top: 4px;
+    transition: background 0.15s;
   }
-  #try-again-btn:active { opacity: 0.8; }
+  #try-again-btn:active { background: #222; }
 
-  /* ── Control screen — full-screen video with overlaid controls ── */
+  /* ── Control screen ── */
   #control-screen {
     display: none;
     position: relative;
     height: 100dvh;
     overflow: hidden;
+    background: #000;
   }
 
-  /* Video fills entire screen */
+  /* Video layer */
   #preview-wrap {
     position: absolute;
     inset: 0;
     z-index: 1;
     cursor: crosshair;
-    background: #000;
   }
   #preview {
     width: 100%;
@@ -162,110 +175,123 @@
     pointer-events: none;
   }
   #connecting-msg {
-    background: rgba(0,0,0,0.55);
-    color: rgba(255,255,255,0.75);
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.65);
     font-size: 13px;
-    padding: 8px 16px;
+    font-weight: 500;
+    padding: 9px 18px;
     border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
   }
+
+  /* Live badge */
   #live-badge {
     display: none;
     position: absolute;
     top: max(14px, env(safe-area-inset-top));
     left: 14px;
-    background: rgba(52, 199, 89, 0.85);
-    color: #fff;
+    background: rgba(0,230,118,0.18);
+    border: 1px solid rgba(0,230,118,0.4);
+    color: #00E676;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 5px 11px;
     border-radius: 20px;
     letter-spacing: 0.5px;
     pointer-events: none;
+    z-index: 5;
   }
 
-  /* Toggle button — always visible top-right */
+  /* Toggle button */
   #toggle-btn {
     position: absolute;
     top: max(14px, env(safe-area-inset-top));
     right: 14px;
     z-index: 30;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.18);
     border-radius: 20px;
-    color: rgba(255,255,255,0.9);
+    color: rgba(255,255,255,0.85);
     font-size: 12px;
     font-weight: 600;
-    padding: 7px 13px;
+    font-family: inherit;
+    padding: 7px 14px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.2s;
   }
-  #toggle-btn:active { background: rgba(255,255,255,0.18); }
+  #toggle-btn:active { background: rgba(255,255,255,0.15); }
 
-  /* Controls panel — overlaid at bottom, semi-transparent */
+  /* Controls panel */
   #controls-panel {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     z-index: 20;
-    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 65%, transparent 100%);
-    padding: 28px 18px max(14px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+    padding: 28px 18px max(16px, env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    opacity: 0.72;
-    transition: opacity 0.25s, transform 0.25s;
+    opacity: 0.78;
+    transition: opacity 0.28s, transform 0.28s;
   }
-  #controls-panel:has(:active) { opacity: 0.95; }
+  #controls-panel:has(:active) { opacity: 0.98; }
   #controls-panel.controls-hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
 
   #tap-hint {
     font-size: 11px;
-    color: rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.38);
     margin-bottom: -4px;
+    letter-spacing: 0.3px;
   }
 
   /* D-pad */
   #dpad {
     display: grid;
-    grid-template-columns: repeat(3, 52px);
-    grid-template-rows: repeat(3, 52px);
-    gap: 5px;
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(3, 54px);
+    gap: 6px;
   }
   .arrow-btn {
-    background: rgba(255,255,255,0.14);
-    border: none;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
     color: #fff;
-    font-size: 22px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background 0.1s, transform 0.1s;
+    transition: background 0.1s, border-color 0.1s, transform 0.1s;
   }
-  .arrow-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.88); }
+  .arrow-btn:active {
+    background: rgba(0,168,255,0.3);
+    border-color: rgba(0,168,255,0.5);
+    transform: scale(0.88);
+  }
   .ghost { visibility: hidden; pointer-events: none; }
   .center-label {
-    background: rgba(255,255,255,0.06);
-    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
-    color: rgba(255,255,255,0.4);
-    letter-spacing: 1px;
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    font-weight: 600;
   }
 
   /* Zoom row */
@@ -274,92 +300,198 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    max-width: 280px;
+    max-width: 286px;
     justify-content: center;
   }
   .zoom-btn {
-    background: rgba(255,255,255,0.14);
-    border: none;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
     color: #fff;
     font-size: 26px;
     font-weight: 300;
-    width: 64px;
-    height: 44px;
+    width: 66px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background 0.1s, transform 0.1s;
+    transition: background 0.1s, border-color 0.1s, transform 0.1s;
     line-height: 1;
   }
-  .zoom-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.88); }
+  .zoom-btn:active {
+    background: rgba(0,168,255,0.3);
+    border-color: rgba(0,168,255,0.5);
+    transform: scale(0.88);
+  }
   #zoom-label {
     flex: 1;
     text-align: center;
     font-size: 10px;
-    color: rgba(255,255,255,0.38);
+    font-weight: 700;
+    color: rgba(255,255,255,0.32);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
+    letter-spacing: 1.5px;
   }
 
-  /* Torch button */
+  /* Torch */
   #torch-btn {
-    background: rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.1);
     border: 1.5px solid transparent;
-    border-radius: 12px;
-    color: rgba(255,255,255,0.75);
+    border-radius: 14px;
+    color: rgba(255,255,255,0.7);
     font-size: 13px;
     font-weight: 600;
-    height: 42px;
+    font-family: inherit;
+    height: 44px;
     width: 100%;
-    max-width: 280px;
+    max-width: 286px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
-    letter-spacing: 0.2px;
   }
   #torch-btn.torch-on {
-    background: rgba(255, 214, 10, 0.15);
-    border-color: rgba(255, 214, 10, 0.55);
-    color: #ffd60a;
+    background: rgba(255,214,10,0.12);
+    border-color: rgba(255,214,10,0.5);
+    color: #FFD60A;
   }
   #torch-btn:active { opacity: 0.7; }
-  #torch-btn:disabled { color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); border-color: transparent; }
+  #torch-btn:disabled { color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); border-color: transparent; }
 
-  /* Capture button */
+  /* Capture */
   #capture-btn {
-    background: #ff375f;
+    background: #FF375F;
     border: none;
     border-radius: 15px;
     color: #fff;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    height: 52px;
+    font-family: inherit;
+    height: 54px;
     width: 100%;
-    max-width: 280px;
+    max-width: 286px;
     cursor: pointer;
     touch-action: manipulation;
     letter-spacing: 0.3px;
-    box-shadow: 0 3px 18px rgba(255, 55, 95, 0.5);
+    box-shadow: 0 4px 20px rgba(255,55,95,0.5);
     transition: background 0.1s, transform 0.1s, box-shadow 0.1s;
   }
   #capture-btn:active { background: #d91a40; transform: scale(0.95); box-shadow: 0 2px 10px rgba(255,55,95,0.3); }
-  #capture-btn:disabled { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.38); box-shadow: none; }
+  #capture-btn:disabled { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35); box-shadow: none; }
 
-  #status-footer { font-size: 11px; color: rgba(255,255,255,0.38); text-align: center; }
+  #status-footer {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+
+  /* ── Countdown overlay (over video) ── */
+  #dir-countdown {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #dir-countdown-num {
+    font-size: 200px;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 100px rgba(0,168,255,0.5), 0 0 200px rgba(0,168,255,0.2);
+  }
+  #dir-countdown-num.count-anim {
+    animation: count-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes count-in {
+    0%   { opacity: 0; transform: scale(2.4); }
+    40%  { opacity: 1; transform: scale(0.92); }
+    70%  { transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ── Freeze screen (frozen frame + "Perfect Frame!" overlay) ── */
+  #director-freeze {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+  }
+  #frozen-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 51;
+  }
+  .freeze-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 52;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fade-in 0.4s ease;
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .freeze-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    padding: 40px 28px;
+  }
+  .freeze-photo-emoji { font-size: 72px; }
+  .freeze-title {
+    font-size: 30px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  #done-btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 16px 48px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    margin-top: 8px;
+  }
+  #done-btn:active { opacity: 0.85; transform: scale(0.96); }
+
+  /* ── Focus tap dot ── */
+  @keyframes tap-fade {
+    0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.35); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8); }
+  }
 </style>
 </head>
 <body>
 
-<!-- ── Join screen (includes approval-wait and denied-msg sub-states) ── -->
+<!-- ── Join screen ── -->
 <div id="join-screen">
-  <div class="icon">🎬</div>
-  <h1>Director</h1>
+  <div class="join-logo">
+    <div class="logo-text"><span class="logo-camera">Camera</span><span class="logo-share">Share</span></div>
+  </div>
+  <div class="join-subtitle">Director</div>
 
-  <!-- Normal join form -->
   <div id="join-form" style="display:contents">
     <p>Enter the room code shown on the Photographer's phone, or scan their QR code.</p>
     <input
@@ -371,16 +503,14 @@
     <div id="join-error"></div>
   </div>
 
-  <!-- Waiting for photographer approval -->
-  <div id="approval-wait" hidden style="display:none">
+  <div id="approval-wait" style="display:none">
     <div class="approval-spinner">⏳</div>
     <div class="approval-title">Waiting for approval…</div>
     <div class="approval-desc">The Photographer must allow your request before you can view the feed.</div>
     <button id="cancel-knock-btn">Cancel</button>
   </div>
 
-  <!-- Request denied -->
-  <div id="denied-msg" hidden style="display:none">
+  <div id="denied-msg" style="display:none">
     <div class="denied-icon">🚫</div>
     <div class="denied-title">Request declined</div>
     <div class="denied-desc" id="denied-desc-text">The Photographer declined your request.</div>
@@ -397,6 +527,23 @@
       <div id="connecting-msg">Waiting for camera stream…</div>
     </div>
     <div id="live-badge">● LIVE</div>
+  </div>
+
+  <!-- Countdown overlay (over video, behind controls) -->
+  <div id="dir-countdown" hidden>
+    <div id="dir-countdown-num">3</div>
+  </div>
+
+  <!-- Freeze screen (frozen frame + "Perfect Frame!" UI) -->
+  <div id="director-freeze" hidden>
+    <img id="frozen-frame" alt="">
+    <div class="freeze-overlay">
+      <div class="freeze-content">
+        <div class="freeze-photo-emoji">📸</div>
+        <div class="freeze-title">Perfect Frame!</div>
+        <button id="done-btn">Done</button>
+      </div>
+    </div>
   </div>
 
   <button id="toggle-btn">Hide Controls</button>
@@ -454,28 +601,31 @@ let isLive = false;
 let controlsVisible = true;
 let torchOn = false;
 
-// DOM refs
-const joinScreen     = document.getElementById('join-screen');
-const joinFormEls    = document.getElementById('join-form');
-const approvalWait   = document.getElementById('approval-wait');
-const deniedMsg      = document.getElementById('denied-msg');
-const codeInput      = document.getElementById('code-input');
-const joinBtn        = document.getElementById('join-btn');
-const joinError      = document.getElementById('join-error');
-const controlScreen  = document.getElementById('control-screen');
-const preview        = document.getElementById('preview');
-const connectingMsg  = document.getElementById('connecting-msg');
-const liveBadge      = document.getElementById('live-badge');
-const captureBtn     = document.getElementById('capture-btn');
-const statusFooter   = document.getElementById('status-footer');
-const controlsPanel  = document.getElementById('controls-panel');
-const toggleBtn      = document.getElementById('toggle-btn');
-const torchBtn       = document.getElementById('torch-btn');
+const joinScreen      = document.getElementById('join-screen');
+const joinFormEls     = document.getElementById('join-form');
+const approvalWait    = document.getElementById('approval-wait');
+const deniedMsg       = document.getElementById('denied-msg');
+const codeInput       = document.getElementById('code-input');
+const joinBtn         = document.getElementById('join-btn');
+const joinError       = document.getElementById('join-error');
+const controlScreen   = document.getElementById('control-screen');
+const preview         = document.getElementById('preview');
+const connectingMsg   = document.getElementById('connecting-msg');
+const liveBadge       = document.getElementById('live-badge');
+const captureBtn      = document.getElementById('capture-btn');
+const statusFooter    = document.getElementById('status-footer');
+const controlsPanel   = document.getElementById('controls-panel');
+const toggleBtn       = document.getElementById('toggle-btn');
+const torchBtn        = document.getElementById('torch-btn');
+const dirCountdown    = document.getElementById('dir-countdown');
+const dirCountdownNum = document.getElementById('dir-countdown-num');
+const directorFreeze  = document.getElementById('director-freeze');
+const doneBtn         = document.getElementById('done-btn');
 
-// ── Join screen sub-state helpers ───────────────────────────────────
+// ── Join sub-state helpers ───────────────────────────────────────────
 
 function showJoinForm(errorMsg) {
-  joinFormEls.style.display = 'contents';
+  joinFormEls.style.display  = 'contents';
   approvalWait.style.display = 'none';
   deniedMsg.style.display    = 'none';
   joinBtn.disabled    = false;
@@ -495,7 +645,6 @@ function showDenied(message) {
   approvalWait.style.display = 'none';
   deniedMsg.style.display    = 'flex';
   document.getElementById('denied-desc-text').textContent = message;
-  // Close WS so they start fresh on retry
   ws?.close();
 }
 
@@ -538,9 +687,9 @@ function joinRoom() {
         break;
 
       case 'room-joined':
-        joinScreen.style.display  = 'none';
+        joinScreen.style.display    = 'none';
         controlScreen.style.display = 'block';
-        statusFooter.textContent  = 'Waiting for camera stream…';
+        statusFooter.textContent    = 'Waiting for camera stream…';
         break;
 
       case 'offer':
@@ -560,7 +709,7 @@ function joinRoom() {
 
       case 'peer-left':
         isLive = false;
-        liveBadge.style.display = 'none';
+        liveBadge.style.display     = 'none';
         connectingMsg.style.display = 'flex';
         connectingMsg.textContent   = 'Photographer disconnected.';
         captureBtn.disabled = true;
@@ -589,7 +738,7 @@ async function handleOffer(msg) {
   pc = new RTCPeerConnection({ iceServers: ICE });
 
   pc.ontrack = ({ streams }) => {
-    preview.srcObject = streams[0];
+    preview.srcObject           = streams[0];
     connectingMsg.style.display = 'none';
     liveBadge.style.display     = 'block';
     captureBtn.disabled = false;
@@ -612,7 +761,7 @@ async function handleOffer(msg) {
   ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp }));
 }
 
-// ── Controls ─────────────────────────────────────────────────────────
+// ── Controls ────────────────────────────────────────────────────────
 
 toggleBtn.addEventListener('click', () => {
   controlsVisible = !controlsVisible;
@@ -630,25 +779,64 @@ document.getElementById('zoom-out-btn').addEventListener('click', () => sendCmd(
 torchBtn.addEventListener('click', () => {
   if (!isLive) return;
   torchOn = !torchOn;
-  torchBtn.textContent = torchOn ? '🔦  Torch: ON' : '🔦  Torch: OFF';
+  torchBtn.textContent = torchOn ? '🔦  Torch: ON' : '🔦  Torch: OFF';
   torchBtn.classList.toggle('torch-on', torchOn);
   sendCmd('torch', { on: torchOn });
 });
 
 captureBtn.addEventListener('click', () => {
   if (!isLive) return;
-  captureBtn.disabled    = true;
-  captureBtn.textContent = '⏳  Capturing…';
-  sendCmd('capture');
-  setTimeout(() => {
-    captureBtn.textContent = '📷  Capture!';
-    captureBtn.disabled    = false;
-  }, 2500);
+  startDirectorCapture();
 });
 
-// Tap-to-focus on video
+// ── Countdown & freeze flow ──────────────────────────────────────────
+
+function startDirectorCapture() {
+  captureBtn.disabled = true;
+  sendCmd('start-capture'); // photographer starts its own countdown
+
+  dirCountdown.hidden = false;
+  let count = 3;
+  animateDirCountNum(count);
+
+  const iv = setInterval(() => {
+    count--;
+    if (count <= 0) {
+      clearInterval(iv);
+      dirCountdown.hidden = true;
+      showDirectorFreeze();
+    } else {
+      animateDirCountNum(count);
+    }
+  }, 1000);
+}
+
+function animateDirCountNum(n) {
+  dirCountdownNum.textContent = n;
+  dirCountdownNum.classList.remove('count-anim');
+  void dirCountdownNum.offsetWidth;
+  dirCountdownNum.classList.add('count-anim');
+}
+
+function showDirectorFreeze() {
+  const canvas = document.createElement('canvas');
+  canvas.width  = preview.videoWidth  || 640;
+  canvas.height = preview.videoHeight || 480;
+  canvas.getContext('2d').drawImage(preview, 0, 0);
+  document.getElementById('frozen-frame').src = canvas.toDataURL('image/jpeg', 0.92);
+  directorFreeze.hidden = false;
+}
+
+doneBtn.addEventListener('click', () => {
+  directorFreeze.hidden = true;
+  captureBtn.disabled   = false;
+});
+
+// ── Tap-to-focus ────────────────────────────────────────────────────
+
 document.getElementById('preview-wrap').addEventListener('click', e => {
   if (!isLive) return;
+  if (dirCountdown.hidden === false || directorFreeze.hidden === false) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
   const y = (e.clientY - rect.top)  / rect.height;
@@ -658,14 +846,8 @@ document.getElementById('preview-wrap').addEventListener('click', e => {
 
 function spawnFocusDot(cx, cy) {
   const el = document.createElement('div');
-  el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:48px;height:48px;border:2px solid #ffd60a;border-radius:6px;transform:translate(-50%,-50%);pointer-events:none;z-index:99;animation:tap-fade 0.85s ease-out forwards;`;
+  el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:52px;height:52px;border:2px solid #00A8FF;border-radius:6px;transform:translate(-50%,-50%);pointer-events:none;z-index:99;animation:tap-fade 0.85s ease-out forwards;`;
   document.body.appendChild(el);
-  if (!document.getElementById('_tap_anim')) {
-    const s = document.createElement('style');
-    s.id = '_tap_anim';
-    s.textContent = '@keyframes tap-fade{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}}';
-    document.head.appendChild(s);
-  }
   setTimeout(() => el.remove(), 850);
 }
 

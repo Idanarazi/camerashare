@@ -5,16 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#ff375f">
+<meta name="theme-color" content="#00A8FF">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>CameraShare</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #0d0d0d;
+    background: #0A0A0A;
     color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -23,39 +26,55 @@
     padding: 40px 24px;
     gap: 20px;
   }
-  .logo { font-size: 56px; margin-bottom: 4px; }
-  h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+
+  .logo-wrap { text-align: center; margin-bottom: 4px; }
+  .logo-icon { font-size: 52px; display: block; margin-bottom: 14px; }
+  .logo-text { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+  .logo-camera { color: #fff; }
+  .logo-share  { color: #00A8FF; }
+
   .tagline {
-    color: rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.4);
     font-size: 15px;
     text-align: center;
-    max-width: 260px;
-    line-height: 1.6;
-    margin-bottom: 8px;
+    max-width: 270px;
+    line-height: 1.65;
+    margin-top: -4px;
   }
+
   a.role-card {
-    background: rgba(255,255,255,0.07);
-    border: 1.5px solid rgba(255,255,255,0.1);
-    border-radius: 20px;
+    background: #1A1A1A;
+    border: 1.5px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
     padding: 24px 22px;
     width: 100%;
     max-width: 340px;
     text-decoration: none;
     color: #fff;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s, background 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
-  a.role-card:active { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.22); }
-  .role-emoji { font-size: 36px; display: block; margin-bottom: 10px; }
-  .role-title { font-size: 21px; font-weight: 700; margin-bottom: 5px; }
-  .role-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; }
-  .divider    { color: rgba(255,255,255,0.2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  a.role-card:active {
+    background: #222;
+    border-color: rgba(0,168,255,0.4);
+  }
+  .role-emoji { font-size: 32px; line-height: 1; }
+  .role-title { font-size: 20px; font-weight: 700; }
+  .role-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.55; }
+
+  .divider { color: rgba(255,255,255,0.18); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
 </style>
 </head>
 <body>
-  <div class="logo">📷</div>
-  <h1>CameraShare</h1>
-  <p class="tagline">Direct the perfect shot — see through their lens in real time.</p>
+  <div class="logo-wrap">
+    <span class="logo-icon">📷</span>
+    <div class="logo-text"><span class="logo-camera">Camera</span><span class="logo-share">Share</span></div>
+  </div>
+
+  <p class="tagline">Let someone else frame your perfect shot.</p>
 
   <a href="/photographer.html" class="role-card">
     <span class="role-emoji">📷</span>
