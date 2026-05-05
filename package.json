@@ -1,0 +1,17 @@
+{
+  "name": "camerashare",
+  "version": "1.0.0",
+  "description": "Real-time camera sharing with director controls",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "generate-icons": "node scripts/generate-icons.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.14.2"
+  }
+}

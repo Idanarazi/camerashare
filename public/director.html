@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ff375f">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>CameraShare — Director</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Join screen ── */
+  #join-screen {
+    height: 100dvh;
+    background: #0d0d0d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 28px;
+    gap: 18px;
+    text-align: center;
+  }
+  #join-screen .icon { font-size: 56px; }
+  #join-screen h1 { font-size: 28px; font-weight: 800; }
+  #join-screen p  { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.6; max-width: 280px; }
+
+  /* Join form */
+  #join-form { display: contents; }
+  #code-input {
+    width: 100%;
+    max-width: 300px;
+    background: rgba(255,255,255,0.09);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 16px;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    padding: 16px;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #code-input:focus { border-color: rgba(255,255,255,0.45); }
+  #code-input::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; font-weight: 400; font-size: 18px; }
+  #join-btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 18px 32px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    touch-action: manipulation;
+    transition: opacity 0.15s;
+  }
+  #join-btn:active   { opacity: 0.8; }
+  #join-btn:disabled { opacity: 0.45; }
+  #join-error { color: #ff375f; font-size: 14px; display: none; max-width: 300px; }
+
+  /* Waiting-for-approval sub-state */
+  #approval-wait {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 300px;
+  }
+  .approval-spinner {
+    font-size: 44px;
+    animation: spin-slow 2s linear infinite;
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+  .approval-title { font-size: 18px; font-weight: 700; }
+  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; max-width: 260px; }
+  #cancel-knock-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 14px;
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 13px 28px;
+    cursor: pointer;
+    touch-action: manipulation;
+    margin-top: 4px;
+  }
+  #cancel-knock-btn:active { background: rgba(255,255,255,0.18); }
+
+  /* Denied state */
+  #denied-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 300px;
+  }
+  .denied-icon  { font-size: 44px; }
+  .denied-title { font-size: 18px; font-weight: 700; }
+  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; max-width: 260px; }
+  #try-again-btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px 28px;
+    cursor: pointer;
+    touch-action: manipulation;
+    margin-top: 4px;
+  }
+  #try-again-btn:active { opacity: 0.8; }
+
+  /* ── Control screen — full-screen video with overlaid controls ── */
+  #control-screen {
+    display: none;
+    position: relative;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Video fills entire screen */
+  #preview-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: crosshair;
+    background: #000;
+  }
+  #preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  #connecting-msg {
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 20px;
+  }
+  #live-badge {
+    display: none;
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    left: 14px;
+    background: rgba(52, 199, 89, 0.85);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+  }
+
+  /* Toggle button — always visible top-right */
+  #toggle-btn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+    z-index: 30;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.9);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 13px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s;
+  }
+  #toggle-btn:active { background: rgba(255,255,255,0.18); }
+
+  /* Controls panel — overlaid at bottom, semi-transparent */
+  #controls-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 65%, transparent 100%);
+    padding: 28px 18px max(14px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.72;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  #controls-panel:has(:active) { opacity: 0.95; }
+  #controls-panel.controls-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+  }
+
+  #tap-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: -4px;
+  }
+
+  /* D-pad */
+  #dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 5px;
+  }
+  .arrow-btn {
+    background: rgba(255,255,255,0.14);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .arrow-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.88); }
+  .ghost { visibility: hidden; pointer-events: none; }
+  .center-label {
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Zoom row */
+  #zoom-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+  }
+  .zoom-btn {
+    background: rgba(255,255,255,0.14);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 300;
+    width: 64px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.1s, transform 0.1s;
+    line-height: 1;
+  }
+  .zoom-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.88); }
+  #zoom-label {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.38);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  /* Torch button */
+  #torch-btn {
+    background: rgba(255,255,255,0.14);
+    border: 1.5px solid transparent;
+    border-radius: 12px;
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    font-weight: 600;
+    height: 42px;
+    width: 100%;
+    max-width: 280px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    letter-spacing: 0.2px;
+  }
+  #torch-btn.torch-on {
+    background: rgba(255, 214, 10, 0.15);
+    border-color: rgba(255, 214, 10, 0.55);
+    color: #ffd60a;
+  }
+  #torch-btn:active { opacity: 0.7; }
+  #torch-btn:disabled { color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); border-color: transparent; }
+
+  /* Capture button */
+  #capture-btn {
+    background: #ff375f;
+    border: none;
+    border-radius: 15px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    height: 52px;
+    width: 100%;
+    max-width: 280px;
+    cursor: pointer;
+    touch-action: manipulation;
+    letter-spacing: 0.3px;
+    box-shadow: 0 3px 18px rgba(255, 55, 95, 0.5);
+    transition: background 0.1s, transform 0.1s, box-shadow 0.1s;
+  }
+  #capture-btn:active { background: #d91a40; transform: scale(0.95); box-shadow: 0 2px 10px rgba(255,55,95,0.3); }
+  #capture-btn:disabled { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.38); box-shadow: none; }
+
+  #status-footer { font-size: 11px; color: rgba(255,255,255,0.38); text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ── Join screen (includes approval-wait and denied-msg sub-states) ── -->
+<div id="join-screen">
+  <div class="icon">🎬</div>
+  <h1>Director</h1>
+
+  <!-- Normal join form -->
+  <div id="join-form" style="display:contents">
+    <p>Enter the room code shown on the Photographer's phone, or scan their QR code.</p>
+    <input
+      type="text" id="code-input" placeholder="LAKE-7392"
+      maxlength="9" autocomplete="off" autocorrect="off"
+      autocapitalize="characters" spellcheck="false" inputmode="text"
+    >
+    <button id="join-btn">Join Room</button>
+    <div id="join-error"></div>
+  </div>
+
+  <!-- Waiting for photographer approval -->
+  <div id="approval-wait" hidden style="display:none">
+    <div class="approval-spinner">⏳</div>
+    <div class="approval-title">Waiting for approval…</div>
+    <div class="approval-desc">The Photographer must allow your request before you can view the feed.</div>
+    <button id="cancel-knock-btn">Cancel</button>
+  </div>
+
+  <!-- Request denied -->
+  <div id="denied-msg" hidden style="display:none">
+    <div class="denied-icon">🚫</div>
+    <div class="denied-title">Request declined</div>
+    <div class="denied-desc" id="denied-desc-text">The Photographer declined your request.</div>
+    <button id="try-again-btn">Try Again</button>
+  </div>
+</div>
+
+<!-- ── Control screen ── -->
+<div id="control-screen">
+
+  <div id="preview-wrap">
+    <video id="preview" autoplay playsinline></video>
+    <div id="preview-overlay">
+      <div id="connecting-msg">Waiting for camera stream…</div>
+    </div>
+    <div id="live-badge">● LIVE</div>
+  </div>
+
+  <button id="toggle-btn">Hide Controls</button>
+
+  <div id="controls-panel">
+    <div id="tap-hint">Tap video above to focus</div>
+
+    <div id="dpad">
+      <div class="ghost"></div>
+      <button class="arrow-btn" data-cmd="move-up">↑</button>
+      <div class="ghost"></div>
+      <button class="arrow-btn" data-cmd="move-left">←</button>
+      <div class="center-label">MOVE</div>
+      <button class="arrow-btn" data-cmd="move-right">→</button>
+      <div class="ghost"></div>
+      <button class="arrow-btn" data-cmd="move-down">↓</button>
+      <div class="ghost"></div>
+    </div>
+
+    <div id="zoom-row">
+      <button class="zoom-btn" id="zoom-out-btn">−</button>
+      <div id="zoom-label">ZOOM</div>
+      <button class="zoom-btn" id="zoom-in-btn">+</button>
+    </div>
+
+    <button id="torch-btn" disabled>🔦&nbsp; Torch: OFF</button>
+
+    <button id="capture-btn" disabled>📷&nbsp; Capture!</button>
+
+    <div id="status-footer">Connecting…</div>
+  </div>
+</div>
+
+<script>
+const WS_URL = `wss://${location.host}`;
+const ICE = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  {
+    urls: [
+      'turn:coshot.metered.live:80',
+      'turn:coshot.metered.live:80?transport=tcp',
+      'turns:coshot.metered.live:443',
+      'turns:coshot.metered.live:443?transport=tcp',
+    ],
+    username:   '17744b6ee59f102bf8f889ce',
+    credential: 'oebXMegQvdfHEOxl',
+  },
+];
+
+let ws, pc;
+let pendingCandidates = [];
+let remoteDescSet = false;
+let isLive = false;
+let controlsVisible = true;
+let torchOn = false;
+
+// DOM refs
+const joinScreen     = document.getElementById('join-screen');
+const joinFormEls    = document.getElementById('join-form');
+const approvalWait   = document.getElementById('approval-wait');
+const deniedMsg      = document.getElementById('denied-msg');
+const codeInput      = document.getElementById('code-input');
+const joinBtn        = document.getElementById('join-btn');
+const joinError      = document.getElementById('join-error');
+const controlScreen  = document.getElementById('control-screen');
+const preview        = document.getElementById('preview');
+const connectingMsg  = document.getElementById('connecting-msg');
+const liveBadge      = document.getElementById('live-badge');
+const captureBtn     = document.getElementById('capture-btn');
+const statusFooter   = document.getElementById('status-footer');
+const controlsPanel  = document.getElementById('controls-panel');
+const toggleBtn      = document.getElementById('toggle-btn');
+const torchBtn       = document.getElementById('torch-btn');
+
+// ── Join screen sub-state helpers ───────────────────────────────────
+
+function showJoinForm(errorMsg) {
+  joinFormEls.style.display = 'contents';
+  approvalWait.style.display = 'none';
+  deniedMsg.style.display    = 'none';
+  joinBtn.disabled    = false;
+  joinBtn.textContent = 'Join Room';
+  joinError.style.display = errorMsg ? 'block' : 'none';
+  joinError.textContent   = errorMsg || '';
+}
+
+function showApprovalWait() {
+  joinFormEls.style.display  = 'none';
+  approvalWait.style.display = 'flex';
+  deniedMsg.style.display    = 'none';
+}
+
+function showDenied(message) {
+  joinFormEls.style.display  = 'none';
+  approvalWait.style.display = 'none';
+  deniedMsg.style.display    = 'flex';
+  document.getElementById('denied-desc-text').textContent = message;
+  // Close WS so they start fresh on retry
+  ws?.close();
+}
+
+// ── URL pre-fill ────────────────────────────────────────────────────
+
+const urlCode = new URLSearchParams(location.search).get('code');
+if (urlCode) codeInput.value = urlCode;
+
+// ── Join / cancel / retry ───────────────────────────────────────────
+
+joinBtn.addEventListener('click', joinRoom);
+codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+
+document.getElementById('cancel-knock-btn').addEventListener('click', () => {
+  ws?.send(JSON.stringify({ type: 'cancel-knock' }));
+  showJoinForm();
+});
+
+document.getElementById('try-again-btn').addEventListener('click', () => {
+  showJoinForm();
+});
+
+function joinRoom() {
+  const code = codeInput.value.trim().toUpperCase().replace(/\s/g, '');
+  if (!code) { showJoinForm('Please enter a room code.'); return; }
+
+  joinBtn.disabled    = true;
+  joinBtn.textContent = 'Joining…';
+  joinError.style.display = 'none';
+
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'join-room', code }));
+
+  ws.onmessage = async ({ data }) => {
+    const msg = JSON.parse(data);
+    switch (msg.type) {
+
+      case 'knock-sent':
+        showApprovalWait();
+        break;
+
+      case 'room-joined':
+        joinScreen.style.display  = 'none';
+        controlScreen.style.display = 'block';
+        statusFooter.textContent  = 'Waiting for camera stream…';
+        break;
+
+      case 'offer':
+        await handleOffer(msg);
+        break;
+
+      case 'ice-candidate': {
+        const c = new RTCIceCandidate(msg.candidate);
+        if (remoteDescSet) await pc.addIceCandidate(c).catch(() => {});
+        else pendingCandidates.push(c);
+        break;
+      }
+
+      case 'knock-denied':
+        showDenied(msg.message);
+        break;
+
+      case 'peer-left':
+        isLive = false;
+        liveBadge.style.display = 'none';
+        connectingMsg.style.display = 'flex';
+        connectingMsg.textContent   = 'Photographer disconnected.';
+        captureBtn.disabled = true;
+        torchBtn.disabled   = true;
+        statusFooter.textContent = msg.message;
+        break;
+
+      case 'error':
+        showJoinForm(msg.message);
+        break;
+    }
+  };
+
+  ws.onclose = () => {
+    if (isLive) {
+      statusFooter.textContent = 'Connection lost — reload to reconnect.';
+      captureBtn.disabled = true;
+      torchBtn.disabled   = true;
+    }
+  };
+}
+
+// ── WebRTC ──────────────────────────────────────────────────────────
+
+async function handleOffer(msg) {
+  pc = new RTCPeerConnection({ iceServers: ICE });
+
+  pc.ontrack = ({ streams }) => {
+    preview.srcObject = streams[0];
+    connectingMsg.style.display = 'none';
+    liveBadge.style.display     = 'block';
+    captureBtn.disabled = false;
+    torchBtn.disabled   = false;
+    isLive = true;
+    statusFooter.textContent = 'Live — tap video to focus';
+  };
+
+  pc.onicecandidate = ({ candidate }) => {
+    if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
+  };
+
+  await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+  remoteDescSet = true;
+  for (const c of pendingCandidates) await pc.addIceCandidate(c).catch(() => {});
+  pendingCandidates = [];
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp }));
+}
+
+// ── Controls ─────────────────────────────────────────────────────────
+
+toggleBtn.addEventListener('click', () => {
+  controlsVisible = !controlsVisible;
+  controlsPanel.classList.toggle('controls-hidden', !controlsVisible);
+  toggleBtn.textContent = controlsVisible ? 'Hide Controls' : 'Show Controls';
+});
+
+document.querySelectorAll('.arrow-btn[data-cmd]').forEach(btn => {
+  btn.addEventListener('click', () => sendCmd(btn.dataset.cmd));
+});
+
+document.getElementById('zoom-in-btn').addEventListener('click',  () => sendCmd('zoom-in'));
+document.getElementById('zoom-out-btn').addEventListener('click', () => sendCmd('zoom-out'));
+
+torchBtn.addEventListener('click', () => {
+  if (!isLive) return;
+  torchOn = !torchOn;
+  torchBtn.textContent = torchOn ? '🔦  Torch: ON' : '🔦  Torch: OFF';
+  torchBtn.classList.toggle('torch-on', torchOn);
+  sendCmd('torch', { on: torchOn });
+});
+
+captureBtn.addEventListener('click', () => {
+  if (!isLive) return;
+  captureBtn.disabled    = true;
+  captureBtn.textContent = '⏳  Capturing…';
+  sendCmd('capture');
+  setTimeout(() => {
+    captureBtn.textContent = '📷  Capture!';
+    captureBtn.disabled    = false;
+  }, 2500);
+});
+
+// Tap-to-focus on video
+document.getElementById('preview-wrap').addEventListener('click', e => {
+  if (!isLive) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top)  / rect.height;
+  sendCmd('focus', { x, y });
+  spawnFocusDot(e.clientX, e.clientY);
+});
+
+function spawnFocusDot(cx, cy) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:48px;height:48px;border:2px solid #ffd60a;border-radius:6px;transform:translate(-50%,-50%);pointer-events:none;z-index:99;animation:tap-fade 0.85s ease-out forwards;`;
+  document.body.appendChild(el);
+  if (!document.getElementById('_tap_anim')) {
+    const s = document.createElement('style');
+    s.id = '_tap_anim';
+    s.textContent = '@keyframes tap-fade{0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}}';
+    document.head.appendChild(s);
+  }
+  setTimeout(() => el.remove(), 850);
+}
+
+function sendCmd(command, data) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'command', command, data }));
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

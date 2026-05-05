@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ff375f">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>CameraShare — Photographer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Viewfinder ── */
+  #viewfinder {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  /* ── Setup screen ── */
+  #setup-screen {
+    position: fixed;
+    inset: 0;
+    background: #0d0d0d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 48px 28px;
+    gap: 18px;
+    text-align: center;
+  }
+  #setup-screen .icon { font-size: 56px; }
+  #setup-screen h1 { font-size: 28px; font-weight: 800; }
+  #setup-screen p { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.6; max-width: 280px; }
+  #start-btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 18px 32px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 8px;
+  }
+  #start-btn:active { opacity: 0.8; }
+  #start-btn:disabled { opacity: 0.5; }
+  #setup-error { color: #ff375f; font-size: 14px; display: none; }
+
+  /* ── Waiting overlay (QR code share screen) ── */
+  #waiting-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+  }
+
+  .qr-card {
+    background: #fff;
+    color: #000;
+    border-radius: 24px;
+    padding: 22px 22px 18px;
+    text-align: center;
+    width: 100%;
+    max-width: 270px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .qr-share-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #999;
+    margin-bottom: 14px;
+  }
+  #qr-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
+    background: #f0f0f0;
+  }
+  .qr-code-text {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #000;
+    margin-top: 14px;
+  }
+  .qr-url-text {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 5px;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  #waiting-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .dot.waiting { animation: pulse 1.5s infinite; }
+  .dot.live    { background: #34c759; animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── Knock-to-approve modal ── */
+  #knock-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0,0,0,0.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+  .knock-card {
+    background: #1c1c1e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 30px 24px 24px;
+    text-align: center;
+    width: 100%;
+    max-width: 310px;
+    animation: card-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes card-rise {
+    from { opacity: 0; transform: translateY(24px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .knock-bell {
+    font-size: 46px;
+    display: block;
+    margin-bottom: 14px;
+    animation: bell-ring 0.55s ease-out;
+  }
+  @keyframes bell-ring {
+    0%,100% { transform: rotate(0); }
+    20%     { transform: rotate(-16deg); }
+    40%     { transform: rotate(16deg); }
+    60%     { transform: rotate(-10deg); }
+    80%     { transform: rotate(10deg); }
+  }
+  .knock-card h2  { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .knock-card p   { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; margin-bottom: 24px; }
+  .knock-actions  { display: flex; gap: 10px; }
+  .knock-actions button {
+    flex: 1;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 15px 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #deny-btn  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+  #deny-btn:active  { background: rgba(255,255,255,0.18); }
+  #allow-btn { background: #34c759; color: #fff; }
+  #allow-btn:active { background: #2aad4a; transform: scale(0.97); }
+
+  /* ── Live HUD (after Director is connected) ── */
+  #live-hud-top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: max(14px, env(safe-area-inset-top)) 16px 36px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .code-pill {
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.85);
+  }
+  #live-hud-bottom {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: 36px 16px max(14px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #live-status {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Command overlays ── */
+  #indicator-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  #indicator {
+    font-size: 140px;
+    opacity: 0;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.9));
+    line-height: 1;
+  }
+  #indicator.pop {
+    animation: pop-out 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes pop-out {
+    0%   { opacity: 1; transform: scale(1.4); }
+    40%  { opacity: 0.9; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.85); }
+  }
+
+  #focus-ring {
+    position: fixed;
+    width: 64px;
+    height: 64px;
+    border: 2px solid #ffd60a;
+    border-radius: 6px;
+    z-index: 21;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+  #focus-ring.pop {
+    animation: focus-pop 1s ease-out forwards;
+  }
+  @keyframes focus-pop {
+    0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.4); }
+    40%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
+  }
+
+  #capture-flash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 70;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #capture-flash.flash {
+    animation: shutter 0.35s ease-out forwards;
+  }
+  @keyframes shutter { 0%{opacity:1} 100%{opacity:0} }
+
+  #zoom-badge {
+    position: fixed;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 700;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #zoom-badge.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── 1. Setup screen ── -->
+<div id="setup-screen">
+  <div class="icon">📷</div>
+  <h1>Photographer</h1>
+  <p>Tap to open the camera and get a shareable room code for your Director.</p>
+  <button id="start-btn">Open Camera</button>
+  <div id="setup-error"></div>
+</div>
+
+<!-- ── Camera (always running once started) ── -->
+<video id="viewfinder" autoplay playsinline muted></video>
+
+<!-- ── 2. Waiting overlay: QR code + room code ── -->
+<div id="waiting-overlay" hidden>
+  <div class="qr-card">
+    <div class="qr-share-label">Share with your Director</div>
+    <img id="qr-img" src="" alt="QR Code" width="200" height="200">
+    <div class="qr-code-text" id="qr-code-text">——</div>
+    <div class="qr-url-text"  id="qr-url-text"></div>
+  </div>
+  <div id="waiting-status">
+    <span class="dot waiting" id="waiting-dot"></span>
+    <span id="waiting-text">Waiting for Director…</span>
+  </div>
+</div>
+
+<!-- ── 3. Knock-to-approve modal ── -->
+<div id="knock-modal" hidden>
+  <div class="knock-card">
+    <span class="knock-bell">🔔</span>
+    <h2>Access Request</h2>
+    <p>A Director wants to view your camera feed.</p>
+    <div class="knock-actions">
+      <button id="deny-btn">Deny</button>
+      <button id="allow-btn">Allow</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 4. Live HUD (shown once Director is streaming) ── -->
+<div id="live-hud-top" hidden>
+  <span class="code-pill" id="live-code-pill">——</span>
+</div>
+<div id="live-hud-bottom" hidden>
+  <div id="live-status">
+    <span class="dot live"></span>
+    <span id="live-status-text">Director is watching</span>
+  </div>
+</div>
+
+<!-- ── Command overlays ── -->
+<div id="indicator-wrap"><div id="indicator"></div></div>
+<div id="focus-ring"></div>
+<div id="capture-flash"></div>
+<div id="zoom-badge">1.0×</div>
+
+<script>
+const WS_URL = `wss://${location.host}`;
+const ICE = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  {
+    urls: [
+      'turn:coshot.metered.live:80',
+      'turn:coshot.metered.live:80?transport=tcp',
+      'turns:coshot.metered.live:443',
+      'turns:coshot.metered.live:443?transport=tcp',
+    ],
+    username:   '17744b6ee59f102bf8f889ce',
+    credential: 'oebXMegQvdfHEOxl',
+  },
+];
+
+let ws, pc, localStream;
+let zoomCap = null, currentZoom = 1, zoomTimer = null;
+let roomCode = '';
+
+// DOM refs
+const setupScreen    = document.getElementById('setup-screen');
+const startBtn       = document.getElementById('start-btn');
+const setupError     = document.getElementById('setup-error');
+const waitingOverlay = document.getElementById('waiting-overlay');
+const waitingDot     = document.getElementById('waiting-dot');
+const waitingText    = document.getElementById('waiting-text');
+const knockModal     = document.getElementById('knock-modal');
+const allowBtn       = document.getElementById('allow-btn');
+const denyBtn        = document.getElementById('deny-btn');
+const liveHudTop     = document.getElementById('live-hud-top');
+const liveHudBottom  = document.getElementById('live-hud-bottom');
+const liveCodePill   = document.getElementById('live-code-pill');
+const liveStatusText = document.getElementById('live-status-text');
+const viewfinder     = document.getElementById('viewfinder');
+const indicator      = document.getElementById('indicator');
+const focusRing      = document.getElementById('focus-ring');
+const captureFlash   = document.getElementById('capture-flash');
+const zoomBadge      = document.getElementById('zoom-badge');
+
+// ── State helpers ───────────────────────────────────────────────────
+
+function showWaiting(statusMsg) {
+  waitingOverlay.hidden = false;
+  knockModal.hidden     = true;
+  liveHudTop.hidden     = true;
+  liveHudBottom.hidden  = true;
+  if (statusMsg) waitingText.textContent = statusMsg;
+  waitingDot.className = 'dot waiting';
+}
+
+function showKnock() {
+  knockModal.hidden = false;
+}
+
+function hideKnock() {
+  knockModal.hidden = true;
+}
+
+function showLive() {
+  waitingOverlay.hidden = true;
+  knockModal.hidden     = true;
+  liveHudTop.hidden     = false;
+  liveHudBottom.hidden  = false;
+  liveCodePill.textContent = roomCode;
+}
+
+// ── Setup ───────────────────────────────────────────────────────────
+
+startBtn.addEventListener('click', startApp);
+
+async function startApp() {
+  startBtn.disabled    = true;
+  startBtn.textContent = 'Starting…';
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false,
+    });
+  } catch (err) {
+    showSetupError('Camera error: ' + err.message);
+    return;
+  }
+  viewfinder.srcObject = localStream;
+  const track = localStream.getVideoTracks()[0];
+  const caps  = track.getCapabilities?.();
+  if (caps?.zoom) { zoomCap = caps.zoom; currentZoom = caps.zoom.min ?? 1; }
+  connectWS();
+}
+
+// ── WebSocket ───────────────────────────────────────────────────────
+
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'create-room' }));
+
+  ws.onmessage = async ({ data }) => {
+    const msg = JSON.parse(data);
+    switch (msg.type) {
+
+      case 'room-created': {
+        roomCode = msg.code;
+        setupScreen.hidden = true;
+        const directorUrl = `${location.protocol}//${location.host}/director.html?code=${roomCode}`;
+        document.getElementById('qr-code-text').textContent = roomCode;
+        document.getElementById('qr-url-text').textContent  = directorUrl;
+        document.getElementById('qr-img').src = `/api/qr?url=${encodeURIComponent(directorUrl)}`;
+        showWaiting('Waiting for Director…');
+        break;
+      }
+
+      case 'knock':
+        showKnock();
+        break;
+
+      case 'knock-cancelled':
+        hideKnock();
+        showWaiting('Waiting for Director…');
+        break;
+
+      case 'director-joined':
+        hideKnock();
+        showLive();
+        liveStatusText.textContent = 'Director connected — starting…';
+        await startWebRTC();
+        break;
+
+      case 'answer':
+        await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+        liveStatusText.textContent = 'Director is watching';
+        break;
+
+      case 'ice-candidate':
+        if (pc && msg.candidate) await pc.addIceCandidate(msg.candidate).catch(() => {});
+        break;
+
+      case 'command':
+        handleCommand(msg.command, msg.data);
+        break;
+
+      case 'peer-left':
+        pc?.close(); pc = null;
+        showWaiting('Director left — waiting for reconnect…');
+        break;
+
+      case 'error':
+        showSetupError(msg.message);
+        break;
+    }
+  };
+
+  ws.onclose = () => showWaiting('Disconnected — reload to reconnect.');
+}
+
+// ── Knock buttons ───────────────────────────────────────────────────
+
+allowBtn.addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'knock-response', allowed: true }));
+  hideKnock();
+});
+
+denyBtn.addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'knock-response', allowed: false }));
+  hideKnock();
+});
+
+// ── WebRTC ──────────────────────────────────────────────────────────
+
+async function startWebRTC() {
+  pc = new RTCPeerConnection({ iceServers: ICE });
+  for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
+  pc.onicecandidate = ({ candidate }) => {
+    if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
+  };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp }));
+}
+
+// ── Command handlers ────────────────────────────────────────────────
+
+function handleCommand(cmd, data) {
+  switch (cmd) {
+    case 'move-left':  showIndicator('←'); break;
+    case 'move-right': showIndicator('→'); break;
+    case 'move-up':    showIndicator('↑'); break;
+    case 'move-down':  showIndicator('↓'); break;
+    case 'zoom-in':    adjustZoom(+0.5); break;
+    case 'zoom-out':   adjustZoom(-0.5); break;
+    case 'focus':      applyFocus(data); break;
+    case 'capture':    capturePhoto(); break;
+    case 'torch':      applyTorch(data?.on ?? false); break;
+  }
+}
+
+function showIndicator(symbol) {
+  indicator.textContent = symbol;
+  indicator.classList.remove('pop');
+  void indicator.offsetWidth;
+  indicator.classList.add('pop');
+}
+
+async function adjustZoom(delta) {
+  currentZoom = Math.max(1, Math.min(5, currentZoom + delta));
+  zoomBadge.textContent = `${currentZoom.toFixed(1)}×`;
+  zoomBadge.classList.add('show');
+  clearTimeout(zoomTimer);
+  zoomTimer = setTimeout(() => zoomBadge.classList.remove('show'), 2200);
+  showIndicator(delta > 0 ? '＋' : '－');
+  if (!zoomCap) return;
+  const track = localStream.getVideoTracks()[0];
+  const z = Math.max(zoomCap.min, Math.min(zoomCap.max, currentZoom));
+  try { await track.applyConstraints({ advanced: [{ zoom: z }] }); } catch {}
+}
+
+async function applyFocus({ x, y }) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  focusRing.style.left = `${x * vw}px`;
+  focusRing.style.top  = `${y * vh}px`;
+  focusRing.classList.remove('pop');
+  void focusRing.offsetWidth;
+  focusRing.classList.add('pop');
+  const track = localStream.getVideoTracks()[0];
+  try { await track.applyConstraints({ advanced: [{ focusMode: 'manual', pointOfInterest: { x, y } }] }); } catch {}
+}
+
+async function applyTorch(on) {
+  const track = localStream.getVideoTracks()[0];
+  try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch {}
+}
+
+async function capturePhoto() {
+  captureFlash.classList.remove('flash');
+  void captureFlash.offsetWidth;
+  captureFlash.classList.add('flash');
+  showIndicator('✓');
+  const track = localStream.getVideoTracks()[0];
+  let blob;
+  if (typeof ImageCapture !== 'undefined') {
+    try {
+      const ic   = new ImageCapture(track);
+      const caps = await ic.getPhotoCapabilities();
+      const settings = {};
+      if (caps.imageWidth?.max)  settings.imageWidth  = caps.imageWidth.max;
+      if (caps.imageHeight?.max) settings.imageHeight = caps.imageHeight.max;
+      blob = await ic.takePhoto(Object.keys(settings).length ? settings : undefined);
+    } catch {}
+  }
+  if (!blob) {
+    const canvas = Object.assign(document.createElement('canvas'), {
+      width: viewfinder.videoWidth, height: viewfinder.videoHeight,
+    });
+    canvas.getContext('2d').drawImage(viewfinder, 0, 0);
+    blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.97));
+  }
+  const filename = `camerashare-${Date.now()}.jpg`;
+  const file = new File([blob], filename, { type: 'image/jpeg' });
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: 'CameraShare Photo' }).catch(() => {});
+  } else {
+    const url = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+}
+
+// ── UI helpers ──────────────────────────────────────────────────────
+
+function showSetupError(msg) {
+  setupError.style.display = 'block';
+  setupError.textContent   = msg;
+  startBtn.disabled        = false;
+  startBtn.textContent     = 'Try Again';
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

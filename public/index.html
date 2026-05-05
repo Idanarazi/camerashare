@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ff375f">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>CameraShare</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d0d;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 20px;
+  }
+  .logo { font-size: 56px; margin-bottom: 4px; }
+  h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+  .tagline {
+    color: rgba(255,255,255,0.45);
+    font-size: 15px;
+    text-align: center;
+    max-width: 260px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  a.role-card {
+    background: rgba(255,255,255,0.07);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 24px 22px;
+    width: 100%;
+    max-width: 340px;
+    text-decoration: none;
+    color: #fff;
+    display: block;
+    -webkit-tap-highlight-color: transparent;
+  }
+  a.role-card:active { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.22); }
+  .role-emoji { font-size: 36px; display: block; margin-bottom: 10px; }
+  .role-title { font-size: 21px; font-weight: 700; margin-bottom: 5px; }
+  .role-desc  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.55; }
+  .divider    { color: rgba(255,255,255,0.2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+  <div class="logo">📷</div>
+  <h1>CameraShare</h1>
+  <p class="tagline">Direct the perfect shot — see through their lens in real time.</p>
+
+  <a href="/photographer.html" class="role-card">
+    <span class="role-emoji">📷</span>
+    <div class="role-title">Photographer</div>
+    <div class="role-desc">Hold the phone. Stream your camera and receive directions from your Director.</div>
+  </a>
+
+  <div class="divider">or</div>
+
+  <a href="/director.html" class="role-card">
+    <span class="role-emoji">🎬</span>
+    <div class="role-title">Director</div>
+    <div class="role-desc">See through their lens. Give directions — angle, zoom, focus — and hit Capture!</div>
+  </a>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
