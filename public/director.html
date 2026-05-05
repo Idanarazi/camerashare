@@ -417,7 +417,7 @@
     100% { opacity: 1; transform: scale(1); }
   }
 
-  /* ── Freeze screen (frozen frame + "Perfect Frame!" overlay) ── */
+  /* ── Freeze screen (frozen frame + minimal corner UI) ── */
   #director-freeze {
     position: absolute;
     inset: 0;
@@ -431,50 +431,46 @@
     object-fit: cover;
     z-index: 51;
   }
-  .freeze-overlay {
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  #freeze-badge {
     position: absolute;
-    inset: 0;
+    top: max(14px, env(safe-area-inset-top));
+    left: 14px;
     z-index: 52;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0,0,0,0.48);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.82);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    letter-spacing: 0.2px;
+    pointer-events: none;
     animation: fade-in 0.4s ease;
   }
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  .freeze-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    padding: 40px 28px;
-  }
-  .freeze-photo-emoji { font-size: 72px; }
-  .freeze-title {
-    font-size: 30px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-  }
   #done-btn {
-    background: #fff;
-    color: #000;
-    border: none;
-    border-radius: 16px;
-    font-size: 17px;
+    position: absolute;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    right: 16px;
+    z-index: 52;
+    background: rgba(255,255,255,0.16);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 15px;
     font-weight: 700;
     font-family: inherit;
-    padding: 16px 48px;
+    padding: 10px 22px;
     cursor: pointer;
     touch-action: manipulation;
-    transition: opacity 0.15s, transform 0.1s;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    margin-top: 8px;
+    transition: background 0.15s, transform 0.1s;
+    animation: fade-in 0.4s ease;
   }
-  #done-btn:active { opacity: 0.85; transform: scale(0.96); }
+  #done-btn:active { background: rgba(255,255,255,0.28); transform: scale(0.96); }
 
   /* ── Focus tap dot ── */
   @keyframes tap-fade {
@@ -534,16 +530,11 @@
     <div id="dir-countdown-num">3</div>
   </div>
 
-  <!-- Freeze screen (frozen frame + "Perfect Frame!" UI) -->
+  <!-- Freeze screen (frozen frame + minimal corner UI) -->
   <div id="director-freeze" hidden>
     <img id="frozen-frame" alt="">
-    <div class="freeze-overlay">
-      <div class="freeze-content">
-        <div class="freeze-photo-emoji">📸</div>
-        <div class="freeze-title">Perfect Frame!</div>
-        <button id="done-btn">Done</button>
-      </div>
-    </div>
+    <div id="freeze-badge">📸 Frozen</div>
+    <button id="done-btn">Done</button>
   </div>
 
   <button id="toggle-btn">Hide Controls</button>
@@ -705,6 +696,11 @@ function joinRoom() {
 
       case 'knock-denied':
         showDenied(msg.message);
+        break;
+
+      case 'unfreeze':
+        directorFreeze.hidden = true;
+        captureBtn.disabled   = false;
         break;
 
       case 'peer-left':

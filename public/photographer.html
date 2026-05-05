@@ -315,31 +315,56 @@
     text-transform: uppercase;
   }
 
-  /* ── Freeze message ── */
-  #freeze-msg {
+  /* ── Frozen frame (shown after countdown) ── */
+  #frozen-frame-photo {
     position: fixed;
     inset: 0;
-    z-index: 50;
-    background: rgba(0,0,0,0.62);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 49;
+  }
+
+  /* ── Freeze bar (bottom minimal UI) ── */
+  #freeze-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 51;
+    padding: 48px 20px max(20px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
+    justify-content: space-between;
+    gap: 12px;
     animation: fade-in 0.35s ease;
   }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  .freeze-icon-big { font-size: 76px; }
-  .freeze-msg-text {
-    font-size: 22px;
-    font-weight: 700;
-    color: #fff;
-    text-align: center;
-    max-width: 260px;
-    line-height: 1.45;
+  .freeze-bar-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.4;
   }
+  #continue-btn {
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 9px 20px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+  }
+  #continue-btn:active { background: rgba(255,255,255,0.32); transform: scale(0.96); }
 
   /* ── Command overlays ── */
   #indicator-wrap {
@@ -482,10 +507,13 @@
   <div id="countdown-label">Get Ready!</div>
 </div>
 
-<!-- ── Freeze message (after countdown) ── -->
-<div id="freeze-msg" hidden>
-  <div class="freeze-icon-big">📸</div>
-  <div class="freeze-msg-text">Switch to your camera now!</div>
+<!-- ── Frozen frame (shown after countdown, overlays viewfinder) ── -->
+<img id="frozen-frame-photo" hidden alt="">
+
+<!-- ── Freeze bar (bottom minimal UI) ── -->
+<div id="freeze-bar" hidden>
+  <span class="freeze-bar-text">Frame frozen — take your shot!</span>
+  <button id="continue-btn">Continue</button>
 </div>
 
 <!-- Command overlays -->
@@ -536,7 +564,9 @@ const zoomBadge        = document.getElementById('zoom-badge');
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownNum     = document.getElementById('countdown-num');
 const countdownLabel   = document.getElementById('countdown-label');
-const freezeMsg        = document.getElementById('freeze-msg');
+const frozenFramePhoto = document.getElementById('frozen-frame-photo');
+const freezeBar        = document.getElementById('freeze-bar');
+const continueBtn      = document.getElementById('continue-btn');
 
 // ── State helpers ───────────────────────────────────────────────────
 
@@ -692,8 +722,9 @@ function handleCommand(cmd, data) {
 // ── Countdown ───────────────────────────────────────────────────────
 
 function startPhotographerCountdown() {
-  countdownOverlay.hidden = false;
-  freezeMsg.hidden        = true;
+  countdownOverlay.hidden  = false;
+  frozenFramePhoto.hidden  = true;
+  freezeBar.hidden         = true;
   countdownLabel.textContent = 'Get Ready!';
   let count = 3;
   animateCountNum(count);
@@ -719,9 +750,20 @@ function animateCountNum(n) {
 }
 
 function showFreezeMessage() {
-  freezeMsg.hidden = false;
-  setTimeout(() => { freezeMsg.hidden = true; }, 5000);
+  const canvas = document.createElement('canvas');
+  canvas.width  = viewfinder.videoWidth  || 640;
+  canvas.height = viewfinder.videoHeight || 480;
+  canvas.getContext('2d').drawImage(viewfinder, 0, 0);
+  frozenFramePhoto.src    = canvas.toDataURL('image/jpeg', 0.92);
+  frozenFramePhoto.hidden = false;
+  freezeBar.hidden        = false;
 }
+
+continueBtn.addEventListener('click', () => {
+  frozenFramePhoto.hidden = true;
+  freezeBar.hidden        = true;
+  ws.send(JSON.stringify({ type: 'unfreeze' }));
+});
 
 // ── Indicator / overlay helpers ─────────────────────────────────────
 

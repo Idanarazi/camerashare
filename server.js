@@ -130,6 +130,13 @@ wss.on('connection', (ws) => {
         send(room.photographer, { type: 'command', command: msg.command, data: msg.data });
         break;
       }
+
+      case 'unfreeze': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'photographer') return;
+        send(room.director, { type: 'unfreeze' });
+        break;
+      }
     }
   });
 
