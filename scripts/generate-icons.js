@@ -1,5 +1,6 @@
 /**
  * Generates public/icons/icon-192.png and icon-512.png
+ * Design: camera lens aperture in electric blue (#00A8FF) on near-black (#0A0A0A)
  * Pure Node.js — no extra dependencies.
  * Run once with: npm run generate-icons
  */
@@ -9,7 +10,9 @@ const path = require('path');
 
 function makeCameraIcon(size) {
   const px = new Uint8Array(size * size * 4);
-  const s  = size / 192; // scale factor (192 is the design canvas)
+  const s  = size / 192;
+  const cx = size / 2;
+  const cy = size / 2;
 
   function set(x, y, r, g, b, a = 255) {
     x = Math.round(x); y = Math.round(y);
@@ -18,75 +21,52 @@ function makeCameraIcon(size) {
     px[i] = r; px[i+1] = g; px[i+2] = b; px[i+3] = a;
   }
 
-  function rect(x, y, w, h, r, g, b) {
-    for (let py = y; py < y + h; py++)
-      for (let px2 = x; px2 < x + w; px2++)
-        set(px2, py, r, g, b);
-  }
-
-  function roundRect(x, y, w, h, rad, r, g, b) {
-    for (let py = y; py < y + h; py++) {
-      for (let px2 = x; px2 < x + w; px2++) {
-        const dx = px2 - x, dy = py - y, rx = w - 1 - dx, ry = h - 1 - dy;
-        let skip = false;
-        if (dx < rad && dy < rad) skip = (rad-dx-0.5)**2 + (rad-dy-0.5)**2 > rad*rad;
-        else if (rx < rad && dy < rad) skip = (rad-rx-0.5)**2 + (rad-dy-0.5)**2 > rad*rad;
-        else if (dx < rad && ry < rad) skip = (rad-dx-0.5)**2 + (rad-ry-0.5)**2 > rad*rad;
-        else if (rx < rad && ry < rad) skip = (rad-rx-0.5)**2 + (rad-ry-0.5)**2 > rad*rad;
-        if (!skip) set(px2, py, r, g, b);
-      }
-    }
-  }
-
-  function circle(cx, cy, rad, r, g, b) {
-    for (let py = Math.floor(cy - rad); py <= Math.ceil(cy + rad); py++)
-      for (let px2 = Math.floor(cx - rad); px2 <= Math.ceil(cx + rad); px2++)
-        if ((px2 - cx + 0.5)**2 + (py - cy + 0.5)**2 <= rad * rad)
+  function circle(cxp, cyp, rad, r, g, b) {
+    const x0 = Math.floor(cxp - rad), x1 = Math.ceil(cxp + rad);
+    const y0 = Math.floor(cyp - rad), y1 = Math.ceil(cyp + rad);
+    for (let py = y0; py <= y1; py++)
+      for (let px2 = x0; px2 <= x1; px2++)
+        if ((px2 - cxp + 0.5) ** 2 + (py - cyp + 0.5) ** 2 <= rad * rad)
           set(px2, py, r, g, b);
   }
 
-  // ── Background: app red ─────────────────────────────────────────
+  // ── Background: #0A0A0A ─────────────────────────────────────────────
   for (let i = 0; i < px.length; i += 4) {
-    px[i] = 255; px[i+1] = 55; px[i+2] = 95; px[i+3] = 255;
+    px[i] = 10; px[i+1] = 10; px[i+2] = 10; px[i+3] = 255;
   }
 
-  // ── Camera body: white rounded rect ────────────────────────────
-  roundRect(
-    Math.round(32*s), Math.round(72*s),
-    Math.round(128*s), Math.round(76*s),
-    Math.round(16*s),
-    255, 255, 255
-  );
+  // Blue: #00A8FF
+  const [BR, BG, BB] = [0, 168, 255];
+  // Background repeat for cutouts: #0A0A0A
+  const [DKR, DKG, DKB] = [10, 10, 10];
 
-  // ── Viewfinder bump (top centre of body) ───────────────────────
-  roundRect(
-    Math.round(76*s), Math.round(58*s),
-    Math.round(40*s), Math.round(20*s),
-    Math.round(6*s),
-    255, 255, 255
-  );
+  // Outer blue filled circle — the outermost ring
+  circle(cx, cy, 84 * s, BR, BG, BB);
 
-  // ── Lens ring (white) ──────────────────────────────────────────
-  circle(Math.round(96*s), Math.round(110*s), Math.round(26*s), 255, 255, 255);
+  // Cut a dark circle — reveals outer blue ring (14 px wide at 192)
+  circle(cx, cy, 70 * s, DKR, DKG, DKB);
 
-  // ── Lens hole (red) ───────────────────────────────────────────
-  circle(Math.round(96*s), Math.round(110*s), Math.round(18*s), 255, 55, 95);
+  // Middle blue filled circle — second ring
+  circle(cx, cy, 52 * s, BR, BG, BB);
 
-  // ── Lens highlight (white dot) ─────────────────────────────────
-  circle(Math.round(96*s), Math.round(110*s), Math.round(6*s), 255, 255, 255);
+  // Cut another dark circle — reveals middle blue ring (16 px wide at 192)
+  circle(cx, cy, 36 * s, DKR, DKG, DKB);
 
-  // ── Flash dot (upper right of body) ───────────────────────────
-  circle(Math.round(136*s), Math.round(90*s), Math.round(6*s), 255, 55, 95);
+  // Center blue dot
+  circle(cx, cy, 16 * s, BR, BG, BB);
 
-  // ── Encode PNG ────────────────────────────────────────────────
+  // Tiny white highlight — top-left of center dot, like a real lens reflection
+  circle(cx - 6 * s, cy - 6 * s, 5 * s, 255, 255, 255);
+
+  // ── Encode as PNG ───────────────────────────────────────────────────
   const scan = Buffer.alloc(size * (1 + size * 4));
   for (let y = 0; y < size; y++) {
-    scan[y * (1 + size * 4)] = 0;
+    scan[y * (1 + size * 4)] = 0; // filter byte
     Buffer.from(px.buffer, y * size * 4, size * 4).copy(scan, y * (1 + size * 4) + 1);
   }
   const compressed = zlib.deflateSync(scan, { level: 9 });
 
-  // CRC32 table
+  // CRC-32
   const T = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
     let c = i;
@@ -99,12 +79,10 @@ function makeCameraIcon(size) {
     return (c ^ 0xffffffff) >>> 0;
   }
   function chunk(type, data) {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length);
-    const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-    const crcBuf = Buffer.alloc(4);
-    crcBuf.writeUInt32BE(crc32(td));
-    return Buffer.concat([len, td, crcBuf]);
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const td  = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
+    return Buffer.concat([len, td, crc]);
   }
 
   const ihdr = Buffer.alloc(13);
@@ -112,7 +90,7 @@ function makeCameraIcon(size) {
   ihdr[8] = 8; ihdr[9] = 6; // 8-bit RGBA
 
   return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), // PNG signature
     chunk('IHDR', ihdr),
     chunk('IDAT', compressed),
     chunk('IEND', Buffer.alloc(0)),
