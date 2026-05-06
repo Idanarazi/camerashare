@@ -67,6 +67,54 @@
 
   .divider { color: rgba(255,255,255,0.18); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
 
+  /* ── Share App button ── */
+  #share-app-btn {
+    background: transparent;
+    border: 1.5px solid rgba(0,168,255,0.32);
+    border-radius: 16px;
+    color: #00A8FF;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 14px 22px;
+    width: 100%;
+    max-width: 340px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    letter-spacing: 0.1px;
+  }
+  #share-app-btn:active {
+    background: rgba(0,168,255,0.08);
+    border-color: rgba(0,168,255,0.6);
+    transform: scale(0.97);
+  }
+
+  /* ── Toast notification ── */
+  .toast {
+    position: fixed;
+    bottom: 96px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1E1E1E;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.22s, transform 0.22s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* ── Install banner ── */
   #install-banner {
     position: fixed;
@@ -153,6 +201,8 @@
     <div class="role-desc">See through their lens. Give directions — angle, zoom, focus — and hit Capture!</div>
   </a>
 
+  <button id="share-app-btn">Share App 🔗</button>
+
 <!-- ── Install banner ── -->
 <div id="install-banner" hidden>
   <div id="install-banner-row">
@@ -168,6 +218,35 @@
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ── Share App button ─────────────────────────────────────────────────
+document.getElementById('share-app-btn').addEventListener('click', async () => {
+  const shareData = {
+    title: 'CameraShare',
+    text: 'Let someone else frame your perfect shot! Check out CameraShare 📸',
+    url: 'https://camerashare-production.up.railway.app',
+  };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      showToast('✓ Link copied!');
+    } catch {}
+  }
+});
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
+  setTimeout(() => {
+    t.classList.remove('toast-show');
+    setTimeout(() => t.remove(), 250);
+  }, 2500);
 }
 
 // ── Install banner logic ─────────────────────────────────────────────
