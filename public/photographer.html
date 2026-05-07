@@ -442,6 +442,61 @@
     transition: opacity 0.3s;
   }
   #zoom-badge.show { opacity: 1; }
+
+  /* ── Connection quality indicator ── */
+  #qual-ind {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    pointer-events: none;
+  }
+  .qi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .qi-dot.excellent { background: #00E676; animation: pulse-green  2.5s ease-in-out infinite; }
+  .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
+  .qi-dot.poor      { background: #FF375F; }
+  .qi-label         { color: rgba(255,255,255,0.5); margin-left: 1px; }
+
+  /* ── Network type indicators ── */
+  #net-banner {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.35);
+    border-radius: 22px;
+    color: #00E676;
+    font-size: 14px; font-weight: 600;
+    padding: 10px 20px;
+    pointer-events: none;
+    transition: opacity 1s ease;
+    white-space: nowrap;
+  }
+  #net-badge {
+    position: fixed;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: 14px;
+    z-index: 10;
+    background: rgba(0,0,0,0.48);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.5);
+    font-size: 11px; font-weight: 600;
+    padding: 5px 12px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -493,6 +548,11 @@
 <!-- ── Live HUD ── -->
 <div id="live-hud-top" hidden>
   <span class="code-pill" id="live-code-pill">——</span>
+  <div id="qual-ind" hidden>
+    <span class="qi-dot"></span>
+    <span class="qi-rtt"></span>
+    <span class="qi-label"></span>
+  </div>
 </div>
 <div id="live-hud-bottom" hidden>
   <div id="live-status">
@@ -500,6 +560,10 @@
     <span id="live-status-text">Director is watching</span>
   </div>
 </div>
+
+<!-- Network type indicators (shown once ICE connects) -->
+<div id="net-banner" hidden>⚡ Same network — best quality</div>
+<div id="net-badge"  hidden>📶 Cross-network mode</div>
 
 <!-- ── Countdown overlay ── -->
 <div id="countdown-overlay" hidden>
@@ -527,6 +591,8 @@ const WS_URL = `wss://${location.host}`;
 const ICE = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
   {
     urls: [
       'turn:coshot.metered.live:80',
@@ -598,18 +664,40 @@ async function startApp() {
   startBtn.disabled    = true;
   startBtn.textContent = 'Starting…';
   try {
+    // Request highest quality: 1080p60, back camera
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:      { ideal: 1920, min: 1280 },
+        height:     { ideal: 1080, min: 720 },
+        frameRate:  { ideal: 60,   min: 30 },
+      },
       audio: false,
     });
-  } catch (err) {
-    showSetupError('Camera error: ' + err.message);
-    return;
+  } catch {
+    // Fall back to any available camera if device rejects constraints
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+    } catch (err) {
+      showSetupError('Camera error: ' + err.message);
+      startBtn.disabled    = false;
+      startBtn.textContent = 'Open Camera';
+      return;
+    }
   }
   viewfinder.srcObject = localStream;
   const track = localStream.getVideoTracks()[0];
   const caps  = track.getCapabilities?.();
   if (caps?.zoom) { zoomCap = caps.zoom; currentZoom = caps.zoom.min ?? 1; }
+  // Best-effort: enable continuous autofocus + auto white balance
+  try {
+    await track.applyConstraints({
+      advanced: [{ focusMode: 'continuous' }, { whiteBalanceMode: 'continuous' }],
+    });
+  } catch {}
   connectWS();
 }
 
@@ -692,11 +780,34 @@ denyBtn.addEventListener('click', () => {
 // ── WebRTC ──────────────────────────────────────────────────────────
 
 async function startWebRTC() {
-  pc = new RTCPeerConnection({ iceServers: ICE });
+  pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
   for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
+
+  // Prefer H.264 — hardware-accelerated on most mobile devices
+  if (RTCRtpSender.getCapabilities) {
+    try {
+      const videoTx = pc.getTransceivers().find(t => t.sender.track?.kind === 'video');
+      if (videoTx) {
+        const caps = RTCRtpSender.getCapabilities('video');
+        const h264 = caps.codecs.filter(c => c.mimeType.toLowerCase() === 'video/h264');
+        const rest  = caps.codecs.filter(c => c.mimeType.toLowerCase() !== 'video/h264');
+        if (h264.length) videoTx.setCodecPreferences([...h264, ...rest]);
+      }
+    } catch {}
+  }
+
   pc.onicecandidate = ({ candidate }) => {
     if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
   };
+
+  pc.oniceconnectionstatechange = () => {
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+      setInitialBitrate();
+      detectConnectionType();
+      startQualityMonitor();
+    }
+  };
+
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp }));
@@ -803,6 +914,100 @@ async function applyTorch(on) {
   try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch {}
 }
 
+// ── Quality & connection monitoring ────────────────────────────────
+
+let qualMonitor = null;
+
+async function setInitialBitrate() {
+  const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
+  if (!sender) return;
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings?.length) return;
+    params.encodings[0].maxBitrate = 4_000_000; // start at 4 Mbps
+    await sender.setParameters(params);
+  } catch {}
+}
+
+function startQualityMonitor() {
+  if (qualMonitor) clearInterval(qualMonitor);
+  qualMonitor = setInterval(async () => {
+    if (!pc) { clearInterval(qualMonitor); return; }
+    try {
+      const stats = await pc.getStats();
+      let bestPair = null;
+      stats.forEach(r => {
+        if (r.type === 'candidate-pair' && r.state === 'succeeded')
+          if (!bestPair || r.nominated) bestPair = r;
+      });
+      if (bestPair?.currentRoundTripTime != null)
+        updateQuality(bestPair.currentRoundTripTime * 1000);
+    } catch {}
+  }, 3000);
+}
+
+async function updateQuality(rttMs) {
+  updateQualityUI(rttMs);
+  const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
+  if (!sender) return;
+  try {
+    const params = sender.getParameters();
+    if (!params.encodings?.length) return;
+    const target = rttMs < 100 ? 4_000_000 : rttMs < 250 ? 2_000_000 : 800_000;
+    if (params.encodings[0].maxBitrate === target) return;
+    params.encodings[0].maxBitrate = target;
+    await sender.setParameters(params);
+  } catch {}
+}
+
+function updateQualityUI(rttMs) {
+  const el = document.getElementById('qual-ind');
+  if (!el) return;
+  el.hidden = false;
+  el.querySelector('.qi-rtt').textContent = `${Math.round(rttMs)}ms`;
+  const dot = el.querySelector('.qi-dot');
+  const lbl = el.querySelector('.qi-label');
+  if      (rttMs < 100) { dot.className = 'qi-dot excellent'; lbl.textContent = 'Excellent'; }
+  else if (rttMs < 250) { dot.className = 'qi-dot good';      lbl.textContent = 'Good'; }
+  else                  { dot.className = 'qi-dot poor';       lbl.textContent = 'Poor'; }
+}
+
+async function detectConnectionType() {
+  if (!pc) return;
+  await new Promise(r => setTimeout(r, 1500)); // wait for stats to settle
+  try {
+    const stats = await pc.getStats();
+    let bestPair = null;
+    stats.forEach(r => {
+      if (r.type === 'candidate-pair' && r.state === 'succeeded')
+        if (!bestPair || r.nominated) bestPair = r;
+    });
+    if (!bestPair) return;
+    let candType = null;
+    stats.forEach(r => {
+      if (r.type === 'local-candidate' && r.id === bestPair.localCandidateId)
+        candType = r.candidateType;
+    });
+    if (candType === 'relay') showNetBadge();
+    else if (candType)        showNetBanner();
+  } catch {}
+}
+
+function showNetBanner() {
+  const el = document.getElementById('net-banner');
+  if (!el) return;
+  el.hidden = false;
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.hidden = true; el.style.opacity = ''; }, 1000);
+  }, 4000);
+}
+
+function showNetBadge() {
+  const el = document.getElementById('net-badge');
+  if (el) el.hidden = false;
+}
+
 async function capturePhoto() {
   captureFlash.classList.remove('flash');
   void captureFlash.offsetWidth;
@@ -848,6 +1053,14 @@ function showSetupError(msg) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+
+// Pre-warm: auto-start camera if permission already granted (skips button tap)
+(async () => {
+  try {
+    const perm = await navigator.permissions.query({ name: 'camera' });
+    if (perm.state === 'granted') startApp();
+  } catch {}
+})();
 </script>
 </body>
 </html>

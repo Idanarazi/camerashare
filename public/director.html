@@ -477,6 +477,75 @@
     0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.35); }
     100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8); }
   }
+
+  /* ── Pulse animations (reused by quality indicator) ── */
+  @keyframes pulse-green  {
+    0%, 100% { box-shadow: 0 0 0 0   rgba(0,230,118,0.5); }
+    50%       { box-shadow: 0 0 0 5px rgba(0,230,118,0); }
+  }
+  @keyframes pulse-yellow {
+    0%, 100% { box-shadow: 0 0 0 0   rgba(255,214,10,0.55); }
+    50%       { box-shadow: 0 0 0 5px rgba(255,214,10,0); }
+  }
+
+  /* ── Connection quality indicator ── */
+  #qual-ind {
+    position: absolute;
+    top: calc(max(14px, env(safe-area-inset-top)) + 32px);
+    left: 14px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    pointer-events: none;
+  }
+  .qi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .qi-dot.excellent { background: #00E676; animation: pulse-green  2.5s ease-in-out infinite; }
+  .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
+  .qi-dot.poor      { background: #FF375F; }
+  .qi-label         { color: rgba(255,255,255,0.5); margin-left: 1px; }
+
+  /* ── Network type banners ── */
+  #net-banner {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.35);
+    border-radius: 22px;
+    color: #00E676;
+    font-size: 14px; font-weight: 600;
+    padding: 10px 20px;
+    pointer-events: none;
+    transition: opacity 1s ease;
+    white-space: nowrap;
+  }
+  #net-badge {
+    position: absolute;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: 14px;
+    z-index: 5;
+    background: rgba(0,0,0,0.48);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.5);
+    font-size: 11px; font-weight: 600;
+    padding: 5px 12px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -537,6 +606,15 @@
     <button id="done-btn">Done</button>
   </div>
 
+  <!-- Connection quality & network indicators -->
+  <div id="qual-ind" hidden>
+    <span class="qi-dot"></span>
+    <span class="qi-rtt"></span>
+    <span class="qi-label"></span>
+  </div>
+  <div id="net-banner" hidden>⚡ Same network — best quality</div>
+  <div id="net-badge"  hidden>📶 Cross-network mode</div>
+
   <button id="toggle-btn">Hide Controls</button>
 
   <div id="controls-panel">
@@ -573,6 +651,8 @@ const WS_URL = `wss://${location.host}`;
 const ICE = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
   {
     urls: [
       'turn:coshot.metered.live:80',
@@ -731,9 +811,11 @@ function joinRoom() {
 // ── WebRTC ──────────────────────────────────────────────────────────
 
 async function handleOffer(msg) {
-  pc = new RTCPeerConnection({ iceServers: ICE });
+  pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
 
-  pc.ontrack = ({ streams }) => {
+  pc.ontrack = ({ streams, receiver }) => {
+    // Minimize jitter buffer delay — prioritize latency over smoothness
+    try { if (receiver.track.kind === 'video') receiver.playoutDelayHint = 0; } catch {}
     preview.srcObject           = streams[0];
     connectingMsg.style.display = 'none';
     liveBadge.style.display     = 'block';
@@ -745,6 +827,13 @@ async function handleOffer(msg) {
 
   pc.onicecandidate = ({ candidate }) => {
     if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+      detectConnectionType();
+      startQualityMonitor();
+    }
   };
 
   await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
@@ -850,6 +939,75 @@ function spawnFocusDot(cx, cy) {
 function sendCmd(command, data) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: 'command', command, data }));
+}
+
+// ── Quality & connection monitoring ────────────────────────────────
+
+let qualMonitor = null;
+
+function startQualityMonitor() {
+  if (qualMonitor) clearInterval(qualMonitor);
+  qualMonitor = setInterval(async () => {
+    if (!pc) { clearInterval(qualMonitor); return; }
+    try {
+      const stats = await pc.getStats();
+      let bestPair = null;
+      stats.forEach(r => {
+        if (r.type === 'candidate-pair' && r.state === 'succeeded')
+          if (!bestPair || r.nominated) bestPair = r;
+      });
+      if (bestPair?.currentRoundTripTime != null)
+        updateQualityUI(bestPair.currentRoundTripTime * 1000);
+    } catch {}
+  }, 3000);
+}
+
+function updateQualityUI(rttMs) {
+  const el = document.getElementById('qual-ind');
+  if (!el) return;
+  el.hidden = false;
+  el.querySelector('.qi-rtt').textContent = `${Math.round(rttMs)}ms`;
+  const dot = el.querySelector('.qi-dot');
+  const lbl = el.querySelector('.qi-label');
+  if      (rttMs < 100) { dot.className = 'qi-dot excellent'; lbl.textContent = 'Excellent'; }
+  else if (rttMs < 250) { dot.className = 'qi-dot good';      lbl.textContent = 'Good'; }
+  else                  { dot.className = 'qi-dot poor';       lbl.textContent = 'Poor'; }
+}
+
+async function detectConnectionType() {
+  if (!pc) return;
+  await new Promise(r => setTimeout(r, 1500)); // let stats settle post-connect
+  try {
+    const stats = await pc.getStats();
+    let bestPair = null;
+    stats.forEach(r => {
+      if (r.type === 'candidate-pair' && r.state === 'succeeded')
+        if (!bestPair || r.nominated) bestPair = r;
+    });
+    if (!bestPair) return;
+    let candType = null;
+    stats.forEach(r => {
+      if (r.type === 'local-candidate' && r.id === bestPair.localCandidateId)
+        candType = r.candidateType;
+    });
+    if (candType === 'relay') showNetBadge();
+    else if (candType)        showNetBanner();
+  } catch {}
+}
+
+function showNetBanner() {
+  const el = document.getElementById('net-banner');
+  if (!el) return;
+  el.hidden = false;
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.hidden = true; el.style.opacity = ''; }, 1000);
+  }, 4000);
+}
+
+function showNetBadge() {
+  const el = document.getElementById('net-badge');
+  if (el) el.hidden = false;
 }
 
 if ('serviceWorker' in navigator) {
