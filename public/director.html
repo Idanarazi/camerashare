@@ -612,6 +612,92 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* ── Scan QR button ── */
+  #scan-qr-btn {
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    border-radius: 16px;
+    color: rgba(255,255,255,0.45);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 14px 32px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    touch-action: manipulation;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #scan-qr-btn:active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); }
+
+  /* ── QR Scanner overlay ── */
+  #qr-scanner {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  #qr-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  #qr-ui {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: max(48px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom));
+    width: 100%;
+  }
+  #qr-frame {
+    width: 220px;
+    height: 220px;
+    border: 2.5px solid #00A8FF;
+    border-radius: 20px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.65);
+    flex-shrink: 0;
+  }
+  #qr-hint {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  #qr-error {
+    font-size: 14px;
+    font-weight: 600;
+    color: #FF375F;
+    background: rgba(255,55,95,0.12);
+    border: 1px solid rgba(255,55,95,0.3);
+    border-radius: 14px;
+    padding: 9px 18px;
+    text-align: center;
+  }
+  #qr-cancel-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    color: rgba(255,255,255,0.8);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 15px 40px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s;
+  }
+  #qr-cancel-btn:active { background: rgba(255,255,255,0.2); }
 </style>
 </head>
 <body>
@@ -631,6 +717,7 @@
       autocapitalize="characters" spellcheck="false" inputmode="text"
     >
     <button id="join-btn">Join Room</button>
+    <button id="scan-qr-btn" type="button">Scan QR Code 📷</button>
     <div id="join-error"></div>
   </div>
 
@@ -646,6 +733,17 @@
     <div class="denied-title">Request declined</div>
     <div class="denied-desc" id="denied-desc-text">The Photographer declined your request.</div>
     <button id="try-again-btn">Try Again</button>
+  </div>
+</div>
+
+<!-- ── QR Scanner overlay ── -->
+<div id="qr-scanner" hidden>
+  <video id="qr-video" autoplay playsinline muted></video>
+  <div id="qr-ui">
+    <div id="qr-frame"></div>
+    <p id="qr-hint">Point camera at the Photographer's QR code</p>
+    <p id="qr-error" hidden>Invalid QR code — try again</p>
+    <button id="qr-cancel-btn">Cancel</button>
   </div>
 </div>
 
@@ -1101,6 +1199,84 @@ function showNetBanner() {
 function showNetBadge() {
   const el = document.getElementById('net-badge');
   if (el) el.hidden = false;
+}
+
+// ── QR Scanner ─────────────────────────────────────────────────────
+
+let qrStream = null, qrRaf = null;
+
+document.getElementById('scan-qr-btn').addEventListener('click', startQRScanner);
+document.getElementById('qr-cancel-btn').addEventListener('click', stopQRScanner);
+
+async function startQRScanner() {
+  document.getElementById('qr-scanner').hidden = false;
+  document.getElementById('qr-error').hidden = true;
+  const video = document.getElementById('qr-video');
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = qrStream;
+    await video.play();
+  } catch {
+    document.getElementById('qr-hint').textContent = 'Camera access denied';
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  // Load jsQR on demand
+  if (!window.jsQR) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    }).catch(() => {
+      document.getElementById('qr-hint').textContent = 'Scanner failed to load — check connection';
+      return;
+    });
+  }
+
+  function tick() {
+    if (!qrStream) return;
+    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+      if (code) {
+        const handled = onQRDetected(code.data);
+        if (handled) return;
+        // Invalid QR — pause briefly then resume
+        setTimeout(() => { if (qrStream) qrRaf = requestAnimationFrame(tick); }, 1500);
+        return;
+      }
+    }
+    qrRaf = requestAnimationFrame(tick);
+  }
+  qrRaf = requestAnimationFrame(tick);
+}
+
+function onQRDetected(data) {
+  try {
+    const url  = new URL(data);
+    const code = url.searchParams.get('code');
+    if (code && /^[A-Z]+-\d{4}$/.test(code)) {
+      stopQRScanner();
+      codeInput.value = code;
+      joinRoom();
+      return true;
+    }
+  } catch {}
+  document.getElementById('qr-error').hidden = false;
+  return false;
+}
+
+function stopQRScanner() {
+  cancelAnimationFrame(qrRaf); qrRaf = null;
+  if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+  document.getElementById('qr-scanner').hidden = true;
+  document.getElementById('qr-hint').textContent = 'Point camera at the Photographer\'s QR code';
 }
 
 // ── Mic ────────────────────────────────────────────────────────────

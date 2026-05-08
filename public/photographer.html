@@ -562,6 +562,32 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* ── Native camera shortcut ── */
+  #native-cam-btn {
+    position: fixed;
+    top: calc(max(14px, env(safe-area-inset-top)) + 36px);
+    left: 14px;
+    z-index: 11;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    color: rgba(255,255,255,0.55);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 7px 11px;
+    cursor: pointer;
+    touch-action: manipulation;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+    line-height: 1.4;
+    text-align: center;
+  }
+  #native-cam-btn:active { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
@@ -641,6 +667,9 @@
 <!-- ── Frozen frame (shown after countdown, overlays viewfinder) ── -->
 <img id="frozen-frame-photo" hidden alt="">
 
+<!-- ── Native camera shortcut (shown during live session) ── -->
+<button id="native-cam-btn" hidden>📸<br>Native</button>
+
 <!-- ── Freeze bar (bottom minimal UI) ── -->
 <div id="freeze-bar" hidden>
   <span class="freeze-bar-text">Frame frozen — take your shot!</span>
@@ -709,6 +738,7 @@ function showWaiting(statusMsg) {
   knockModal.hidden     = true;
   liveHudTop.hidden     = true;
   liveHudBottom.hidden  = true;
+  document.getElementById('native-cam-btn').hidden = true;
   if (statusMsg) waitingText.textContent = statusMsg;
   waitingDot.className = 'status-dot waiting';
 }
@@ -721,6 +751,7 @@ function showLive() {
   knockModal.hidden     = true;
   liveHudTop.hidden     = false;
   liveHudBottom.hidden  = false;
+  document.getElementById('native-cam-btn').hidden = false;
   liveCodePill.textContent = roomCode;
 }
 
@@ -1134,6 +1165,21 @@ async function capturePhoto() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 }
+
+// ── Native camera shortcut ────────────────────────────────────────
+
+document.getElementById('native-cam-btn').addEventListener('click', () => {
+  showMicToast('Switching to your camera — come back when done!');
+  setTimeout(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.setAttribute('capture', 'environment');
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(() => input.remove(), 1000);
+  }, 350);
+});
 
 // ── Mic ────────────────────────────────────────────────────────────
 
