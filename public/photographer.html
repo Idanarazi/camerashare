@@ -904,6 +904,8 @@ async function startWebRTC() {
     remoteAudio.srcObject = new MediaStream([receiver.track]);
     remoteAudio.autoplay = true;
     remoteAudio.play().catch(() => {});
+    // If play() ran while the track was still silent, resume when audio arrives
+    receiver.track.addEventListener('unmute', () => remoteAudio.play().catch(() => {}));
   };
 
   // Prefer H.264 — hardware-accelerated on most mobile devices

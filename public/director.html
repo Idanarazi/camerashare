@@ -1026,8 +1026,17 @@ async function handleOffer(msg) {
   };
 
   await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
-  // Grab the audio sender created by photographer's addTransceiver
-  audioSender = pc.getTransceivers().find(t => t.receiver.track?.kind === 'audio')?.sender ?? null;
+
+  // Before createAnswer(), force the audio transceiver to sendrecv.
+  // Without this, createAnswer() emits a=recvonly (no sender track yet), which
+  // means ontrack never fires on the Photographer — so they never build an Audio
+  // element for the Director's voice and replaceTrack() has nowhere to deliver to.
+  const audioTx = pc.getTransceivers().find(t => t.receiver.track?.kind === 'audio');
+  if (audioTx) {
+    audioTx.direction = 'sendrecv';
+    audioSender = audioTx.sender;
+  }
+
   remoteDescSet = true;
   for (const c of pendingCandidates) await pc.addIceCandidate(c).catch(() => {});
   pendingCandidates = [];
