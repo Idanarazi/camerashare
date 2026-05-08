@@ -1168,18 +1168,49 @@ async function capturePhoto() {
 
 // ── Native camera shortcut ────────────────────────────────────────
 
-document.getElementById('native-cam-btn').addEventListener('click', () => {
-  showMicToast('Switching to your camera — come back when done!');
+document.getElementById('native-cam-btn').addEventListener('click', openNativeCamera);
+
+function openNativeCamera() {
+  showMicToast('Your native camera is opening — come back to CameraShare when you\'re done! 📸');
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
+
   setTimeout(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.setAttribute('capture', 'environment');
-    document.body.appendChild(input);
-    input.click();
-    setTimeout(() => input.remove(), 1000);
+    if (isAndroid) {
+      // STILL_IMAGE_CAMERA opens the camera app without expecting a result back.
+      // The user can shoot freely and return to CameraShare via the back button.
+      window.location.href =
+        'intent://open#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end';
+    } else if (isIOS) {
+      // camera:// is not a public iOS URL scheme — try it silently via a link.
+      // If it works on the device, the Camera app opens. If not, it fails silently.
+      const a = document.createElement('a');
+      a.href = 'camera://';
+      a.click();
+      // Reliable fallback: capture="environment" opens the iOS camera directly.
+      // The user takes a shot, dismisses the result, and repeats from CameraShare.
+      setTimeout(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.setAttribute('capture', 'environment');
+        document.body.appendChild(input);
+        input.click();
+        setTimeout(() => input.remove(), 60000);
+      }, 400);
+    } else {
+      // Desktop / other: best-effort camera via file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.setAttribute('capture', 'environment');
+      document.body.appendChild(input);
+      input.click();
+      setTimeout(() => input.remove(), 60000);
+    }
   }, 350);
-});
+}
 
 // ── Mic ────────────────────────────────────────────────────────────
 
