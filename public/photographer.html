@@ -128,11 +128,12 @@
     background: rgba(255,255,255,0.06);
   }
   .qr-code-text {
-    font-size: 24px;
+    font-size: 16px;
     font-weight: 800;
-    letter-spacing: 4px;
+    letter-spacing: 1px;
     color: #fff;
     margin-top: 14px;
+    word-break: break-all;
   }
   .qr-url-text {
     font-size: 10px;
@@ -252,9 +253,9 @@
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 20px;
     padding: 5px 13px;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     color: rgba(255,255,255,0.9);
   }
   #live-hud-bottom {
@@ -588,6 +589,14 @@
     text-align: center;
   }
   #native-cam-btn:active { background: rgba(255,255,255,0.15); }
+
+  /* ── Join-attempt log ── */
+  #join-log { position: fixed; bottom: max(4px, env(safe-area-inset-bottom)); left: 16px; z-index: 8; pointer-events: none; }
+  .join-log-entry { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.6; animation: fade-in 0.3s ease; }
+  .join-log-entry.outcome-allowed   { color: rgba(0,230,118,0.65); }
+  .join-log-entry.outcome-denied    { color: rgba(255,55,95,0.65); }
+  .join-log-entry.outcome-pending   { color: rgba(255,214,10,0.65); }
+  .join-log-entry.outcome-cancelled { color: rgba(255,255,255,0.3); }
 </style>
 </head>
 <body>
@@ -682,24 +691,23 @@
 <div id="capture-flash"></div>
 <div id="zoom-badge">1.0×</div>
 
+<!-- Join-attempt log (shown during live session) -->
+<div id="join-log" hidden></div>
+
 <script>
 const WS_URL = `wss://${location.host}`;
-const ICE = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  {
-    urls: [
-      'turn:coshot.metered.live:80',
-      'turn:coshot.metered.live:80?transport=tcp',
-      'turns:coshot.metered.live:443',
-      'turns:coshot.metered.live:443?transport=tcp',
-    ],
-    username:   '17744b6ee59f102bf8f889ce',
-    credential: 'oebXMegQvdfHEOxl',
-  },
-];
+
+let iceConfig = null;
+async function getICE() {
+  if (iceConfig) return iceConfig;
+  try {
+    const res = await fetch('/api/turn-credentials');
+    iceConfig = await res.json();
+  } catch {
+    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+  }
+  return iceConfig;
+}
 
 let ws, pc, localStream;
 let zoomCap = null, currentZoom = 1, zoomTimer = null;
@@ -739,6 +747,7 @@ function showWaiting(statusMsg) {
   liveHudTop.hidden     = true;
   liveHudBottom.hidden  = true;
   document.getElementById('native-cam-btn').hidden = true;
+  document.getElementById('join-log').hidden = true;
   if (statusMsg) waitingText.textContent = statusMsg;
   waitingDot.className = 'status-dot waiting';
 }
@@ -752,6 +761,7 @@ function showLive() {
   liveHudTop.hidden     = false;
   liveHudBottom.hidden  = false;
   document.getElementById('native-cam-btn').hidden = false;
+  document.getElementById('join-log').hidden = false;
   liveCodePill.textContent = roomCode;
 }
 
@@ -760,6 +770,7 @@ function showLive() {
 startBtn.addEventListener('click', startApp);
 
 async function startApp() {
+  if (localStream) { ws?.close(); setupScreen.hidden = true; connectWS(); return; }
   startBtn.disabled    = true;
   startBtn.textContent = 'Starting…';
   try {
@@ -863,6 +874,21 @@ function connectWS() {
         document.getElementById('remote-mic-ind').hidden = !msg.enabled;
         break;
 
+      case 'session-expired':
+        pc?.close(); pc = null;
+        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+        micEnabled = false; audioSender = null;
+        setupScreen.hidden = false;
+        setupError.style.display = 'block';
+        setupError.textContent = msg.message;
+        startBtn.disabled    = false;
+        startBtn.textContent = 'Start New Room';
+        break;
+
+      case 'join-attempt':
+        addJoinLog(msg.outcome);
+        break;
+
       case 'error':
         showSetupError(msg.message);
         break;
@@ -891,7 +917,8 @@ denyBtn.addEventListener('click', () => {
 // ── WebRTC ──────────────────────────────────────────────────────────
 
 async function startWebRTC() {
-  pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
+  const ice = await getICE();
+  pc = new RTCPeerConnection({ iceServers: ice, iceCandidatePoolSize: 10 });
   for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
 
   // Pre-negotiate audio channel — no mic permission needed yet; replaceTrack() on tap
@@ -1232,6 +1259,24 @@ function showMicToast(msg) {
   document.body.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
   setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 250); }, 3000);
+}
+
+function addJoinLog(outcome) {
+  const log = document.getElementById('join-log');
+  if (!log || log.hidden) return;
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const labels = {
+    pending:   'Someone tried to join — pending',
+    allowed:   'Someone joined — allowed',
+    denied:    'Someone tried to join — denied',
+    cancelled: 'Someone tried to join — cancelled',
+  };
+  const el = document.createElement('div');
+  el.className = `join-log-entry outcome-${outcome}`;
+  el.textContent = `${time} · ${labels[outcome] || 'Join attempt'}`;
+  log.appendChild(el);
+  while (log.children.length > 3) log.removeChild(log.firstChild);
+  setTimeout(() => el.remove(), 8000);
 }
 
 function showSetupError(msg) {

@@ -56,17 +56,16 @@
     border-radius: 16px;
     color: #fff;
     font-family: inherit;
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
     padding: 16px;
     text-align: center;
-    text-transform: uppercase;
     outline: none;
     transition: border-color 0.2s;
   }
   #code-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.15); }
-  #code-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 2px; font-weight: 400; font-size: 18px; }
+  #code-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 0px; font-weight: 400; font-size: 14px; }
   #join-btn {
     background: #00A8FF;
     color: #fff;
@@ -712,9 +711,9 @@
   <div id="join-form" style="display:contents">
     <p>Enter the room code shown on the Photographer's phone, or scan their QR code.</p>
     <input
-      type="text" id="code-input" placeholder="LAKE-7392"
-      maxlength="9" autocomplete="off" autocorrect="off"
-      autocapitalize="characters" spellcheck="false" inputmode="text"
+      type="text" id="code-input" placeholder="tiger-lake-7392-blue"
+      maxlength="25" autocomplete="off" autocorrect="off"
+      autocapitalize="none" spellcheck="false" inputmode="text"
     >
     <button id="join-btn">Join Room</button>
     <button id="scan-qr-btn" type="button">Scan QR Code 📷</button>
@@ -815,22 +814,18 @@
 
 <script>
 const WS_URL = `wss://${location.host}`;
-const ICE = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  {
-    urls: [
-      'turn:coshot.metered.live:80',
-      'turn:coshot.metered.live:80?transport=tcp',
-      'turns:coshot.metered.live:443',
-      'turns:coshot.metered.live:443?transport=tcp',
-    ],
-    username:   '17744b6ee59f102bf8f889ce',
-    credential: 'oebXMegQvdfHEOxl',
-  },
-];
+
+let iceConfig = null;
+async function getICE() {
+  if (iceConfig) return iceConfig;
+  try {
+    const res = await fetch('/api/turn-credentials');
+    iceConfig = await res.json();
+  } catch {
+    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+  }
+  return iceConfig;
+}
 
 let ws, pc;
 let pendingCandidates = [];
@@ -908,7 +903,7 @@ document.getElementById('try-again-btn').addEventListener('click', () => {
 });
 
 function joinRoom() {
-  const code = codeInput.value.trim().toUpperCase().replace(/\s/g, '');
+  const code = codeInput.value.trim().toLowerCase().replace(/\s/g, '');
   if (!code) { showJoinForm('Please enter a room code.'); return; }
 
   joinBtn.disabled    = true;
@@ -971,6 +966,15 @@ function joinRoom() {
         document.getElementById('remote-mic-ind').hidden = !msg.enabled;
         break;
 
+      case 'session-expired':
+        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+        micEnabled = false; audioSender = null;
+        pc?.close(); pc = null; isLive = false;
+        controlScreen.style.display = 'none';
+        joinScreen.style.display    = 'flex';
+        showJoinForm(msg.message);
+        break;
+
       case 'error':
         showJoinForm(msg.message);
         break;
@@ -993,7 +997,8 @@ function joinRoom() {
 // ── WebRTC ──────────────────────────────────────────────────────────
 
 async function handleOffer(msg) {
-  pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
+  const ice = await getICE();
+  pc = new RTCPeerConnection({ iceServers: ice, iceCandidatePoolSize: 10 });
 
   pc.ontrack = ({ streams, receiver }) => {
     if (receiver.track.kind === 'video') {
@@ -1270,7 +1275,7 @@ function onQRDetected(data) {
   try {
     const url  = new URL(data);
     const code = url.searchParams.get('code');
-    if (code && /^[A-Z]+-\d{4}$/.test(code)) {
+    if (code && /^[a-z]+-[a-z]+-\d{4}-[a-z]+$/.test(code)) {
       stopQRScanner();
       codeInput.value = code;
       joinRoom();

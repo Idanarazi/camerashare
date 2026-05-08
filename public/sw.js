@@ -1,5 +1,5 @@
 // Bump this version with every deployment to clear old caches automatically.
-const VERSION = 'camerashare-v3';
+const VERSION = 'camerashare-v4';
 
 // Only truly static assets that never change between deployments.
 // HTML is intentionally excluded — it must always be fetched fresh.
