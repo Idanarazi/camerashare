@@ -546,6 +546,72 @@
     pointer-events: none;
     white-space: nowrap;
   }
+
+  /* ── Mic button ── */
+  #mic-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid transparent;
+    border-radius: 14px;
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    height: 44px;
+    width: 100%;
+    max-width: 286px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  #mic-btn.mic-on {
+    background: rgba(0,168,255,0.15);
+    border-color: rgba(0,168,255,0.5);
+    color: #00A8FF;
+    animation: mic-pulse 2s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.4); }
+    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0); }
+  }
+  #mic-btn:active { opacity: 0.7; }
+  #mic-btn:disabled { color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); border-color: transparent; animation: none; }
+  #remote-mic-ind {
+    position: absolute;
+    top: calc(max(14px, env(safe-area-inset-top)) + 70px);
+    left: 14px;
+    z-index: 5;
+    background: rgba(0,168,255,0.15);
+    border: 1px solid rgba(0,168,255,0.4);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #00A8FF;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .mic-toast {
+    position: fixed;
+    bottom: 200px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1E1E1E;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.22s, transform 0.22s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .mic-toast.toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -614,6 +680,7 @@
   </div>
   <div id="net-banner" hidden>⚡ Same network — best quality</div>
   <div id="net-badge"  hidden>📶 Cross-network mode</div>
+  <div id="remote-mic-ind" hidden>🎙 Photographer speaking</div>
 
   <button id="toggle-btn">Hide Controls</button>
 
@@ -639,6 +706,8 @@
     </div>
 
     <button id="torch-btn" disabled>🔦&nbsp; Torch: OFF</button>
+
+    <button id="mic-btn" disabled>🎙&nbsp; Mic: OFF</button>
 
     <button id="capture-btn" disabled>📷&nbsp; Capture!</button>
 
@@ -671,6 +740,7 @@ let remoteDescSet = false;
 let isLive = false;
 let controlsVisible = true;
 let torchOn = false;
+let micEnabled = false, audioSender = null, micStream = null;
 
 const joinScreen      = document.getElementById('join-screen');
 const joinFormEls     = document.getElementById('join-form');
@@ -692,6 +762,7 @@ const dirCountdown    = document.getElementById('dir-countdown');
 const dirCountdownNum = document.getElementById('dir-countdown-num');
 const directorFreeze  = document.getElementById('director-freeze');
 const doneBtn         = document.getElementById('done-btn');
+const micBtn          = document.getElementById('mic-btn');
 
 // ── Join sub-state helpers ───────────────────────────────────────────
 
@@ -785,12 +856,21 @@ function joinRoom() {
 
       case 'peer-left':
         isLive = false;
+        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+        micEnabled = false; audioSender = null;
         liveBadge.style.display     = 'none';
         connectingMsg.style.display = 'flex';
         connectingMsg.textContent   = 'Photographer disconnected.';
         captureBtn.disabled = true;
         torchBtn.disabled   = true;
+        micBtn.disabled     = true;
+        document.getElementById('remote-mic-ind').hidden = true;
+        updateMicUI();
         statusFooter.textContent = msg.message;
+        break;
+
+      case 'mic-state':
+        document.getElementById('remote-mic-ind').hidden = !msg.enabled;
         break;
 
       case 'error':
@@ -801,9 +881,13 @@ function joinRoom() {
 
   ws.onclose = () => {
     if (isLive) {
+      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+      micEnabled = false; audioSender = null;
+      updateMicUI();
       statusFooter.textContent = 'Connection lost — reload to reconnect.';
       captureBtn.disabled = true;
       torchBtn.disabled   = true;
+      micBtn.disabled     = true;
     }
   };
 }
@@ -814,15 +898,22 @@ async function handleOffer(msg) {
   pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
 
   pc.ontrack = ({ streams, receiver }) => {
-    // Minimize jitter buffer delay — prioritize latency over smoothness
-    try { if (receiver.track.kind === 'video') receiver.playoutDelayHint = 0; } catch {}
-    preview.srcObject           = streams[0];
-    connectingMsg.style.display = 'none';
-    liveBadge.style.display     = 'block';
-    captureBtn.disabled = false;
-    torchBtn.disabled   = false;
-    isLive = true;
-    statusFooter.textContent = 'Live — tap video to focus';
+    if (receiver.track.kind === 'video') {
+      try { receiver.playoutDelayHint = 0; } catch {}
+      preview.srcObject           = streams[0];
+      connectingMsg.style.display = 'none';
+      liveBadge.style.display     = 'block';
+      captureBtn.disabled = false;
+      torchBtn.disabled   = false;
+      micBtn.disabled     = false;
+      isLive = true;
+      statusFooter.textContent = 'Live — tap video to focus';
+    } else if (receiver.track.kind === 'audio') {
+      const remoteAudio = new Audio();
+      remoteAudio.srcObject = new MediaStream([receiver.track]);
+      remoteAudio.autoplay = true;
+      remoteAudio.play().catch(() => {});
+    }
   };
 
   pc.onicecandidate = ({ candidate }) => {
@@ -837,6 +928,8 @@ async function handleOffer(msg) {
   };
 
   await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+  // Grab the audio sender created by photographer's addTransceiver
+  audioSender = pc.getTransceivers().find(t => t.receiver.track?.kind === 'audio')?.sender ?? null;
   remoteDescSet = true;
   for (const c of pendingCandidates) await pc.addIceCandidate(c).catch(() => {});
   pendingCandidates = [];
@@ -1008,6 +1101,58 @@ function showNetBanner() {
 function showNetBadge() {
   const el = document.getElementById('net-badge');
   if (el) el.hidden = false;
+}
+
+// ── Mic ────────────────────────────────────────────────────────────
+
+micBtn.addEventListener('click', toggleMic);
+
+async function toggleMic() {
+  if (!isLive) return;
+  if (micEnabled) {
+    audioSender?.replaceTrack(null);
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    micEnabled = false;
+    updateMicUI();
+    ws?.send(JSON.stringify({ type: 'mic-state', enabled: false }));
+    return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
+    micEnabled = true;
+    updateMicUI();
+    ws?.send(JSON.stringify({ type: 'mic-state', enabled: true }));
+    if (pc) {
+      try {
+        const stats = await pc.getStats();
+        let bestPair = null;
+        stats.forEach(r => {
+          if (r.type === 'candidate-pair' && r.state === 'succeeded')
+            if (!bestPair || r.nominated) bestPair = r;
+        });
+        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('⚠️ High latency — audio may lag');
+      } catch {}
+    }
+  } catch {
+    showMicToast('Microphone access denied');
+  }
+}
+
+function updateMicUI() {
+  micBtn.classList.toggle('mic-on', micEnabled);
+  micBtn.textContent = micEnabled ? '🎙  Mic: ON' : '🎙  Mic: OFF';
+}
+
+function showMicToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'mic-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
+  setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 250); }, 3000);
 }
 
 if ('serviceWorker' in navigator) {

@@ -137,6 +137,14 @@ wss.on('connection', (ws) => {
         send(room.director, { type: 'unfreeze' });
         break;
       }
+
+      case 'mic-state': {
+        const room = rooms.get(ws.roomCode);
+        if (!room) return;
+        const target = ws.role === 'photographer' ? room.director : room.photographer;
+        send(target, { type: 'mic-state', enabled: msg.enabled });
+        break;
+      }
     }
   });
 

@@ -265,8 +265,8 @@
     padding: 36px 16px max(14px, env(safe-area-inset-bottom));
     background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
   }
   #live-status {
     font-size: 13px;
@@ -497,6 +497,71 @@
     pointer-events: none;
     white-space: nowrap;
   }
+
+  /* ── Mic button ── */
+  #mic-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    pointer-events: auto;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #mic-btn.mic-on {
+    background: rgba(0,168,255,0.22);
+    border-color: #00A8FF;
+    animation: mic-pulse 2s ease-in-out infinite;
+  }
+  #mic-btn:active { transform: scale(0.9); }
+  @keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.4); }
+    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0); }
+  }
+  #remote-mic-ind {
+    background: rgba(0,168,255,0.15);
+    border: 1px solid rgba(0,168,255,0.4);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #00A8FF;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .mic-toast {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1E1E1E;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.22s, transform 0.22s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .mic-toast.toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -559,6 +624,8 @@
     <span class="status-dot live"></span>
     <span id="live-status-text">Director is watching</span>
   </div>
+  <div id="remote-mic-ind" hidden>🎙 Director speaking</div>
+  <button id="mic-btn" aria-label="Toggle microphone">🎙</button>
 </div>
 
 <!-- Network type indicators (shown once ICE connects) -->
@@ -608,6 +675,7 @@ const ICE = [
 let ws, pc, localStream;
 let zoomCap = null, currentZoom = 1, zoomTimer = null;
 let roomCode = '';
+let micEnabled = false, audioSender = null, micStream = null;
 
 const setupScreen      = document.getElementById('setup-screen');
 const startBtn         = document.getElementById('start-btn');
@@ -753,7 +821,15 @@ function connectWS() {
 
       case 'peer-left':
         pc?.close(); pc = null;
+        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+        micEnabled = false; audioSender = null;
+        document.getElementById('remote-mic-ind').hidden = true;
+        updateMicUI();
         showWaiting('Director left — waiting for reconnect…');
+        break;
+
+      case 'mic-state':
+        document.getElementById('remote-mic-ind').hidden = !msg.enabled;
         break;
 
       case 'error':
@@ -762,7 +838,11 @@ function connectWS() {
     }
   };
 
-  ws.onclose = () => showWaiting('Disconnected — reload to reconnect.');
+  ws.onclose = () => {
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    micEnabled = false;
+    showWaiting('Disconnected — reload to reconnect.');
+  };
 }
 
 // ── Knock buttons ───────────────────────────────────────────────────
@@ -782,6 +862,18 @@ denyBtn.addEventListener('click', () => {
 async function startWebRTC() {
   pc = new RTCPeerConnection({ iceServers: ICE, iceCandidatePoolSize: 10 });
   for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
+
+  // Pre-negotiate audio channel — no mic permission needed yet; replaceTrack() on tap
+  const audioTx = pc.addTransceiver('audio', { direction: 'sendrecv' });
+  audioSender = audioTx.sender;
+
+  pc.ontrack = ({ receiver }) => {
+    if (receiver.track.kind !== 'audio') return;
+    const remoteAudio = new Audio();
+    remoteAudio.srcObject = new MediaStream([receiver.track]);
+    remoteAudio.autoplay = true;
+    remoteAudio.play().catch(() => {});
+  };
 
   // Prefer H.264 — hardware-accelerated on most mobile devices
   if (RTCRtpSender.getCapabilities) {
@@ -1041,6 +1133,57 @@ async function capturePhoto() {
     Object.assign(document.createElement('a'), { href: url, download: filename }).click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
+}
+
+// ── Mic ────────────────────────────────────────────────────────────
+
+document.getElementById('mic-btn').addEventListener('click', toggleMic);
+
+async function toggleMic() {
+  if (micEnabled) {
+    audioSender?.replaceTrack(null);
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    micEnabled = false;
+    updateMicUI();
+    ws?.send(JSON.stringify({ type: 'mic-state', enabled: false }));
+    return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
+    micEnabled = true;
+    updateMicUI();
+    ws?.send(JSON.stringify({ type: 'mic-state', enabled: true }));
+    if (pc) {
+      try {
+        const stats = await pc.getStats();
+        let bestPair = null;
+        stats.forEach(r => {
+          if (r.type === 'candidate-pair' && r.state === 'succeeded')
+            if (!bestPair || r.nominated) bestPair = r;
+        });
+        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('⚠️ High latency — audio may lag');
+      } catch {}
+    }
+  } catch {
+    showMicToast('Microphone access denied');
+  }
+}
+
+function updateMicUI() {
+  const btn = document.getElementById('mic-btn');
+  if (btn) btn.classList.toggle('mic-on', micEnabled);
+}
+
+function showMicToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'mic-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
+  setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 250); }, 3000);
 }
 
 function showSetupError(msg) {
