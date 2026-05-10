@@ -1080,7 +1080,7 @@ function showMoveOverlay(arrow, text) {
   document.getElementById('move-overlay-text').textContent  = text;
   overlay.hidden = false;
   clearTimeout(moveOverlayTimer);
-  moveOverlayTimer = setTimeout(() => { overlay.hidden = true; }, 2000);
+  moveOverlayTimer = setTimeout(() => { overlay.hidden = true; }, 1000);
 }
 
 async function adjustZoom(delta) {
