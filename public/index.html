@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<title>CameraShare</title>
+<title>PicMe</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -121,10 +121,10 @@
 <body>
   <div class="logo-wrap">
     <span class="logo-icon">📷</span>
-    <div class="logo-text"><span class="logo-camera">Camera</span><span class="logo-share">Share</span></div>
+    <div class="logo-text"><span class="logo-camera">Pic</span><span class="logo-share">Me</span></div>
   </div>
 
-  <p class="tagline">Let someone else frame your perfect shot.</p>
+  <p class="tagline">Stop retaking. Start directing.</p>
   <p class="wifi-hint">Works best on the same WiFi network</p>
 
   <a href="/photographer.html" class="role-card">
@@ -152,8 +152,8 @@ if ('serviceWorker' in navigator) {
 // ── Share App button ─────────────────────────────────────────────────
 document.getElementById('share-app-btn').addEventListener('click', async () => {
   const shareData = {
-    title: 'CameraShare',
-    text: 'Let someone else frame your perfect shot! Check out CameraShare 📸',
+    title: 'PicMe',
+    text: 'Stop retaking. Start directing. Try PicMe — the app that lets someone else frame your perfect shot! 📸',
     url: 'https://camerashare-production.up.railway.app',
   };
   if (navigator.share) {

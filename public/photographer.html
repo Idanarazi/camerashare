@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<title>CameraShare — Photographer</title>
+<title>PicMe — Photographer</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -670,7 +670,7 @@
 <!-- ── Setup screen ── -->
 <div id="setup-screen">
   <div class="setup-logo">
-    <div class="logo-text"><span class="logo-camera">Camera</span><span class="logo-share">Share</span></div>
+    <div class="logo-text"><span class="logo-camera">Pic</span><span class="logo-share">Me</span></div>
   </div>
   <div class="setup-subtitle">Photographer</div>
   <p>Open your camera to get a room code, then share it with your Director.</p>
@@ -685,7 +685,7 @@
 <div id="waiting-overlay" hidden>
   <div class="qr-card">
     <div class="card-logo">
-      <div class="logo-text"><span class="logo-camera">Camera</span><span class="logo-share">Share</span></div>
+      <div class="logo-text"><span class="logo-camera">Pic</span><span class="logo-share">Me</span></div>
     </div>
     <div class="qr-share-label">Share with your Director</div>
     <img id="qr-img" src="" alt="QR Code" width="180" height="180">
@@ -1291,10 +1291,10 @@ async function capturePhoto() {
     canvas.getContext('2d').drawImage(viewfinder, 0, 0);
     blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.97));
   }
-  const filename = `camerashare-${Date.now()}.jpg`;
+  const filename = `picme-${Date.now()}.jpg`;
   const file = new File([blob], filename, { type: 'image/jpeg' });
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: 'CameraShare Photo' }).catch(() => {});
+    await navigator.share({ files: [file], title: 'PicMe Photo' }).catch(() => {});
   } else {
     const url = URL.createObjectURL(blob);
     Object.assign(document.createElement('a'), { href: url, download: filename }).click();

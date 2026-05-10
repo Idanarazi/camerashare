@@ -1,7 +1,7 @@
 {
-  "name": "camerashare",
+  "name": "picme",
   "version": "1.0.0",
-  "description": "Real-time camera sharing with director controls",
+  "description": "Stop retaking. Start directing. Real-time camera sharing with director controls.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

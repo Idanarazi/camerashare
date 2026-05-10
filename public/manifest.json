@@ -1,7 +1,7 @@
 {
-  "name": "CameraShare",
-  "short_name": "CameraShare",
-  "description": "Direct the perfect shot — see through their lens in real time.",
+  "name": "PicMe",
+  "short_name": "PicMe",
+  "description": "Stop retaking. Start directing. PicMe lets someone else frame your perfect shot in real time.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A0A",

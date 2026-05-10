@@ -61,7 +61,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   const https      = require('https');
   const selfsigned = require('selfsigned');
-  const pems = selfsigned.generate([{ name: 'commonName', value: 'camerashare.local' }], {
+  const pems = selfsigned.generate([{ name: 'commonName', value: 'picme.local' }], {
     days: 365, keySize: 2048,
   });
   server = https.createServer({ key: pems.private, cert: pems.cert }, app);
@@ -331,7 +331,7 @@ if (!process.env.VERCEL) {
 
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, '0.0.0.0', () => {
-    console.log('\n CameraShare is running!\n');
+    console.log('\n PicMe is running!\n');
     if (process.env.NODE_ENV !== 'production') {
       const ip = getLocalIP();
       console.log(` Local:   https://localhost:${PORT}`);
