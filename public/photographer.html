@@ -453,25 +453,61 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    background: rgba(0,0,0,0.60);
+    gap: 18px;
+    background: rgba(0,0,0,0.72);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     pointer-events: none;
     animation: fade-in 0.18s ease;
   }
-  #move-overlay-arrow {
-    font-size: 100px;
-    line-height: 1;
-    filter: drop-shadow(0 0 28px rgba(0,168,255,0.65));
-    color: #fff;
+  #move-overlay.fading-out {
+    animation: move-overlay-out 0.3s ease forwards;
   }
+  @keyframes move-overlay-out { to { opacity: 0; } }
+
+  #move-arrows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #00A8FF;
+    animation: arrow-wave 0.55s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  .arrow-row span {
+    display: block;
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(0,168,255,1), 0 0 32px rgba(0,168,255,0.55);
+  }
+  @keyframes arrow-wave {
+    0%, 100% { opacity: 0.2;  transform: scale(0.82); }
+    50%       { opacity: 1;   transform: scale(1.07); }
+  }
+
+  /* Move Closer: rows small→large top to bottom, wave flows top→bottom */
+  #move-overlay[data-dir="closer"] #arrow-r1 { font-size: 14px; animation-delay: 0s;    }
+  #move-overlay[data-dir="closer"] #arrow-r2 { font-size: 26px; animation-delay: 0.12s; }
+  #move-overlay[data-dir="closer"] #arrow-r3 { font-size: 44px; animation-delay: 0.24s; }
+  #move-overlay[data-dir="closer"] #arrow-r4 { font-size: 66px; animation-delay: 0.36s; }
+
+  /* Step Back: rows large→small top to bottom, wave flows top→bottom */
+  #move-overlay[data-dir="back"]   #arrow-r1 { font-size: 66px; animation-delay: 0s;    }
+  #move-overlay[data-dir="back"]   #arrow-r2 { font-size: 44px; animation-delay: 0.12s; }
+  #move-overlay[data-dir="back"]   #arrow-r3 { font-size: 26px; animation-delay: 0.24s; }
+  #move-overlay[data-dir="back"]   #arrow-r4 { font-size: 14px; animation-delay: 0.36s; }
+
   #move-overlay-text {
-    font-size: 30px;
+    font-size: 24px;
     font-weight: 800;
     color: #fff;
-    letter-spacing: -0.3px;
-    text-shadow: 0 2px 16px rgba(0,0,0,0.55);
+    letter-spacing: -0.2px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.6);
   }
 
   /* ── Connection quality indicator ── */
@@ -723,7 +759,12 @@
 
 <!-- Move-distance overlay -->
 <div id="move-overlay" hidden>
-  <div id="move-overlay-arrow">→</div>
+  <div id="move-arrows">
+    <div class="arrow-row" id="arrow-r1"></div>
+    <div class="arrow-row" id="arrow-r2"></div>
+    <div class="arrow-row" id="arrow-r3"></div>
+    <div class="arrow-row" id="arrow-r4"></div>
+  </div>
   <div id="move-overlay-text">Move Closer!</div>
 </div>
 
@@ -1009,8 +1050,8 @@ function handleCommand(cmd, data) {
     case 'move-right':    showIndicator('→'); break;
     case 'move-up':       showIndicator('↑'); break;
     case 'move-down':     showIndicator('↓'); break;
-    case 'move-closer':   showMoveOverlay('→', 'Move Closer!'); break;
-    case 'step-back':     showMoveOverlay('←', 'Step Back!'); break;
+    case 'move-closer':   showMoveOverlay('closer'); break;
+    case 'step-back':     showMoveOverlay('back');   break;
     case 'focus':         applyFocus(data); break;
     case 'capture':       capturePhoto(); break;
     case 'torch':         applyTorch(data?.on ?? false); break;
@@ -1074,13 +1115,33 @@ function showIndicator(symbol) {
 }
 
 let moveOverlayTimer = null;
-function showMoveOverlay(arrow, text) {
+function showMoveOverlay(direction) {
   const overlay = document.getElementById('move-overlay');
-  document.getElementById('move-overlay-arrow').textContent = arrow;
-  document.getElementById('move-overlay-text').textContent  = text;
+  overlay.classList.remove('fading-out');
+  overlay.dataset.dir = direction;
+
+  // ▶ for Move Closer (rows 4→3→2→1 symbols, small→large)
+  // ◀ for Step Back   (rows 1→2→3→4 symbols, large→small)
+  const sym    = direction === 'closer' ? '▶' : '◀';
+  const counts = direction === 'closer' ? [4, 3, 2, 1] : [1, 2, 3, 4];
+  [1, 2, 3, 4].forEach((n, idx) => {
+    const row = document.getElementById(`arrow-r${n}`);
+    row.innerHTML = '';
+    for (let k = 0; k < counts[idx]; k++) {
+      const s = document.createElement('span');
+      s.textContent = sym;
+      row.appendChild(s);
+    }
+  });
+
+  document.getElementById('move-overlay-text').textContent =
+    direction === 'closer' ? 'Move Closer!' : 'Step Back!';
   overlay.hidden = false;
   clearTimeout(moveOverlayTimer);
-  moveOverlayTimer = setTimeout(() => { overlay.hidden = true; }, 1000);
+  moveOverlayTimer = setTimeout(() => {
+    overlay.classList.add('fading-out');
+    setTimeout(() => { overlay.hidden = true; overlay.classList.remove('fading-out'); }, 300);
+  }, 1000);
 }
 
 async function adjustZoom(delta) {
