@@ -293,45 +293,27 @@
     text-transform: uppercase;
   }
 
-  /* Zoom row */
-  #zoom-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    max-width: 286px;
-    justify-content: center;
-  }
-  .zoom-btn {
+  /* Distance buttons */
+  .dist-btn {
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
-    color: #fff;
-    font-size: 26px;
-    font-weight: 300;
-    width: 66px;
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
     height: 46px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100%;
+    max-width: 286px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.1s, border-color 0.1s, transform 0.1s;
-    line-height: 1;
+    letter-spacing: 0.2px;
   }
-  .zoom-btn:active {
-    background: rgba(0,168,255,0.3);
+  .dist-btn:active {
+    background: rgba(0,168,255,0.25);
     border-color: rgba(0,168,255,0.5);
-    transform: scale(0.88);
-  }
-  #zoom-label {
-    flex: 1;
-    text-align: center;
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.32);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
+    transform: scale(0.95);
   }
 
   /* Torch */
@@ -796,11 +778,8 @@
       <div class="ghost"></div>
     </div>
 
-    <div id="zoom-row">
-      <button class="zoom-btn" id="zoom-out-btn">−</button>
-      <div id="zoom-label">ZOOM</div>
-      <button class="zoom-btn" id="zoom-in-btn">+</button>
-    </div>
+    <button class="dist-btn" id="move-closer-btn">Move Closer 🚶→</button>
+    <button class="dist-btn" id="step-back-btn">←🚶 Step Back</button>
 
     <button id="torch-btn" disabled>🔦&nbsp; Torch: OFF</button>
 
@@ -1063,8 +1042,8 @@ document.querySelectorAll('.arrow-btn[data-cmd]').forEach(btn => {
   btn.addEventListener('click', () => sendCmd(btn.dataset.cmd));
 });
 
-document.getElementById('zoom-in-btn').addEventListener('click',  () => sendCmd('zoom-in'));
-document.getElementById('zoom-out-btn').addEventListener('click', () => sendCmd('zoom-out'));
+document.getElementById('move-closer-btn').addEventListener('click', () => sendCmd('move-closer'));
+document.getElementById('step-back-btn').addEventListener('click',   () => sendCmd('step-back'));
 
 torchBtn.addEventListener('click', () => {
   if (!isLive) return;

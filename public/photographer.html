@@ -444,6 +444,36 @@
   }
   #zoom-badge.show { opacity: 1; }
 
+  /* ── Move-distance overlay (Move Closer / Step Back) ── */
+  #move-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 22;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: rgba(0,0,0,0.60);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    pointer-events: none;
+    animation: fade-in 0.18s ease;
+  }
+  #move-overlay-arrow {
+    font-size: 100px;
+    line-height: 1;
+    filter: drop-shadow(0 0 28px rgba(0,168,255,0.65));
+    color: #fff;
+  }
+  #move-overlay-text {
+    font-size: 30px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.3px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.55);
+  }
+
   /* ── Connection quality indicator ── */
   #qual-ind {
     display: flex;
@@ -690,6 +720,12 @@
 <div id="focus-ring"></div>
 <div id="capture-flash"></div>
 <div id="zoom-badge">1.0×</div>
+
+<!-- Move-distance overlay -->
+<div id="move-overlay" hidden>
+  <div id="move-overlay-arrow">→</div>
+  <div id="move-overlay-text">Move Closer!</div>
+</div>
 
 <!-- Join-attempt log (shown during live session) -->
 <div id="join-log" hidden></div>
@@ -973,8 +1009,8 @@ function handleCommand(cmd, data) {
     case 'move-right':    showIndicator('→'); break;
     case 'move-up':       showIndicator('↑'); break;
     case 'move-down':     showIndicator('↓'); break;
-    case 'zoom-in':       adjustZoom(+0.5); break;
-    case 'zoom-out':      adjustZoom(-0.5); break;
+    case 'move-closer':   showMoveOverlay('→', 'Move Closer!'); break;
+    case 'step-back':     showMoveOverlay('←', 'Step Back!'); break;
     case 'focus':         applyFocus(data); break;
     case 'capture':       capturePhoto(); break;
     case 'torch':         applyTorch(data?.on ?? false); break;
@@ -1035,6 +1071,16 @@ function showIndicator(symbol) {
   indicator.classList.remove('pop');
   void indicator.offsetWidth;
   indicator.classList.add('pop');
+}
+
+let moveOverlayTimer = null;
+function showMoveOverlay(arrow, text) {
+  const overlay = document.getElementById('move-overlay');
+  document.getElementById('move-overlay-arrow').textContent = arrow;
+  document.getElementById('move-overlay-text').textContent  = text;
+  overlay.hidden = false;
+  clearTimeout(moveOverlayTimer);
+  moveOverlayTimer = setTimeout(() => { overlay.hidden = true; }, 2000);
 }
 
 async function adjustZoom(delta) {
