@@ -13,7 +13,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>PicMe</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :focus-visible {
+    outline: 2.5px solid #00A8FF;
+    outline-offset: 2px;
+  }
   body {
     background: #0A0A0A;
     color: #fff;
@@ -25,6 +29,7 @@
     justify-content: center;
     padding: 40px 24px;
     gap: 20px;
+    overscroll-behavior: none;
   }
 
   .logo-wrap { text-align: center; margin-bottom: 4px; }
@@ -65,8 +70,8 @@
   .role-title { font-size: 20px; font-weight: 700; }
   .role-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.55; }
 
-  .divider { color: rgba(255,255,255,0.18); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
-  .wifi-hint { color: rgba(255,255,255,0.22); font-size: 12px; text-align: center; letter-spacing: 0.2px; margin-top: -10px; }
+  .divider { color: rgba(255,255,255,0.40); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+  .wifi-hint { color: rgba(255,255,255,0.48); font-size: 12px; text-align: center; letter-spacing: 0.2px; margin-top: -10px; }
 
   /* ── Share App button ── */
   #share-app-btn {

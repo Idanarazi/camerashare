@@ -15,12 +15,17 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; }
+  :focus-visible {
+    outline: 2.5px solid #00A8FF;
+    outline-offset: 2px;
+  }
   body {
     background: #0A0A0A;
     color: #fff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -248,7 +253,7 @@
 
   #tap-hint {
     font-size: 11px;
-    color: rgba(255,255,255,0.38);
+    color: rgba(255,255,255,0.55);
     margin-bottom: -4px;
     letter-spacing: 0.3px;
   }
@@ -311,7 +316,7 @@
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
-    height: 40px;
+    height: 44px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.1s, border-color 0.1s, transform 0.1s;
@@ -332,7 +337,7 @@
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
-    height: 40px;
+    height: 44px;
     width: 100%;
     max-width: 286px;
     cursor: pointer;
@@ -371,7 +376,7 @@
   #status-footer {
     font-size: 11px;
     font-weight: 500;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.55);
     text-align: center;
     letter-spacing: 0.2px;
   }
@@ -500,7 +505,7 @@
   .qi-dot.excellent { background: #00E676; animation: pulse-green  2.5s ease-in-out infinite; }
   .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
   .qi-dot.poor      { background: #FF375F; }
-  .qi-label         { color: rgba(255,255,255,0.5); margin-left: 1px; }
+  .qi-label         { color: rgba(255,255,255,0.65); margin-left: 1px; }
 
   /* ── Network type banners ── */
   #net-banner {
@@ -544,7 +549,7 @@
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
-    height: 40px;
+    height: 44px;
     width: 100%;
     max-width: 286px;
     cursor: pointer;
@@ -705,7 +710,7 @@
       autocapitalize="none" spellcheck="false" inputmode="text"
     >
     <button id="join-btn">Join Room</button>
-    <button id="scan-qr-btn" type="button">Scan QR Code 📷</button>
+    <button id="scan-qr-btn" type="button" aria-label="Scan photographer's QR code">Scan QR Code 📷</button>
     <div id="join-error"></div>
   </div>
 
@@ -713,14 +718,14 @@
     <div class="approval-spinner">⏳</div>
     <div class="approval-title">Waiting for approval…</div>
     <div class="approval-desc">The Photographer must allow your request before you can view the feed.</div>
-    <button id="cancel-knock-btn">Cancel</button>
+    <button id="cancel-knock-btn" aria-label="Cancel join request">Cancel</button>
   </div>
 
   <div id="denied-msg" style="display:none">
     <div class="denied-icon">🚫</div>
     <div class="denied-title">Request declined</div>
     <div class="denied-desc" id="denied-desc-text">The Photographer declined your request.</div>
-    <button id="try-again-btn">Try Again</button>
+    <button id="try-again-btn" aria-label="Try joining again">Try Again</button>
   </div>
 </div>
 
@@ -731,7 +736,7 @@
     <div id="qr-frame"></div>
     <p id="qr-hint">Point camera at the Photographer's QR code</p>
     <p id="qr-error" hidden>Invalid QR code — try again</p>
-    <button id="qr-cancel-btn">Cancel</button>
+    <button id="qr-cancel-btn" aria-label="Cancel QR scanner">Cancel</button>
   </div>
 </div>
 
@@ -754,8 +759,8 @@
   <!-- Freeze screen (frozen frame + minimal corner UI) -->
   <div id="director-freeze" hidden>
     <img id="frozen-frame" alt="">
-    <div id="freeze-badge">📸 Frozen</div>
-    <button id="done-btn">Done</button>
+    <div id="freeze-badge" aria-live="polite">📸 Frozen</div>
+    <button id="done-btn" aria-label="Dismiss frozen frame">Done</button>
   </div>
 
   <!-- Connection quality & network indicators -->
@@ -768,34 +773,34 @@
   <div id="net-badge"  hidden>📶 Cross-network mode</div>
   <div id="remote-mic-ind" hidden>🎙 Photographer speaking</div>
 
-  <button id="toggle-btn">Hide Controls</button>
+  <button id="toggle-btn" aria-label="Toggle controls visibility">Hide Controls</button>
 
   <div id="controls-panel">
     <div id="tap-hint">Tap video above to focus</div>
 
     <div id="dpad">
       <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-up">↑</button>
+      <button class="arrow-btn" data-cmd="move-up"    aria-label="Tilt camera up">↑</button>
       <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-left">←</button>
-      <div class="center-label">MOVE</div>
-      <button class="arrow-btn" data-cmd="move-right">→</button>
+      <button class="arrow-btn" data-cmd="move-left"  aria-label="Pan camera left">←</button>
+      <div class="center-label" aria-hidden="true">MOVE</div>
+      <button class="arrow-btn" data-cmd="move-right" aria-label="Pan camera right">→</button>
       <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-down">↓</button>
+      <button class="arrow-btn" data-cmd="move-down"  aria-label="Tilt camera down">↓</button>
       <div class="ghost"></div>
     </div>
 
     <div class="btn-row">
-      <button class="dist-btn" id="move-closer-btn">Move Closer 🚶→</button>
-      <button class="dist-btn" id="step-back-btn">←🚶 Step Back</button>
+      <button class="dist-btn" id="move-closer-btn" aria-label="Tell photographer to move closer">Move Closer 🚶→</button>
+      <button class="dist-btn" id="step-back-btn"   aria-label="Tell photographer to step back">←🚶 Step Back</button>
     </div>
 
     <div class="btn-row">
-      <button id="torch-btn" disabled>🔦&nbsp; Torch: OFF</button>
-      <button id="mic-btn" disabled>🎙&nbsp; Mic: OFF</button>
+      <button id="torch-btn" disabled aria-label="Toggle photographer flashlight">🔦&nbsp; Torch: OFF</button>
+      <button id="mic-btn"   disabled aria-label="Toggle your microphone">🎙&nbsp; Mic: OFF</button>
     </div>
 
-    <button id="capture-btn" disabled>📷&nbsp; Capture!</button>
+    <button id="capture-btn" disabled aria-label="Start capture countdown">📷&nbsp; Capture!</button>
 
     <div id="status-footer">Connecting…</div>
   </div>

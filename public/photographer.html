@@ -13,14 +13,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>PicMe — Photographer</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; }
+  :focus-visible {
+    outline: 2.5px solid #00A8FF;
+    outline-offset: 2px;
+  }
   body {
     background: #000;
     color: #fff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -530,7 +535,7 @@
   .qi-dot.excellent { background: #00E676; animation: pulse-green  2.5s ease-in-out infinite; }
   .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
   .qi-dot.poor      { background: #FF375F; }
-  .qi-label         { color: rgba(255,255,255,0.5); margin-left: 1px; }
+  .qi-label         { color: rgba(255,255,255,0.65); margin-left: 1px; }
 
   /* ── Network type indicators ── */
   #net-banner {
@@ -641,15 +646,15 @@
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 14px;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.65);
     font-size: 11px;
     font-weight: 600;
     font-family: inherit;
-    padding: 7px 11px;
+    padding: 10px 14px;
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
     pointer-events: auto;
-    -webkit-tap-highlight-color: transparent;
     transition: background 0.15s;
     line-height: 1.4;
     text-align: center;
@@ -663,6 +668,23 @@
   .join-log-entry.outcome-denied    { color: rgba(255,55,95,0.65); }
   .join-log-entry.outcome-pending   { color: rgba(255,214,10,0.65); }
   .join-log-entry.outcome-cancelled { color: rgba(255,255,255,0.3); }
+
+  /* ── Reload button (shown on disconnect) ── */
+  #reload-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 14px;
+    color: rgba(255,255,255,0.85);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 13px 28px;
+    min-height: 44px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s, transform 0.1s;
+  }
+  #reload-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.97); }
 </style>
 </head>
 <body>
@@ -696,6 +718,7 @@
     <span class="status-dot waiting" id="waiting-dot"></span>
     <span id="waiting-text">Waiting for Director…</span>
   </div>
+  <button id="reload-btn" hidden aria-label="Reload page to reconnect">↺ Reload</button>
 </div>
 
 <!-- ── Knock modal ── -->
@@ -705,8 +728,8 @@
     <h2>Access Request</h2>
     <p>A Director wants to view your camera feed.</p>
     <div class="knock-actions">
-      <button id="deny-btn">Deny</button>
-      <button id="allow-btn">Allow</button>
+      <button id="deny-btn" aria-label="Deny Director access">Deny</button>
+      <button id="allow-btn" aria-label="Allow Director access">Allow</button>
     </div>
   </div>
 </div>
@@ -743,12 +766,12 @@
 <img id="frozen-frame-photo" hidden alt="">
 
 <!-- ── Native camera shortcut (shown during live session) ── -->
-<button id="native-cam-btn" hidden>📸<br>Native</button>
+<button id="native-cam-btn" hidden aria-label="Switch to native camera app">📸<br>Native</button>
 
 <!-- ── Freeze bar (bottom minimal UI) ── -->
 <div id="freeze-bar" hidden>
   <span class="freeze-bar-text">Frame frozen — take your shot!</span>
-  <button id="continue-btn">Continue</button>
+  <button id="continue-btn" aria-label="Continue shooting">Continue</button>
 </div>
 
 <!-- Command overlays -->
@@ -825,6 +848,7 @@ function showWaiting(statusMsg) {
   liveHudBottom.hidden  = true;
   document.getElementById('native-cam-btn').hidden = true;
   document.getElementById('join-log').hidden = true;
+  document.getElementById('reload-btn').hidden = true;
   if (statusMsg) waitingText.textContent = statusMsg;
   waitingDot.className = 'status-dot waiting';
 }
@@ -845,6 +869,7 @@ function showLive() {
 // ── Setup ───────────────────────────────────────────────────────────
 
 startBtn.addEventListener('click', startApp);
+document.getElementById('reload-btn').addEventListener('click', () => location.reload());
 
 async function startApp() {
   if (localStream) { ws?.close(); setupScreen.hidden = true; connectWS(); return; }
@@ -975,7 +1000,8 @@ function connectWS() {
   ws.onclose = () => {
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     micEnabled = false;
-    showWaiting('Disconnected — reload to reconnect.');
+    showWaiting('Connection lost.');
+    document.getElementById('reload-btn').hidden = false;
   };
 }
 
