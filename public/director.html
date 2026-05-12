@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0A0A0A">
+<meta name="theme-color" content="#080808">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,12 +15,10 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; }
-  :focus-visible {
-    outline: 2.5px solid #00A8FF;
-    outline-offset: 2px;
-  }
+  :focus-visible { outline: 2.5px solid #00A8FF; outline-offset: 2px; }
+
   body {
-    background: #0A0A0A;
+    background: #080808;
     color: #fff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     height: 100dvh;
@@ -31,65 +29,109 @@
   }
 
   /* ── Logo ── */
-  .logo-text   { font-size: 24px; font-weight: 800; line-height: 1; }
+  .logo-text   { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
   .logo-camera { color: #fff; }
   .logo-share  { color: #00A8FF; }
 
   /* ── Join screen ── */
   #join-screen {
     height: 100dvh;
-    background: #0A0A0A;
+    background: #080808;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 28px;
-    gap: 20px;
+    padding: 52px 24px 48px;
+    gap: 14px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
   }
-  .join-logo { margin-bottom: 4px; }
-  .join-subtitle { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; }
-  #join-screen p { color: rgba(255,255,255,0.4); font-size: 14px; line-height: 1.65; max-width: 270px; }
+  #join-screen::before {
+    content: '';
+    position: fixed;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(ellipse at top, rgba(0,168,255,0.10) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  .join-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(145deg, rgba(0,168,255,0.18), rgba(0,168,255,0.05));
+    border: 1px solid rgba(0,168,255,0.22);
+    border-radius: 20px;
+    font-size: 32px;
+    line-height: 1;
+    box-shadow: 0 0 40px rgba(0,168,255,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+    margin-bottom: 2px;
+  }
+  .join-title {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  .join-title .pic { color: #fff; }
+  .join-title .me  { color: #00A8FF; }
+  .join-subtitle { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.30); letter-spacing: 2px; text-transform: uppercase; }
+  #join-screen > p { color: rgba(255,255,255,0.38); font-size: 14px; line-height: 1.6; max-width: 260px; }
 
   /* Join form */
   #join-form { display: contents; }
   #code-input {
     width: 100%;
     max-width: 300px;
-    background: #1A1A1A;
-    border: 1.5px solid rgba(255,255,255,0.1);
-    border-radius: 16px;
+    background: #111111;
+    border: 1.5px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
     color: #fff;
     font-family: inherit;
     font-size: 16px;
     font-weight: 700;
-    letter-spacing: 1px;
-    padding: 16px;
+    letter-spacing: 0.5px;
+    padding: 17px 16px;
     text-align: center;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-top: 4px;
   }
-  #code-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.15); }
-  #code-input::placeholder { color: rgba(255,255,255,0.2); letter-spacing: 0px; font-weight: 400; font-size: 14px; }
+  #code-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.14); }
+  #code-input::placeholder { color: rgba(255,255,255,0.18); letter-spacing: 0; font-weight: 400; font-size: 14px; }
   #join-btn {
-    background: #00A8FF;
+    background: linear-gradient(135deg, #00A8FF, #0080D0);
     color: #fff;
     border: none;
-    border-radius: 16px;
-    font-size: 16px;
+    border-radius: 18px;
+    font-size: 17px;
     font-weight: 700;
     font-family: inherit;
-    padding: 18px 32px;
+    padding: 19px 32px;
     cursor: pointer;
     width: 100%;
     max-width: 300px;
     touch-action: manipulation;
-    transition: background 0.15s, transform 0.1s;
-    box-shadow: 0 4px 24px rgba(0,168,255,0.4);
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 6px 32px rgba(0,168,255,0.45), 0 2px 8px rgba(0,168,255,0.2);
+    position: relative;
   }
-  #join-btn:active   { background: #0096e0; transform: scale(0.97); }
-  #join-btn:disabled { background: rgba(0,168,255,0.35); box-shadow: none; }
-  #join-error { color: #FF375F; font-size: 13px; display: none; max-width: 300px; }
+  #join-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
+  }
+  #join-btn:active   { opacity: 0.85; transform: scale(0.97); }
+  #join-btn:disabled { background: rgba(0,168,255,0.30); box-shadow: none; }
+  #join-error { color: #FF453A; font-size: 13px; display: none; max-width: 300px; background: rgba(255,69,58,0.1); border: 1px solid rgba(255,69,58,0.18); border-radius: 12px; padding: 10px 14px; }
 
   /* Approval wait sub-state */
   #approval-wait {
@@ -99,54 +141,83 @@
     gap: 14px;
     width: 100%;
     max-width: 300px;
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin-top: 4px;
   }
-  .approval-spinner { font-size: 44px; animation: spin-slow 2.5s linear infinite; }
+  .approval-spinner { font-size: 40px; animation: spin-slow 3s linear infinite; }
   @keyframes spin-slow { to { transform: rotate(360deg); } }
-  .approval-title { font-size: 18px; font-weight: 700; }
-  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.6; max-width: 260px; }
+  .approval-title { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.38); line-height: 1.6; max-width: 240px; }
   #cancel-knock-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 14px;
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.55);
     font-size: 15px;
     font-weight: 600;
     font-family: inherit;
     padding: 13px 28px;
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
-    margin-top: 4px;
     transition: background 0.15s;
   }
-  #cancel-knock-btn:active { background: rgba(255,255,255,0.14); }
+  #cancel-knock-btn:active { background: rgba(255,255,255,0.12); }
 
   /* Denied sub-state */
   #denied-msg {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     width: 100%;
     max-width: 300px;
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin-top: 4px;
   }
-  .denied-icon  { font-size: 44px; }
-  .denied-title { font-size: 18px; font-weight: 700; }
-  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.42); line-height: 1.6; max-width: 260px; }
+  .denied-icon  { font-size: 40px; }
+  .denied-title { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.38); line-height: 1.6; max-width: 240px; }
   #try-again-btn {
-    background: #1A1A1A;
-    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.07);
+    border: 1.5px solid rgba(255,255,255,0.10);
     border-radius: 14px;
-    color: #fff;
+    color: rgba(255,255,255,0.85);
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;
-    padding: 14px 28px;
+    padding: 13px 28px;
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
-    margin-top: 4px;
     transition: background 0.15s;
   }
-  #try-again-btn:active { background: #222; }
+  #try-again-btn:active { background: rgba(255,255,255,0.12); }
+
+  /* ── Scan QR button ── */
+  #scan-qr-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    color: rgba(255,255,255,0.50);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 15px 32px;
+    min-height: 44px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;
+    touch-action: manipulation;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #scan-qr-btn:active { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
 
   /* ── Control screen ── */
   #control-screen {
@@ -158,18 +229,8 @@
   }
 
   /* Video layer */
-  #preview-wrap {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    cursor: crosshair;
-  }
-  #preview {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
+  #preview-wrap { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
+  #preview { width: 100%; height: 100%; object-fit: cover; display: block; }
   #preview-overlay {
     position: absolute;
     inset: 0;
@@ -179,15 +240,15 @@
     pointer-events: none;
   }
   #connecting-msg {
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: rgba(255,255,255,0.65);
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: rgba(255,255,255,0.60);
     font-size: 13px;
     font-weight: 500;
-    padding: 9px 18px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 20px;
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.10);
   }
 
   /* Live badge */
@@ -196,12 +257,12 @@
     position: absolute;
     top: max(14px, env(safe-area-inset-top));
     left: 14px;
-    background: rgba(0,230,118,0.18);
-    border: 1px solid rgba(0,230,118,0.4);
-    color: #00E676;
+    background: rgba(50,215,75,0.15);
+    border: 1px solid rgba(50,215,75,0.35);
+    color: #32D74B;
     font-size: 11px;
     font-weight: 700;
-    padding: 5px 11px;
+    padding: 6px 12px;
     border-radius: 20px;
     letter-spacing: 0.5px;
     pointer-events: none;
@@ -214,105 +275,107 @@
     top: max(14px, env(safe-area-inset-top));
     right: 14px;
     z-index: 30;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.60);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 20px;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255,255,255,0.80);
     font-size: 12px;
     font-weight: 600;
     font-family: inherit;
-    padding: 7px 14px;
+    padding: 8px 15px;
+    min-height: 36px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.2s;
   }
-  #toggle-btn:active { background: rgba(255,255,255,0.15); }
+  #toggle-btn:active { background: rgba(255,255,255,0.14); }
 
   /* Controls panel */
   #controls-panel {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     z-index: 20;
-    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-    padding: 16px 18px max(12px, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 55%, transparent 100%);
+    padding: 14px 18px max(14px, env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 7px;
-    opacity: 0.78;
+    gap: 8px;
     transition: opacity 0.28s, transform 0.28s;
   }
-  #controls-panel:has(:active) { opacity: 0.98; }
   #controls-panel.controls-hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(12px);
+    transform: translateY(14px);
   }
 
   #tap-hint {
     font-size: 11px;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.38);
     margin-bottom: -4px;
     letter-spacing: 0.3px;
   }
 
-  /* D-pad */
+  /* D-pad — circular buttons */
   #dpad {
     display: grid;
-    grid-template-columns: repeat(3, 48px);
-    grid-template-rows: repeat(3, 48px);
-    gap: 5px;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
   }
   .arrow-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    color: #fff;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 50%;
+    color: rgba(255,255,255,0.92);
     font-size: 20px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background 0.1s, border-color 0.1s, transform 0.1s;
+    transition: background 0.1s, border-color 0.1s, transform 0.1s, color 0.1s;
   }
   .arrow-btn:active {
-    background: rgba(0,168,255,0.3);
-    border-color: rgba(0,168,255,0.5);
-    transform: scale(0.88);
+    background: rgba(0,168,255,0.28);
+    border-color: rgba(0,168,255,0.55);
+    color: #00A8FF;
+    transform: scale(0.86);
   }
   .ghost { visibility: hidden; pointer-events: none; }
   .center-label {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: 7px;
     font-weight: 700;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.22);
     letter-spacing: 1.5px;
     text-transform: uppercase;
   }
 
-  /* Paired button rows (Move Closer/Step Back, Torch/Mic) */
+  /* Paired button rows */
   .btn-row {
     display: flex;
-    gap: 7px;
+    gap: 8px;
     width: 100%;
-    max-width: 286px;
+    max-width: 296px;
   }
-  .btn-row > button { flex: 1; min-width: 0; width: auto; max-width: none; }
+  .btn-row > button { flex: 1; min-width: 0; }
 
   /* Distance buttons */
   .dist-btn {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    color: rgba(255,255,255,0.85);
+    border-radius: 16px;
+    color: rgba(255,255,255,0.82);
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
@@ -320,85 +383,128 @@
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.1s, border-color 0.1s, transform 0.1s;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.1px;
   }
   .dist-btn:active {
-    background: rgba(0,168,255,0.25);
-    border-color: rgba(0,168,255,0.5);
+    background: rgba(0,168,255,0.20);
+    border-color: rgba(0,168,255,0.45);
     transform: scale(0.95);
   }
 
   /* Torch */
   #torch-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1.5px solid transparent;
-    border-radius: 14px;
-    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    color: rgba(255,255,255,0.68);
     font-size: 13px;
     font-weight: 600;
     font-family: inherit;
     height: 44px;
     width: 100%;
-    max-width: 286px;
+    max-width: 296px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
   }
   #torch-btn.torch-on {
-    background: rgba(255,214,10,0.12);
-    border-color: rgba(255,214,10,0.5);
+    background: rgba(255,214,10,0.10);
+    border-color: rgba(255,214,10,0.38);
     color: #FFD60A;
+    box-shadow: 0 0 16px rgba(255,214,10,0.12);
   }
-  #torch-btn:active { opacity: 0.7; }
-  #torch-btn:disabled { color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); border-color: transparent; }
+  #torch-btn:active { opacity: 0.72; }
+  #torch-btn:disabled { color: rgba(255,255,255,0.20); background: rgba(255,255,255,0.04); border-color: transparent; }
+
+  /* Mic button */
+  #mic-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    color: rgba(255,255,255,0.68);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    height: 44px;
+    width: 100%;
+    max-width: 296px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  #mic-btn.mic-on {
+    background: rgba(0,168,255,0.12);
+    border-color: rgba(0,168,255,0.40);
+    color: #00A8FF;
+    animation: mic-pulse 2s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.35); }
+    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0); }
+  }
+  #mic-btn:active { opacity: 0.72; }
+  #mic-btn:disabled { color: rgba(255,255,255,0.20); background: rgba(255,255,255,0.04); border-color: transparent; animation: none; }
 
   /* Capture */
   #capture-btn {
-    background: #FF375F;
+    background: linear-gradient(135deg, #FF375F 0%, #D91A40 100%);
     border: none;
-    border-radius: 15px;
+    border-radius: 18px;
     color: #fff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     font-family: inherit;
-    height: 48px;
+    height: 56px;
     width: 100%;
-    max-width: 286px;
+    max-width: 296px;
     cursor: pointer;
     touch-action: manipulation;
-    letter-spacing: 0.3px;
-    box-shadow: 0 4px 20px rgba(255,55,95,0.5);
-    transition: background 0.1s, transform 0.1s, box-shadow 0.1s;
+    letter-spacing: 0.4px;
+    box-shadow: 0 6px 28px rgba(255,55,95,0.55), 0 2px 8px rgba(255,55,95,0.25);
+    transition: opacity 0.1s, transform 0.1s, box-shadow 0.1s;
+    position: relative;
   }
-  #capture-btn:active { background: #d91a40; transform: scale(0.95); box-shadow: 0 2px 10px rgba(255,55,95,0.3); }
-  #capture-btn:disabled { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35); box-shadow: none; }
+  #capture-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
+  }
+  #capture-btn:active { opacity: 0.85; transform: scale(0.96); box-shadow: 0 2px 12px rgba(255,55,95,0.4); }
+  #capture-btn:disabled { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.30); box-shadow: none; }
+  #capture-btn:disabled::before { display: none; }
 
   #status-footer {
     font-size: 11px;
     font-weight: 500;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.38);
     text-align: center;
     letter-spacing: 0.2px;
   }
 
-  /* ── Countdown overlay (over video) ── */
+  /* ── Countdown overlay ── */
   #dir-countdown {
     position: absolute;
     inset: 0;
     z-index: 40;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   #dir-countdown-num {
-    font-size: 200px;
-    font-weight: 800;
+    font-size: 220px;
+    font-weight: 900;
     line-height: 1;
     color: #fff;
-    text-shadow: 0 0 100px rgba(0,168,255,0.5), 0 0 200px rgba(0,168,255,0.2);
+    letter-spacing: -10px;
+    text-shadow:
+      0 0 80px rgba(0,168,255,0.60),
+      0 0 160px rgba(0,168,255,0.25),
+      0 0 240px rgba(0,168,255,0.10);
   }
   #dir-countdown-num.count-anim {
     animation: count-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -410,60 +516,49 @@
     100% { opacity: 1; transform: scale(1); }
   }
 
-  /* ── Freeze screen (frozen frame + minimal corner UI) ── */
-  #director-freeze {
-    position: absolute;
-    inset: 0;
-    z-index: 50;
-  }
-  #frozen-frame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 51;
-  }
+  /* ── Freeze screen ── */
+  #director-freeze { position: absolute; inset: 0; z-index: 50; }
+  #frozen-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 51; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
   #freeze-badge {
     position: absolute;
     top: max(14px, env(safe-area-inset-top));
     left: 14px;
     z-index: 52;
-    background: rgba(0,0,0,0.48);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.58);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.13);
     border-radius: 20px;
-    color: rgba(255,255,255,0.82);
+    color: rgba(255,255,255,0.85);
     font-size: 12px;
     font-weight: 600;
-    padding: 5px 12px;
-    letter-spacing: 0.2px;
+    padding: 6px 13px;
     pointer-events: none;
     animation: fade-in 0.4s ease;
   }
   #done-btn {
     position: absolute;
-    bottom: max(20px, env(safe-area-inset-bottom));
+    bottom: max(22px, env(safe-area-inset-bottom));
     right: 16px;
     z-index: 52;
-    background: rgba(255,255,255,0.16);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.28);
-    border-radius: 20px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 22px;
     color: #fff;
     font-size: 15px;
     font-weight: 700;
     font-family: inherit;
-    padding: 10px 22px;
+    padding: 11px 24px;
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.15s, transform 0.1s;
     animation: fade-in 0.4s ease;
   }
-  #done-btn:active { background: rgba(255,255,255,0.28); transform: scale(0.96); }
+  #done-btn:active { background: rgba(255,255,255,0.26); transform: scale(0.96); }
 
   /* ── Focus tap dot ── */
   @keyframes tap-fade {
@@ -471,54 +566,52 @@
     100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8); }
   }
 
-  /* ── Pulse animations (reused by quality indicator) ── */
+  /* ── Quality indicator ── */
   @keyframes pulse-green  {
-    0%, 100% { box-shadow: 0 0 0 0   rgba(0,230,118,0.5); }
-    50%       { box-shadow: 0 0 0 5px rgba(0,230,118,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(50,215,75,0.5); }
+    50%       { box-shadow: 0 0 0 5px rgba(50,215,75,0); }
   }
   @keyframes pulse-yellow {
-    0%, 100% { box-shadow: 0 0 0 0   rgba(255,214,10,0.55); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,214,10,0.55); }
     50%       { box-shadow: 0 0 0 5px rgba(255,214,10,0); }
   }
-
-  /* ── Connection quality indicator ── */
   #qual-ind {
     position: absolute;
-    top: calc(max(14px, env(safe-area-inset-top)) + 32px);
+    top: calc(max(14px, env(safe-area-inset-top)) + 34px);
     left: 14px;
     z-index: 5;
     display: flex;
     align-items: center;
     gap: 5px;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.58);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 20px;
-    padding: 5px 10px;
+    padding: 6px 11px;
     font-size: 11px;
     font-weight: 600;
     color: rgba(255,255,255,0.85);
     pointer-events: none;
   }
   .qi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .qi-dot.excellent { background: #00E676; animation: pulse-green  2.5s ease-in-out infinite; }
+  .qi-dot.excellent { background: #32D74B; animation: pulse-green  2.5s ease-in-out infinite; }
   .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
-  .qi-dot.poor      { background: #FF375F; }
+  .qi-dot.poor      { background: #FF453A; }
   .qi-label         { color: rgba(255,255,255,0.65); margin-left: 1px; }
 
-  /* ── Network type banners ── */
+  /* ── Network banners ── */
   #net-banner {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     z-index: 25;
-    background: rgba(0,230,118,0.12);
-    border: 1px solid rgba(0,230,118,0.35);
+    background: rgba(50,215,75,0.10);
+    border: 1px solid rgba(50,215,75,0.30);
     border-radius: 22px;
-    color: #00E676;
+    color: #32D74B;
     font-size: 14px; font-weight: 600;
-    padding: 10px 20px;
+    padding: 11px 22px;
     pointer-events: none;
     transition: opacity 1s ease;
     white-space: nowrap;
@@ -528,55 +621,26 @@
     bottom: max(14px, env(safe-area-inset-bottom));
     left: 14px;
     z-index: 5;
-    background: rgba(0,0,0,0.48);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.58);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 20px;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.48);
     font-size: 11px; font-weight: 600;
-    padding: 5px 12px;
+    padding: 6px 13px;
     pointer-events: none;
     white-space: nowrap;
   }
-
-  /* ── Mic button ── */
-  #mic-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1.5px solid transparent;
-    border-radius: 14px;
-    color: rgba(255,255,255,0.7);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    height: 44px;
-    width: 100%;
-    max-width: 286px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-  }
-  #mic-btn.mic-on {
-    background: rgba(0,168,255,0.15);
-    border-color: rgba(0,168,255,0.5);
-    color: #00A8FF;
-    animation: mic-pulse 2s ease-in-out infinite;
-  }
-  @keyframes mic-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.4); }
-    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0); }
-  }
-  #mic-btn:active { opacity: 0.7; }
-  #mic-btn:disabled { color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); border-color: transparent; animation: none; }
   #remote-mic-ind {
     position: absolute;
-    top: calc(max(14px, env(safe-area-inset-top)) + 70px);
+    top: calc(max(14px, env(safe-area-inset-top)) + 72px);
     left: 14px;
     z-index: 5;
-    background: rgba(0,168,255,0.15);
-    border: 1px solid rgba(0,168,255,0.4);
+    background: rgba(0,168,255,0.12);
+    border: 1px solid rgba(0,168,255,0.35);
     border-radius: 20px;
-    padding: 5px 12px;
+    padding: 6px 13px;
     font-size: 12px;
     font-weight: 600;
     color: #00A8FF;
@@ -588,41 +652,20 @@
     bottom: 200px;
     left: 50%;
     transform: translateX(-50%) translateY(10px);
-    background: #1E1E1E;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.9);
+    background: #1C1C1E;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 22px;
+    color: rgba(255,255,255,0.92);
     font-size: 14px;
     font-weight: 600;
-    padding: 10px 20px;
+    padding: 11px 20px;
     z-index: 300;
     opacity: 0;
     transition: opacity 0.22s, transform 0.22s;
     white-space: nowrap;
     pointer-events: none;
   }
-  .mic-toast.toast-show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  /* ── Scan QR button ── */
-  #scan-qr-btn {
-    background: transparent;
-    border: 1.5px solid rgba(255,255,255,0.14);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.45);
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 14px 32px;
-    cursor: pointer;
-    width: 100%;
-    max-width: 300px;
-    touch-action: manipulation;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  #scan-qr-btn:active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.28); }
+  .mic-toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ── QR Scanner overlay ── */
   #qr-scanner {
@@ -635,13 +678,7 @@
     align-items: center;
     justify-content: center;
   }
-  #qr-video {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  #qr-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   #qr-ui {
     position: relative;
     z-index: 5;
@@ -649,57 +686,51 @@
     flex-direction: column;
     align-items: center;
     gap: 28px;
-    padding: max(48px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom));
+    padding: max(52px, env(safe-area-inset-top)) 24px max(36px, env(safe-area-inset-bottom));
     width: 100%;
   }
   #qr-frame {
-    width: 220px;
-    height: 220px;
+    width: 224px;
+    height: 224px;
     border: 2.5px solid #00A8FF;
-    border-radius: 20px;
-    box-shadow: 0 0 0 2000px rgba(0,0,0,0.65);
+    border-radius: 24px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.70), 0 0 32px rgba(0,168,255,0.25);
     flex-shrink: 0;
   }
-  #qr-hint {
-    font-size: 15px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.75);
-    text-align: center;
-    letter-spacing: 0.2px;
-  }
+  #qr-hint { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.72); text-align: center; }
   #qr-error {
     font-size: 14px;
     font-weight: 600;
-    color: #FF375F;
-    background: rgba(255,55,95,0.12);
-    border: 1px solid rgba(255,55,95,0.3);
+    color: #FF453A;
+    background: rgba(255,69,58,0.10);
+    border: 1px solid rgba(255,69,58,0.25);
     border-radius: 14px;
-    padding: 9px 18px;
+    padding: 10px 18px;
     text-align: center;
   }
   #qr-cancel-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 18px;
-    color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.78);
     font-size: 15px;
     font-weight: 600;
     font-family: inherit;
-    padding: 15px 40px;
+    padding: 15px 44px;
+    min-height: 44px;
     cursor: pointer;
     touch-action: manipulation;
     transition: background 0.15s;
   }
-  #qr-cancel-btn:active { background: rgba(255,255,255,0.2); }
+  #qr-cancel-btn:active { background: rgba(255,255,255,0.16); }
 </style>
 </head>
 <body>
 
 <!-- ── Join screen ── -->
 <div id="join-screen">
-  <div class="join-logo">
-    <div class="logo-text"><span class="logo-camera">Pic</span><span class="logo-share">Me</span></div>
-  </div>
+  <div class="join-mark">🎬</div>
+  <h1 class="join-title"><span class="pic">Pic</span><span class="me">Me</span></h1>
   <div class="join-subtitle">Director</div>
 
   <div id="join-form" style="display:contents">
