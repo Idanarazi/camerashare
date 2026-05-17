@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>PicMe — Photographer</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -79,13 +79,12 @@
     border-radius: 22px;
     margin-bottom: 4px;
     box-shadow: 0 0 48px rgba(0,168,255,0.16), inset 0 1px 0 rgba(255,255,255,0.07);
-    font-size: 34px;
-    line-height: 1;
   }
   .setup-title {
     font-size: 38px;
     font-weight: 900;
-    letter-spacing: -1.5px;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: -0.5px;
     line-height: 1;
     margin-bottom: 2px;
   }
@@ -294,7 +293,6 @@
     box-shadow: 0 0 32px rgba(255,214,10,0.10);
   }
   .knock-bell {
-    font-size: 36px;
     display: block;
     animation: bell-ring 0.6s ease-out;
   }
@@ -386,9 +384,10 @@
   #countdown-num {
     font-size: 180px;
     font-weight: 900;
+    font-family: 'Barlow Condensed', sans-serif;
     line-height: 1;
     color: #fff;
-    letter-spacing: -8px;
+    letter-spacing: -4px;
     text-shadow:
       0 0 60px rgba(0,168,255,0.65),
       0 0 120px rgba(0,168,255,0.25),
@@ -720,20 +719,22 @@
     font-size: 11px;
     font-weight: 600;
     font-family: inherit;
-    padding: 10px 14px;
+    padding: 0 16px;
     min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
     pointer-events: auto;
     transition: background 0.15s;
-    line-height: 1.4;
-    text-align: center;
+    line-height: 1;
   }
   #native-cam-btn:active { background: rgba(255,255,255,0.14); }
 
   /* ── Join-attempt log ── */
   #join-log { position: fixed; bottom: max(4px, env(safe-area-inset-bottom)); left: 16px; z-index: 8; pointer-events: none; }
-  .join-log-entry { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.6; animation: fade-in 0.3s ease; }
+  .join-log-entry { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.6; animation: fade-in 0.3s ease; }
   .join-log-entry.outcome-allowed   { color: rgba(50,215,75,0.75); }
   .join-log-entry.outcome-denied    { color: rgba(255,69,58,0.75); }
   .join-log-entry.outcome-pending   { color: rgba(255,214,10,0.75); }
@@ -744,7 +745,7 @@
 
 <!-- ── Setup screen ── -->
 <div id="setup-screen">
-  <div class="setup-mark">📷</div>
+  <div class="setup-mark"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
   <div class="setup-title"><span class="pic">Pic</span><span class="me">Me</span></div>
   <div class="setup-subtitle">Photographer Mode</div>
   <p>Open your camera to get a room code, then share it with your Director.</p>
@@ -776,7 +777,7 @@
 <!-- ── Knock modal ── -->
 <div id="knock-modal" hidden>
   <div class="knock-card">
-    <div class="knock-bell-wrap"><span class="knock-bell">🔔</span></div>
+    <div class="knock-bell-wrap"><svg class="knock-bell" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD60A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
     <h2>Access Request</h2>
     <p>A Director wants to view your camera feed.</p>
     <div class="knock-actions">
@@ -800,13 +801,13 @@
     <span class="status-dot live"></span>
     <span id="live-status-text">Director is watching</span>
   </div>
-  <div id="remote-mic-ind" hidden>🎙 Director speaking</div>
-  <button id="mic-btn" aria-label="Toggle microphone">🎙</button>
+  <div id="remote-mic-ind" hidden>Director speaking</div>
+  <button id="mic-btn" aria-label="Toggle microphone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></button>
 </div>
 
 <!-- Network type indicators (shown once ICE connects) -->
-<div id="net-banner" hidden>⚡ Same network — best quality</div>
-<div id="net-badge"  hidden>📶 Cross-network mode</div>
+<div id="net-banner" hidden>Same network — best quality</div>
+<div id="net-badge"  hidden>Cross-network mode</div>
 
 <!-- ── Countdown overlay ── -->
 <div id="countdown-overlay" hidden>
@@ -818,7 +819,7 @@
 <img id="frozen-frame-photo" hidden alt="">
 
 <!-- ── Native camera shortcut (shown during live session) ── -->
-<button id="native-cam-btn" hidden aria-label="Switch to native camera app">📸<br>Native</button>
+<button id="native-cam-btn" hidden aria-label="Switch to native camera app">Camera App</button>
 
 <!-- ── Freeze bar (bottom minimal UI) ── -->
 <div id="freeze-bar" hidden>
@@ -1424,7 +1425,7 @@ async function toggleMic() {
           if (r.type === 'candidate-pair' && r.state === 'succeeded')
             if (!bestPair || r.nominated) bestPair = r;
         });
-        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('⚠️ High latency — audio may lag');
+        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('High latency — audio may lag');
       } catch {}
     }
   } catch {

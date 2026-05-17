@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <title>PicMe</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -79,16 +79,17 @@
     border-radius: 26px;
     margin-bottom: 20px;
     box-shadow:
-      0 0 0 1px rgba(0,168,255,0.08),
-      0 0 48px rgba(0,168,255,0.16),
+      0 0 0 1px rgba(0,168,255,0.05),
+      0 0 48px rgba(0,168,255,0.10),
       inset 0 1px 0 rgba(255,255,255,0.07);
   }
-  .logo-mark span { font-size: 40px; line-height: 1; }
+  .logo-mark span { line-height: 1; }
 
   h1 {
     font-size: 46px;
     font-weight: 900;
-    letter-spacing: -2.5px;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: -1px;
     line-height: 1;
     margin-bottom: 10px;
   }
@@ -137,7 +138,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
     flex-shrink: 0;
   }
   .role-body { flex: 1; min-width: 0; }
@@ -209,14 +209,14 @@
 
 <div class="page">
   <div class="hero">
-    <div class="logo-mark"><span>📷</span></div>
+    <div class="logo-mark"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
     <h1><span class="pic">Pic</span><span class="me">Me</span></h1>
     <p class="tagline">Stop retaking. Start directing.</p>
   </div>
 
   <div class="role-group">
     <a href="/photographer.html" class="role-card">
-      <div class="role-icon">📷</div>
+      <div class="role-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
       <div class="role-body">
         <div class="role-name">Photographer</div>
         <div class="role-desc">Hold the phone. Receive live directions.</div>
@@ -224,7 +224,7 @@
       <div class="role-chev">›</div>
     </a>
     <a href="/director.html" class="role-card">
-      <div class="role-icon">🎬</div>
+      <div class="role-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
       <div class="role-body">
         <div class="role-name">Director</div>
         <div class="role-desc">See their view. Guide every angle.</div>
@@ -234,8 +234,8 @@
   </div>
 
   <div class="bottom">
-    <p class="wifi-hint">Works best on the same Wi-Fi network</p>
-    <button id="share-app-btn">Share PicMe 🔗</button>
+    <p class="wifi-hint">Both phones need internet access</p>
+    <button id="share-app-btn">Share PicMe</button>
   </div>
 </div>
 
