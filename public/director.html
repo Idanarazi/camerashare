@@ -1247,7 +1247,9 @@ async function startQRScanner() {
   document.getElementById('qr-error').hidden = true;
   const video = document.getElementById('qr-video');
   try {
-    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+    });
     video.srcObject = qrStream;
     await video.play();
   } catch {

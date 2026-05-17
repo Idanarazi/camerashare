@@ -46,7 +46,7 @@ app.get('/api/qr', async (req, res) => {
   if (!url) return res.status(400).end();
   try {
     const buf = await QRCode.toBuffer(url, {
-      width: 280, margin: 1,
+      width: 400, margin: 3,
       color: { dark: '#000000', light: '#ffffff' },
     });
     res.set('Content-Type', 'image/png').set('Cache-Control', 'public,max-age=3600').send(buf);
