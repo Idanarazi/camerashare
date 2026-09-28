@@ -27,7 +27,13 @@ Cinematic · Decisive · Effortless. PicMe is a professional tool in consumer cl
 1. **Camera app, not chat app.** Every design decision should reference professional camera tools (ProCamera, Halide, native iOS Camera) not SaaS dashboards. The live viewfinder IS the product; the UI is a thin layer on top of it.
 2. **Two jobs, one app.** Photographer and Director have completely different needs. The interfaces should feel subtly distinct — same DNA, different roles.
 3. **Zero noise during the shot.** When the camera is live, controls must not compete with the image. Anything not essential should be hidden or whispered.
-4. **Conventions earn trust.** Red shutter button. Green live indicator. Yellow warning. These are camera conventions. Don't subvert them without reason.
+4. **Conventions earn trust.** White ring shutter. Green live indicator. Yellow autofocus brackets for guidance. These are camera conventions. Don't subvert them without reason.
+6. **Never cover the frame.** Countdowns, cues and controls sit at the edges; the middle of the picture always stays visible.
+7. **Seconds to the first live view.** Scanning the QR in person joins instantly. Every extra tap before the camera is live is a reason not to use PicMe.
+
+## Visual identity
+
+Off-black `#0A0A0B`, bone white `#F5F5F2`, one accent: viewfinder yellow `#FFD23F` (autofocus-bracket yellow — reads as precision and stays legible in sunlight). System font stack for a native feel. Tokens live in `public/theme.css`.
 5. **Clarity over cleverness.** The QR code, room code, and knock flow must be obvious to a non-technical user seeing them for the first time.
 
 ## Accessibility & Inclusion

@@ -2,853 +2,332 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#080808">
+<meta name="theme-color" content="#0A0A0B">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<title>PicMe — Photographer</title>
+<link rel="stylesheet" href="/theme.css">
+<title>PicMe — Taking the photo</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  [hidden] { display: none !important; }
-  :focus-visible { outline: 2.5px solid #00A8FF; outline-offset: 2px; }
-
-  body {
-    background: #080808;
-    color: #fff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    height: 100dvh;
-    overflow: hidden;
-    overscroll-behavior: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  /* ── Logo ── */
-  .logo-text   { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-  .logo-camera { color: #fff; }
-  .logo-share  { color: #00A8FF; }
-
-  /* ── Viewfinder ── */
+  /* ── Viewfinder: the whole frame, never cropped ── */
   #viewfinder {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: #000;
     z-index: 1;
   }
 
-  /* ── Setup screen ── */
+  /* ── Setup ── */
   #setup-screen {
     position: fixed;
     inset: 0;
-    background: #080808;
+    z-index: 100;
+    background: var(--bg);
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    z-index: 100;
-    padding: 52px 28px 48px;
-    gap: 16px;
-    text-align: center;
+    padding: calc(var(--safe-t) + 40px) 24px calc(var(--safe-b) + 28px);
+    gap: 14px;
   }
-  #setup-screen::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 700px;
-    height: 700px;
-    background: radial-gradient(ellipse at top, rgba(0,168,255,0.10) 0%, transparent 55%);
-    pointer-events: none;
-  }
-  .setup-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 76px;
-    height: 76px;
-    background: linear-gradient(145deg, rgba(0,168,255,0.20), rgba(0,168,255,0.06));
-    border: 1px solid rgba(0,168,255,0.24);
-    border-radius: 22px;
-    margin-bottom: 4px;
-    box-shadow: 0 0 48px rgba(0,168,255,0.16), inset 0 1px 0 rgba(255,255,255,0.07);
-  }
-  .setup-title {
-    font-size: 38px;
-    font-weight: 900;
-    font-family: 'Barlow Condensed', sans-serif;
-    letter-spacing: -0.5px;
-    line-height: 1;
-    margin-bottom: 2px;
-  }
-  .setup-title .pic { color: #fff; }
-  .setup-title .me  { color: #00A8FF; }
-  .setup-subtitle {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.35);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  #setup-screen p { color: rgba(255,255,255,0.38); font-size: 14px; line-height: 1.6; max-width: 250px; }
-  #start-btn {
-    background: linear-gradient(135deg, #00A8FF 0%, #0080D0 100%);
-    color: #fff;
-    border: none;
+  .setup-icon {
+    width: 64px; height: 64px;
     border-radius: 18px;
-    font-size: 17px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 19px 32px;
-    cursor: pointer;
-    width: 100%;
-    max-width: 300px;
-    touch-action: manipulation;
-    margin-top: 8px;
-    transition: opacity 0.15s, transform 0.1s;
-    box-shadow: 0 6px 32px rgba(0,168,255,0.45), 0 2px 8px rgba(0,168,255,0.2);
-    position: relative;
-    z-index: 1;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 6px;
   }
-  #start-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
-  }
-  #start-btn:active   { opacity: 0.85; transform: scale(0.97); }
-  #start-btn:disabled { background: rgba(0,168,255,0.3); box-shadow: none; }
-  #setup-error { color: #FF453A; font-size: 13px; display: none; max-width: 280px; background: rgba(255,69,58,0.1); border: 1px solid rgba(255,69,58,0.2); border-radius: 12px; padding: 10px 14px; }
+  #setup-screen h1 { font-family: var(--font-display); font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+  #setup-screen p  { font-size: 16px; color: var(--text-2); max-width: 320px; margin-bottom: 10px; }
+  #setup-error { display: none; }
 
-  /* ── Waiting overlay ── */
+  /* ── Waiting for the partner (camera stays visible behind) ── */
   #waiting-overlay {
     position: fixed;
     inset: 0;
     z-index: 15;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(10,10,11,0.82);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 22px;
-    padding: 28px;
+    gap: 16px;
+    padding: calc(var(--safe-t) + 24px) 20px calc(var(--safe-b) + 24px);
   }
-
   .qr-card {
-    background: linear-gradient(160deg, #161616 0%, #111111 100%);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 28px;
-    padding: 26px 24px 22px;
-    text-align: center;
-    width: 100%;
-    max-width: 288px;
-    box-shadow:
-      0 32px 80px rgba(0,0,0,0.85),
-      0 0 0 1px rgba(0,168,255,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: card-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  @keyframes card-rise {
-    from { opacity: 0; transform: translateY(24px) scale(0.94); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .card-logo { margin-bottom: 18px; }
-  .qr-share-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,0.30);
-    margin-bottom: 14px;
-  }
-  #qr-img {
-    width: 210px;
-    height: 210px;
-    border-radius: 4px;
-    display: block;
-    margin: 0 auto;
-    background: #fff;
-  }
-  .qr-code-text {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: rgba(255,255,255,0.85);
-    margin-top: 14px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-variant-numeric: tabular-nums;
-  }
-  .qr-url-text {
-    font-size: 10px;
-    color: rgba(255,255,255,0.22);
-    margin-top: 6px;
-    line-height: 1.4;
-  }
-
-  #waiting-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.60);
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 20px;
-    padding: 9px 16px;
-  }
-
-  /* ── Status dots ── */
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    transition: background 0.4s;
-  }
-  .status-dot.waiting {
-    background: #FFD60A;
-    animation: pulse-yellow 1.8s ease-in-out infinite;
-  }
-  .status-dot.live {
-    background: #32D74B;
-    animation: pulse-green 2.5s ease-in-out infinite;
-  }
-  .status-dot.offline { background: #FF453A; }
-  @keyframes pulse-yellow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,214,10,0.6); }
-    50%       { box-shadow: 0 0 0 5px rgba(255,214,10,0); }
-  }
-  @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(50,215,75,0.5); }
-    50%       { box-shadow: 0 0 0 5px rgba(50,215,75,0); }
-  }
-
-  /* ── Reload button (shown on disconnect) ── */
-  #reload-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1.5px solid rgba(255,255,255,0.15);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.80);
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 14px 28px;
-    min-height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.15s, transform 0.1s;
-  }
-  #reload-btn:active { background: rgba(255,255,255,0.14); transform: scale(0.97); }
-
-  /* ── Knock modal ── */
-  #knock-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 28px;
-  }
-  .knock-card {
-    background: linear-gradient(160deg, #181818 0%, #121212 100%);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 28px;
-    padding: 36px 24px 24px;
-    text-align: center;
     width: 100%;
     max-width: 320px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: card-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: 22px 22px 18px;
+    text-align: center;
+    animation: rise 0.35s var(--ease);
   }
-  .knock-bell-wrap {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 72px;
-    height: 72px;
-    background: rgba(255,214,10,0.12);
-    border: 1px solid rgba(255,214,10,0.22);
-    border-radius: 22px;
-    margin-bottom: 18px;
-    box-shadow: 0 0 32px rgba(255,214,10,0.10);
-  }
-  .knock-bell {
+  .qr-card h2 { font-family: var(--font-display); font-size: 21px; font-weight: 750; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .qr-card .sub { font-size: 14px; color: var(--text-2); margin-bottom: 16px; }
+  #qr-img {
+    width: 220px; height: 220px;
     display: block;
-    animation: bell-ring 0.6s ease-out;
-  }
-  @keyframes bell-ring {
-    0%,100% { transform: rotate(0); }
-    20%     { transform: rotate(-18deg); }
-    40%     { transform: rotate(18deg); }
-    60%     { transform: rotate(-10deg); }
-    80%     { transform: rotate(10deg); }
-  }
-  .knock-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.3px; }
-  .knock-card p  { font-size: 14px; color: rgba(255,255,255,0.40); line-height: 1.6; margin-bottom: 26px; }
-  .knock-actions { display: flex; gap: 10px; }
-  .knock-actions button {
-    flex: 1;
-    border: none;
-    border-radius: 16px;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 17px 10px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: transform 0.1s, opacity 0.1s;
-  }
-  #deny-btn  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.60); border: 1px solid rgba(255,255,255,0.08); }
-  #deny-btn:active  { background: rgba(255,255,255,0.12); }
-  #allow-btn { background: linear-gradient(135deg, #00A8FF, #0080D0); color: #fff; box-shadow: 0 4px 20px rgba(0,168,255,0.45); }
-  #allow-btn:active { opacity: 0.85; transform: scale(0.96); }
-
-  /* ── Live HUD ── */
-  #live-hud-top {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 10;
-    pointer-events: none;
-    padding: max(14px, env(safe-area-inset-top)) 14px 40px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent);
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
-  .code-pill {
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    color: rgba(255,255,255,0.92);
-  }
-  #live-hud-bottom {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 10;
-    pointer-events: none;
-    padding: 40px 14px max(16px, env(safe-area-inset-bottom));
-    background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  #live-status {
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.72);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* ── Countdown overlay ── */
-  #countdown-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    background: rgba(0,0,0,0.80);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-  }
-  #countdown-num {
-    font-size: 180px;
-    font-weight: 900;
-    font-family: 'Barlow Condensed', sans-serif;
-    line-height: 1;
-    color: #fff;
-    letter-spacing: -4px;
-    text-shadow:
-      0 0 60px rgba(0,168,255,0.65),
-      0 0 120px rgba(0,168,255,0.25),
-      0 0 200px rgba(0,168,255,0.10);
-  }
-  #countdown-num.count-anim {
-    animation: count-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-  @keyframes count-in {
-    0%   { opacity: 0; transform: scale(2.4); }
-    40%  { opacity: 1; transform: scale(0.92); }
-    70%  { transform: scale(1.04); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  #countdown-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.45);
-    letter-spacing: 5px;
-    text-transform: uppercase;
-  }
-
-  /* ── Frozen frame ── */
-  #frozen-frame-photo {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 49;
-  }
-
-  /* ── Freeze bar ── */
-  #freeze-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 51;
-    padding: 52px 20px max(22px, env(safe-area-inset-bottom));
-    background: linear-gradient(to top, rgba(0,0,0,0.70) 0%, transparent 100%);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    animation: fade-in 0.35s ease;
-  }
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  .freeze-bar-text {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.88);
-    line-height: 1.4;
-  }
-  #continue-btn {
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 22px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 11px 22px;
-    min-height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    flex-shrink: 0;
-    transition: background 0.15s, transform 0.1s;
-  }
-  #continue-btn:active { background: rgba(255,255,255,0.28); transform: scale(0.96); }
-
-  /* ── Command overlays ── */
-  #indicator-wrap {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-  #indicator {
-    font-size: 130px;
-    opacity: 0;
-    filter: drop-shadow(0 0 30px rgba(255,255,255,0.85));
-    line-height: 1;
-  }
-  #indicator.pop { animation: pop-out 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  @keyframes pop-out {
-    0%   { opacity: 1; transform: scale(1.4); }
-    40%  { opacity: 0.9; transform: scale(1); }
-    100% { opacity: 0; transform: scale(0.85); }
-  }
-
-  #focus-ring {
-    position: fixed;
-    width: 62px;
-    height: 62px;
-    border: 2px solid #00A8FF;
-    border-radius: 8px;
-    z-index: 21;
-    pointer-events: none;
-    opacity: 0;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 16px rgba(0,168,255,0.5);
-  }
-  #focus-ring.pop { animation: focus-pop 1s ease-out forwards; }
-  @keyframes focus-pop {
-    0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.4); }
-    40%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
-  }
-
-  #capture-flash {
-    position: fixed;
-    inset: 0;
+    margin: 0 auto;
+    border-radius: var(--r-md);
     background: #fff;
-    z-index: 70;
-    opacity: 0;
+    padding: 10px;
+  }
+  .code-line { margin-top: 14px; font-size: 13px; color: var(--text-3); }
+  #qr-code-text { display: block; margin-top: 3px; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.01em; user-select: text; -webkit-user-select: text; }
+  #waiting-status { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 600; color: var(--text-2); }
+
+  /* ── Live HUD: as little as possible over the picture ── */
+  .hud-top {
+    position: fixed;
+    top: calc(var(--safe-t) + 12px);
+    left: 12px; right: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     pointer-events: none;
   }
-  #capture-flash.flash { animation: shutter 0.4s ease-out forwards; }
-  @keyframes shutter { 0%{opacity:1} 100%{opacity:0} }
-
-  #zoom-badge {
+  .hud-top .left { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .hud-bottom {
     position: fixed;
-    top: 50%;
-    right: 18px;
-    transform: translateY(-50%);
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.14);
-    color: #fff;
-    padding: 7px 13px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 700;
+    bottom: calc(var(--safe-b) + 16px);
+    left: 16px; right: 16px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .hud-bottom .icon-btn, .hud-top .icon-btn { pointer-events: auto; }
+  .labeled { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .labeled span { font-size: 12px; font-weight: 600; color: var(--text); text-shadow: 0 1px 6px rgba(0,0,0,0.8); }
+
+  /* ── Direction cue: glow + chevrons on the matching edge, picture stays clear ── */
+  #cue {
+    position: fixed;
     z-index: 20;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--accent);
     opacity: 0;
-    transition: opacity 0.3s;
   }
-  #zoom-badge.show { opacity: 1; }
+  #cue.show { animation: cue-in 1.1s var(--ease) forwards; }
+  @keyframes cue-in { 0% { opacity: 0; } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+  #cue svg { width: 44px; height: 44px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.7)); }
+  #cue .cue-label { font-size: 17px; font-weight: 800; color: var(--text); text-shadow: 0 1px 10px rgba(0,0,0,0.9); letter-spacing: 0.01em; }
+  #cue[data-dir="left"]  { top: 0; bottom: 0; left: 0; width: 45%; justify-content: flex-start; padding-left: 14px;
+                           background: linear-gradient(to right, rgba(255,210,63,0.38), transparent); }
+  #cue[data-dir="right"] { top: 0; bottom: 0; right: 0; width: 45%; justify-content: flex-end; padding-right: 14px; flex-direction: row-reverse;
+                           background: linear-gradient(to left, rgba(255,210,63,0.38), transparent); }
+  #cue[data-dir="up"]    { left: 0; right: 0; top: 0; height: 32%; flex-direction: column; justify-content: flex-start; padding-top: calc(var(--safe-t) + 56px);
+                           background: linear-gradient(to bottom, rgba(255,210,63,0.38), transparent); }
+  #cue[data-dir="down"]  { left: 0; right: 0; bottom: 0; height: 32%; flex-direction: column-reverse; justify-content: flex-start; padding-bottom: calc(var(--safe-b) + 96px);
+                           background: linear-gradient(to top, rgba(255,210,63,0.38), transparent); }
+  #cue.show[data-dir="left"]  svg { animation: nudge-x 0.5s ease-in-out 2 alternate; --d: -8px; }
+  #cue.show[data-dir="right"] svg { animation: nudge-x 0.5s ease-in-out 2 alternate; --d: 8px; }
+  #cue.show[data-dir="up"]    svg { animation: nudge-y 0.5s ease-in-out 2 alternate; --d: -8px; }
+  #cue.show[data-dir="down"]  svg { animation: nudge-y 0.5s ease-in-out 2 alternate; --d: 8px; }
+  @keyframes nudge-x { to { transform: translateX(var(--d)); } }
+  @keyframes nudge-y { to { transform: translateY(var(--d)); } }
 
-  /* ── Move-distance overlay ── */
-  #move-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 22;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    background: rgba(0,0,0,0.78);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    pointer-events: none;
-    animation: fade-in 0.18s ease;
-  }
-  #move-overlay.fading-out { animation: move-overlay-out 0.3s ease forwards; }
-  @keyframes move-overlay-out { to { opacity: 0; } }
-
-  #move-arrows { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .arrow-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #00A8FF;
-    animation: arrow-wave 0.55s ease-in-out infinite;
-    will-change: opacity, transform;
-  }
-  .arrow-row span {
-    display: block;
-    line-height: 1;
-    text-shadow: 0 0 14px rgba(0,168,255,1), 0 0 32px rgba(0,168,255,0.55);
-  }
-  @keyframes arrow-wave {
-    0%, 100% { opacity: 0.2; transform: scale(0.82); }
-    50%       { opacity: 1;  transform: scale(1.07); }
-  }
-  #move-overlay[data-dir="closer"] #arrow-r1 { font-size: 14px; animation-delay: 0s;    }
-  #move-overlay[data-dir="closer"] #arrow-r2 { font-size: 26px; animation-delay: 0.12s; }
-  #move-overlay[data-dir="closer"] #arrow-r3 { font-size: 44px; animation-delay: 0.24s; }
-  #move-overlay[data-dir="closer"] #arrow-r4 { font-size: 66px; animation-delay: 0.36s; }
-  #move-overlay[data-dir="back"]   #arrow-r1 { font-size: 66px; animation-delay: 0s;    }
-  #move-overlay[data-dir="back"]   #arrow-r2 { font-size: 44px; animation-delay: 0.12s; }
-  #move-overlay[data-dir="back"]   #arrow-r3 { font-size: 26px; animation-delay: 0.24s; }
-  #move-overlay[data-dir="back"]   #arrow-r4 { font-size: 14px; animation-delay: 0.36s; }
-  #move-overlay-text {
-    font-size: 26px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.3px;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.7);
-  }
-
-  /* ── Connection quality ── */
-  #qual-ind {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 20px;
-    padding: 6px 11px;
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.85);
-    pointer-events: none;
-  }
-  .qi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .qi-dot.excellent { background: #32D74B; animation: pulse-green  2.5s ease-in-out infinite; }
-  .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
-  .qi-dot.poor      { background: #FF453A; }
-  .qi-label         { color: rgba(255,255,255,0.65); margin-left: 1px; }
-
-  /* ── Network banners ── */
-  #net-banner {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 25;
-    background: rgba(50,215,75,0.12);
-    border: 1px solid rgba(50,215,75,0.30);
-    border-radius: 22px;
-    color: #32D74B;
-    font-size: 14px; font-weight: 600;
-    padding: 11px 22px;
-    pointer-events: none;
-    transition: opacity 1s ease;
-    white-space: nowrap;
-  }
-  #net-badge {
-    position: fixed;
-    bottom: max(14px, env(safe-area-inset-bottom));
-    left: 14px;
-    z-index: 10;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.50);
-    font-size: 11px; font-weight: 600;
-    padding: 6px 13px;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-
-  /* ── Mic button ── */
-  #mic-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.60);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1.5px solid rgba(255,255,255,0.18);
-    color: #fff;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    pointer-events: auto;
-    flex-shrink: 0;
-    transition: background 0.2s, border-color 0.2s, transform 0.1s;
-  }
-  #mic-btn.mic-on {
-    background: rgba(0,168,255,0.22);
-    border-color: rgba(0,168,255,0.7);
-    box-shadow: 0 0 0 1px rgba(0,168,255,0.2);
-    animation: mic-pulse 2s ease-in-out infinite;
-  }
-  #mic-btn:active { transform: scale(0.88); }
-  @keyframes mic-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.4), 0 0 0 1px rgba(0,168,255,0.2); }
-    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0), 0 0 0 1px rgba(0,168,255,0.2); }
-  }
-  #remote-mic-ind {
-    background: rgba(0,168,255,0.12);
-    border: 1px solid rgba(0,168,255,0.35);
-    border-radius: 20px;
-    padding: 6px 13px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #00A8FF;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .mic-toast {
-    position: fixed;
-    bottom: 120px;
+  /* ── Depth cue: autofocus-style corner brackets grow (closer) or shrink (step back) ── */
+  #depth-cue { position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: 0; }
+  #depth-cue.show { animation: cue-in 1.2s var(--ease) forwards; }
+  #depth-cue .brackets { position: absolute; inset: 30%; }
+  #depth-cue.show[data-dir="closer"] .brackets { animation: grow 0.6s var(--ease) 2; }
+  #depth-cue.show[data-dir="back"]   .brackets { animation: shrink 0.6s var(--ease) 2; }
+  @keyframes grow   { from { inset: 34%; } to { inset: 10%; } }
+  @keyframes shrink { from { inset: 10%; } to { inset: 34%; } }
+  .br { position: absolute; width: 38px; height: 38px; border-color: var(--accent); border-style: solid; border-width: 0;
+        filter: drop-shadow(0 0 4px rgba(0,0,0,0.7)); }
+  .br.tl { top: 0; left: 0;     border-top-width: 4px; border-left-width: 4px;  border-top-left-radius: 6px; }
+  .br.tr { top: 0; right: 0;    border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 6px; }
+  .br.bl { bottom: 0; left: 0;  border-bottom-width: 4px; border-left-width: 4px;  border-bottom-left-radius: 6px; }
+  .br.brr{ bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 6px; }
+  #depth-label {
+    position: absolute;
+    top: calc(var(--safe-t) + 60px);
     left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: #1C1C1E;
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 22px;
-    color: rgba(255,255,255,0.92);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    z-index: 300;
-    opacity: 0;
-    transition: opacity 0.22s, transform 0.22s;
+    transform: translateX(-50%);
+    font-size: 17px; font-weight: 800;
+    color: var(--text);
+    text-shadow: 0 1px 10px rgba(0,0,0,0.9);
     white-space: nowrap;
-    pointer-events: none;
   }
-  .mic-toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ── Native camera shortcut ── */
-  #native-cam-btn {
-    position: fixed;
-    top: calc(max(14px, env(safe-area-inset-top)) + 38px);
-    left: 14px;
-    z-index: 11;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 14px;
-    color: rgba(255,255,255,0.65);
-    font-size: 11px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 0 16px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* "Hold it!": brackets lock in place */
+  #depth-cue.show[data-dir="hold"] .brackets { inset: 18%; animation: lock 0.35s var(--ease); }
+  @keyframes lock { from { inset: 12%; } to { inset: 18%; } }
+
+  /* Last-shot thumbnail, like a camera app */
+  #last-shot {
+    width: 52px; height: 52px;
+    padding: 0;
+    border-radius: 12px;
+    border: 2px solid var(--text);
+    background: var(--surface-2);
+    overflow: hidden;
     cursor: pointer;
     touch-action: manipulation;
     pointer-events: auto;
-    transition: background 0.15s;
-    line-height: 1;
+    position: relative;
+    transition: transform 0.12s var(--ease);
   }
-  #native-cam-btn:active { background: rgba(255,255,255,0.14); }
+  #last-shot:active { transform: scale(0.92); }
+  #last-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #last-shot .count {
+    position: absolute; right: 3px; bottom: 3px;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 9px;
+    background: var(--accent); color: var(--accent-ink);
+    font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
+  }
 
-  /* ── Join-attempt log ── */
-  #join-log { position: fixed; bottom: max(4px, env(safe-area-inset-bottom)); left: 16px; z-index: 8; pointer-events: none; }
-  .join-log-entry { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.6; animation: fade-in 0.3s ease; }
-  .join-log-entry.outcome-allowed   { color: rgba(50,215,75,0.75); }
-  .join-log-entry.outcome-denied    { color: rgba(255,69,58,0.75); }
-  .join-log-entry.outcome-pending   { color: rgba(255,214,10,0.75); }
-  .join-log-entry.outcome-cancelled { color: rgba(255,255,255,0.28); }
+  /* Tripod mode: hands-off camera, nothing to press */
+  body.tripod .photo-only { display: none !important; }
+  body:not(.tripod) .tripod-only { display: none !important; }
+  body.tripod .hud-bottom { justify-content: center; }
+
+  #level { position: fixed; }
+  #ref-thumb { position: fixed; top: calc(var(--safe-t) + 70px); right: 12px; z-index: 12; }
+  body.tripod #ref-thumb { top: calc(var(--safe-t) + 12px); }
+  #ref-thumb[aria-pressed="true"] { border-color: var(--text); }
+
+  /* Countdown & shooting frame are positioned on the fixed viewport here */
+  .countdown, .shooting-frame { position: fixed; }
 </style>
 </head>
 <body>
 
-<!-- ── Setup screen ── -->
+<!-- ── Setup ── -->
 <div id="setup-screen">
-  <div class="setup-mark"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
-  <div class="setup-title"><span class="pic">Pic</span><span class="me">Me</span></div>
-  <div class="setup-subtitle">Photographer Mode</div>
-  <p>Open your camera to get a room code, then share it with your Director.</p>
-  <button id="start-btn">Open Camera</button>
-  <div id="setup-error"></div>
+  <div class="setup-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></div>
+  <h1 class="photo-only">You're taking<br>the photo</h1>
+  <p class="photo-only">Open your camera. Your partner scans a code and sees exactly what you see — then guides you to the shot.</p>
+  <h1 class="tripod-only">Tripod mode</h1>
+  <p class="tripod-only">Prop this phone up facing the group. Whoever scans the code controls the camera from their own phone — no need to come back to this one.</p>
+  <button id="start-btn" class="btn btn-primary btn-block">Open Camera</button>
+  <div id="setup-error" class="error-box" role="alert"></div>
 </div>
 
 <!-- Camera (always running once started) -->
 <video id="viewfinder" autoplay playsinline muted></video>
 
-<!-- ── Waiting overlay ── -->
+<!-- ── Waiting for the partner ── -->
 <div id="waiting-overlay" hidden>
-  <div class="qr-card">
-    <div class="card-logo">
-      <div class="logo-text"><span class="logo-camera">Pic</span><span class="logo-share">Me</span> <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.28);letter-spacing:0">· Photographer</span></div>
-    </div>
-    <div class="qr-share-label">Share with your Director</div>
-    <img id="qr-img" src="" alt="QR Code" width="210" height="210">
-    <div class="qr-code-text" id="qr-code-text">——</div>
-    <div class="qr-url-text"  id="qr-url-text"></div>
+  <div class="qr-card card">
+    <h2 class="photo-only">Have your partner scan this</h2>
+    <h2 class="tripod-only">Scan to control this camera</h2>
+    <div class="sub">With their phone camera or the PicMe app</div>
+    <img id="qr-img" src="" alt="QR code to join" width="220" height="220">
+    <div class="code-line">or enter code<span id="qr-code-text">——</span></div>
   </div>
-  <div id="waiting-status">
-    <span class="status-dot waiting" id="waiting-dot"></span>
-    <span id="waiting-text">Waiting for Director…</span>
+  <div id="waiting-status" role="status">
+    <span class="dot waiting" id="waiting-dot"></span>
+    <span id="waiting-text">Waiting for your partner…</span>
   </div>
-  <button id="reload-btn" hidden aria-label="Reload page to reconnect">↺ Reload</button>
 </div>
 
-<!-- ── Knock modal ── -->
-<div id="knock-modal" hidden>
-  <div class="knock-card">
-    <div class="knock-bell-wrap"><svg class="knock-bell" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFD60A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-    <h2>Access Request</h2>
-    <p>A Director wants to view your camera feed.</p>
-    <div class="knock-actions">
-      <button id="deny-btn" aria-label="Deny Director access">Deny</button>
-      <button id="allow-btn" aria-label="Allow Director access">Allow</button>
+<!-- ── Someone typed the code: ask first ── -->
+<div id="knock-modal" class="modal-scrim" hidden>
+  <div class="modal-card card" role="alertdialog" aria-labelledby="knock-title">
+    <h2 id="knock-title">Someone wants to see your camera</h2>
+    <p>They typed your code. Only allow it if you know who it is.</p>
+    <div class="modal-actions">
+      <button id="deny-btn" class="btn btn-secondary">Deny</button>
+      <button id="allow-btn" class="btn btn-primary">Allow</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Partner asks to switch roles ── -->
+<div id="swap-modal" class="modal-scrim" hidden>
+  <div class="modal-card card" role="alertdialog" aria-labelledby="swap-title">
+    <h2 id="swap-title">Switch roles?</h2>
+    <p>Your partner wants to take the photo. Your camera turns off and you'll see theirs live.</p>
+    <div class="modal-actions">
+      <button id="swap-no" class="btn btn-secondary">Not now</button>
+      <button id="swap-yes" class="btn btn-primary">Switch</button>
     </div>
   </div>
 </div>
 
 <!-- ── Live HUD ── -->
-<div id="live-hud-top" hidden>
-  <span class="code-pill" id="live-code-pill">——</span>
-  <div id="qual-ind" hidden>
-    <span class="qi-dot"></span>
-    <span class="qi-rtt"></span>
-    <span class="qi-label"></span>
+<div class="hud-top" id="live-hud-top" hidden>
+  <div class="left">
+    <span class="chip" id="live-status"><span class="dot live"></span><span id="live-status-text">Partner is watching</span></span>
+    <span class="chip" id="remote-mic-ind" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/></svg>Partner speaking</span>
+    <span class="chip warn" id="qual-ind" hidden>Weak connection</span>
+  </div>
+  <button id="swap-btn" class="icon-btn photo-only" aria-label="Switch roles with your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+</div>
+<div class="hud-bottom" id="live-hud-bottom" hidden>
+  <div class="labeled photo-only">
+    <button id="mic-btn" class="icon-btn" aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+    <span>Talk</span>
+  </div>
+  <div class="labeled">
+    <button id="last-shot" hidden aria-label="See your last shots"><img id="last-shot-img" alt=""><span class="count" id="last-shot-count">5</span></button>
+  </div>
+  <div class="labeled photo-only">
+    <button id="native-cam-btn" class="icon-btn" aria-label="Take a full-quality photo with your camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+    <span>Full quality</span>
   </div>
 </div>
-<div id="live-hud-bottom" hidden>
-  <div id="live-status">
-    <span class="status-dot live"></span>
-    <span id="live-status-text">Director is watching</span>
+<input type="file" id="native-cam-input" accept="image/*" capture="environment" hidden>
+
+<!-- Reference photo from the partner ("make it like this") -->
+<img id="ref-ghost" class="ref-ghost" hidden alt="">
+<button id="ref-thumb" class="ref-thumb" hidden aria-pressed="false" aria-label="Reference photo — tap to overlay it on your camera"><img id="ref-img" alt=""><span class="ref-tag">MATCH</span></button>
+
+<!-- Horizon level -->
+<div class="level" id="level" aria-hidden="true"><span class="tick l"></span><span class="bar"></span><span class="tick r"></span></div>
+
+<!-- Guidance from the partner — never covers the frame -->
+<div id="cue" aria-live="assertive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline id="cue-chevron" points="15 5 8 12 15 19"/></svg><span class="cue-label" id="cue-label">Left</span></div>
+<div id="depth-cue" aria-live="assertive">
+  <div class="brackets"><span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span></div>
+  <div id="depth-label">Move closer</div>
+</div>
+
+<!-- Countdown -->
+<div class="shooting-frame" id="shooting-frame" hidden></div>
+<div class="countdown" id="countdown-overlay" hidden>
+  <div class="countdown-num" id="countdown-num">3</div>
+  <div class="countdown-label" id="countdown-label">Hold still</div>
+</div>
+<div class="shutter-flash" id="capture-flash"></div>
+
+<!-- Pick & save -->
+<div id="review" class="review" hidden role="dialog" aria-label="Your shots">
+  <img id="review-img" class="review-img" alt="Selected shot">
+  <div class="review-bar">
+    <div class="review-top">
+      <div id="review-hint" class="review-hint">Pick your favorite, then tap Save</div>
+      <button id="save-all-btn" class="link-btn" hidden>Save all</button>
+    </div>
+    <div id="review-thumbs" class="review-thumbs"></div>
+    <div class="review-actions">
+      <button id="continue-btn" class="btn btn-secondary">Back to Live</button>
+      <button id="save-btn" class="btn btn-primary">Save Photo</button>
+    </div>
   </div>
-  <div id="remote-mic-ind" hidden>Director speaking</div>
-  <button id="mic-btn" aria-label="Toggle microphone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></button>
 </div>
 
-<!-- Network type indicators (shown once ICE connects) -->
-<div id="net-banner" hidden>Same network — best quality</div>
-<div id="net-badge"  hidden>Cross-network mode</div>
+<div id="conn-banner" class="chip warn" hidden role="status"><span class="dot waiting"></span>Reconnecting…</div>
 
-<!-- ── Countdown overlay ── -->
-<div id="countdown-overlay" hidden>
-  <div id="countdown-num">3</div>
-  <div id="countdown-label">Get Ready!</div>
-</div>
-
-<!-- ── Frozen frame (shown after countdown, overlays viewfinder) ── -->
-<img id="frozen-frame-photo" hidden alt="">
-
-<!-- ── Native camera shortcut (shown during live session) ── -->
-<button id="native-cam-btn" hidden aria-label="Switch to native camera app">Camera App</button>
-
-<!-- ── Freeze bar (bottom minimal UI) ── -->
-<div id="freeze-bar" hidden>
-  <span class="freeze-bar-text">Frame frozen — take your shot!</span>
-  <button id="continue-btn" aria-label="Continue shooting">Continue</button>
-</div>
-
-<!-- Command overlays -->
-<div id="indicator-wrap"><div id="indicator"></div></div>
-<div id="focus-ring"></div>
-<div id="capture-flash"></div>
-<div id="zoom-badge">1.0×</div>
-
-<!-- Move-distance overlay -->
-<div id="move-overlay" hidden>
-  <div id="move-arrows">
-    <div class="arrow-row" id="arrow-r1"></div>
-    <div class="arrow-row" id="arrow-r2"></div>
-    <div class="arrow-row" id="arrow-r3"></div>
-    <div class="arrow-row" id="arrow-r4"></div>
-  </div>
-  <div id="move-overlay-text">Move Closer!</div>
-</div>
-
-<!-- Join-attempt log (shown during live session) -->
-<div id="join-log" hidden></div>
-
+<script src="/signal.js"></script>
+<script src="/gallery.js"></script>
 <script>
-const WS_URL = `wss://${location.host}`;
-
+// ── ICE servers (fetched from our server; credentials never live in this file) ──
 let iceConfig = null;
 async function getICE() {
   if (iceConfig) return iceConfig;
@@ -856,53 +335,75 @@ async function getICE() {
     const res = await fetch('/api/turn-credentials');
     iceConfig = await res.json();
   } catch {
-    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }];
   }
   return iceConfig;
 }
 
-let ws, pc, localStream;
-let zoomCap = null, currentZoom = 1, zoomTimer = null;
+let pc, localStream;
 let roomCode = '';
 let micEnabled = false, audioSender = null, micStream = null;
+let directorConnected = false;
 
-const setupScreen      = document.getElementById('setup-screen');
-const startBtn         = document.getElementById('start-btn');
-const setupError       = document.getElementById('setup-error');
-const waitingOverlay   = document.getElementById('waiting-overlay');
-const waitingDot       = document.getElementById('waiting-dot');
-const waitingText      = document.getElementById('waiting-text');
-const knockModal       = document.getElementById('knock-modal');
-const allowBtn         = document.getElementById('allow-btn');
-const denyBtn          = document.getElementById('deny-btn');
-const liveHudTop       = document.getElementById('live-hud-top');
-const liveHudBottom    = document.getElementById('live-hud-bottom');
-const liveCodePill     = document.getElementById('live-code-pill');
-const liveStatusText   = document.getElementById('live-status-text');
-const viewfinder       = document.getElementById('viewfinder');
-const indicator        = document.getElementById('indicator');
-const focusRing        = document.getElementById('focus-ring');
-const captureFlash     = document.getElementById('capture-flash');
-const zoomBadge        = document.getElementById('zoom-badge');
-const countdownOverlay = document.getElementById('countdown-overlay');
-const countdownNum     = document.getElementById('countdown-num');
-const countdownLabel   = document.getElementById('countdown-label');
-const frozenFramePhoto = document.getElementById('frozen-frame-photo');
-const freezeBar        = document.getElementById('freeze-bar');
-const continueBtn      = document.getElementById('continue-btn');
+const $ = (id) => document.getElementById(id);
+const setupScreen      = $('setup-screen');
+const startBtn         = $('start-btn');
+const setupError       = $('setup-error');
+const waitingOverlay   = $('waiting-overlay');
+const waitingDot       = $('waiting-dot');
+const waitingText      = $('waiting-text');
+const knockModal       = $('knock-modal');
+const liveHudTop       = $('live-hud-top');
+const liveHudBottom    = $('live-hud-bottom');
+const liveStatusText   = $('live-status-text');
+const liveStatusDot    = document.querySelector('#live-status .dot');
+const viewfinder       = $('viewfinder');
+const captureFlash     = $('capture-flash');
+const countdownOverlay = $('countdown-overlay');
+const countdownNum     = $('countdown-num');
+const countdownLabel   = $('countdown-label');
+const review           = $('review');
+const reviewImg        = $('review-img');
+const reviewThumbs     = $('review-thumbs');
+const reviewHint       = $('review-hint');
 
-// ── State helpers ───────────────────────────────────────────────────
+// ── Session (lets a dropped connection or a reload return to the same room) ──
+const SESSION_KEY = 'picme_photographer';
+function saveSession(code, token) { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ code, token, mode: MODE })); } catch {} }
+function loadSession()  { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch {} }
+
+// "photo" = someone holds this phone and follows cues. "tripod" = propped up, fully remote-controlled.
+let MODE = (loadSession()?.mode || new URLSearchParams(location.search).get('mode')) === 'tripod' ? 'tripod' : 'photo';
+function applyMode(mode) {
+  MODE = mode === 'tripod' ? 'tripod' : 'photo';
+  document.body.classList.toggle('tripod', MODE === 'tripod');
+  document.title = MODE === 'tripod' ? 'PicMe — Tripod' : 'PicMe — Taking the photo';
+}
+applyMode(MODE);
+
+// ── Signaling ───────────────────────────────────────────────────────
+const signal = new PicMeSignal({
+  onOpen() {
+    const s = loadSession();
+    if (s?.code && s?.token) signal.send({ type: 'resume-room', code: s.code, token: s.token });
+    else signal.send({ type: 'create-room', mode: MODE });
+  },
+  onMessage: handleMessage,
+  onStatus(state) {
+    $('conn-banner').hidden = state !== 'reconnecting';
+  },
+});
+const sendMsg = (obj) => signal.send(obj);
+
+// ── Screen states ───────────────────────────────────────────────────
 
 function showWaiting(statusMsg) {
   waitingOverlay.hidden = false;
-  knockModal.hidden     = true;
   liveHudTop.hidden     = true;
   liveHudBottom.hidden  = true;
-  document.getElementById('native-cam-btn').hidden = true;
-  document.getElementById('join-log').hidden = true;
-  document.getElementById('reload-btn').hidden = true;
   if (statusMsg) waitingText.textContent = statusMsg;
-  waitingDot.className = 'status-dot waiting';
+  waitingDot.className = 'dot waiting';
 }
 
 function showKnock() { knockModal.hidden = false; }
@@ -910,561 +411,838 @@ function hideKnock() { knockModal.hidden = true; }
 
 function showLive() {
   waitingOverlay.hidden = true;
-  knockModal.hidden     = true;
   liveHudTop.hidden     = false;
   liveHudBottom.hidden  = false;
-  document.getElementById('native-cam-btn').hidden = false;
-  document.getElementById('join-log').hidden = false;
-  liveCodePill.textContent = roomCode;
 }
 
-// ── Setup ───────────────────────────────────────────────────────────
+function setLiveStatus(text, dot) {
+  if (MODE === 'tripod' && text === 'Partner is watching') text = 'Remote control on';
+  liveStatusText.textContent = text;
+  liveStatusDot.className = `dot ${dot}`;
+}
+
+// The QR carries a one-time key: scanning it in person joins instantly, no Allow needed.
+function renderRoom(code, key) {
+  roomCode = code;
+  const directorUrl = `${location.protocol}//${location.host}/director.html?code=${code}` + (key ? `&k=${key}` : '');
+  $('qr-code-text').textContent = code;
+  $('qr-img').src = `/api/qr?url=${encodeURIComponent(directorUrl)}`;
+}
+
+// ── Camera ──────────────────────────────────────────────────────────
 
 startBtn.addEventListener('click', startApp);
-document.getElementById('reload-btn').addEventListener('click', () => location.reload());
+
+// 4:3 matches the phone's normal photo mode, so the Director frames exactly what a photo shows.
+const CAMERA_ATTEMPTS = [
+  { facingMode: { ideal: 'environment' }, aspectRatio: { exact: 4 / 3 },
+    width: { ideal: 1920 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } },
+  { facingMode: { ideal: 'environment' }, aspectRatio: { ideal: 4 / 3 },
+    width: { ideal: 1920 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } },
+  { facingMode: { ideal: 'environment' } },
+];
+
+async function openCamera() {
+  let lastErr;
+  for (const video of CAMERA_ATTEMPTS) {
+    try { return await navigator.mediaDevices.getUserMedia({ video, audio: false }); }
+    catch (err) {
+      lastErr = err;
+      if (err.name === 'NotAllowedError') break; // permission denied — retrying won't help
+    }
+  }
+  throw lastErr;
+}
+
+async function tuneTrack(track) {
+  track.addEventListener('ended', () => { if (!document.hidden) ensureCamera(); });
+  try {
+    await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }, { whiteBalanceMode: 'continuous' }] });
+  } catch {}
+  try { track.contentHint = 'detail'; } catch {}
+}
 
 async function startApp() {
-  if (localStream) { ws?.close(); setupScreen.hidden = true; connectWS(); return; }
+  if (localStream) { setupScreen.hidden = true; setupError.style.display = 'none'; signal.connect(); return; }
   startBtn.disabled    = true;
   startBtn.textContent = 'Starting…';
   try {
-    // Request highest quality: 1080p60, back camera
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:      { ideal: 1920, min: 1280 },
-        height:     { ideal: 1080, min: 720 },
-        frameRate:  { ideal: 60,   min: 30 },
-      },
-      audio: false,
-    });
-  } catch {
-    // Fall back to any available camera if device rejects constraints
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      });
-    } catch (err) {
-      showSetupError('Camera error: ' + err.message);
-      startBtn.disabled    = false;
-      startBtn.textContent = 'Open Camera';
-      return;
-    }
+    localStream = await openCamera();
+  } catch (err) {
+    showSetupError(err?.name === 'NotAllowedError'
+      ? 'Camera access was blocked. Allow camera access for this site in your browser settings, then try again.'
+      : 'Could not open the camera: ' + (err?.message || 'unknown error'));
+    return;
   }
   viewfinder.srcObject = localStream;
-  const track = localStream.getVideoTracks()[0];
-  const caps  = track.getCapabilities?.();
-  if (caps?.zoom) { zoomCap = caps.zoom; currentZoom = caps.zoom.min ?? 1; }
-  // Best-effort: enable continuous autofocus + auto white balance
-  try {
-    await track.applyConstraints({
-      advanced: [{ focusMode: 'continuous' }, { whiteBalanceMode: 'continuous' }],
-    });
-  } catch {}
-  connectWS();
+  await tuneTrack(localStream.getVideoTracks()[0]);
+  keepAwake();
+  signal.connect();
 }
 
-// ── WebSocket ───────────────────────────────────────────────────────
+// iOS can stop our camera when the phone locks or another app uses it — get it back.
+let ensuring = false;
+async function ensureCamera() {
+  if (!localStream || ensuring) return;
+  const track = localStream.getVideoTracks()[0];
+  if (track && track.readyState === 'live') return;
+  ensuring = true;
+  try {
+    const fresh = await openCamera();
+    const newTrack = fresh.getVideoTracks()[0];
+    const old = localStream;
+    localStream = fresh;
+    viewfinder.srcObject = fresh;
+    await tuneTrack(newTrack);
+    old.getTracks().forEach(t => t.stop());
+    if (videoSender) await videoSender.replaceTrack(newTrack);
+  } catch {}
+  ensuring = false;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) ensureCamera(); });
 
-function connectWS() {
-  ws = new WebSocket(WS_URL);
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'create-room' }));
+// ── Messages from the server ────────────────────────────────────────
 
-  ws.onmessage = async ({ data }) => {
-    const msg = JSON.parse(data);
-    switch (msg.type) {
+async function handleMessage(msg) {
+  switch (msg.type) {
 
-      case 'room-created': {
-        roomCode = msg.code;
-        setupScreen.hidden = true;
-        const directorUrl = `${location.protocol}//${location.host}/director.html?code=${roomCode}`;
-        document.getElementById('qr-code-text').textContent = roomCode;
-        document.getElementById('qr-url-text').textContent  = directorUrl;
-        document.getElementById('qr-img').src = `/api/qr?url=${encodeURIComponent(directorUrl)}`;
-        showWaiting('Waiting for Director…');
-        break;
-      }
+    case 'room-created':
+      applyMode(msg.mode);
+      saveSession(msg.code, msg.token);
+      renderRoom(msg.code, msg.key);
+      setupScreen.hidden = true;
+      directorConnected = false;
+      showWaiting('Waiting for your partner…');
+      break;
 
-      case 'knock':
-        showKnock();
-        break;
+    case 'room-key':
+      renderRoom(roomCode, msg.key);
+      break;
 
-      case 'knock-cancelled':
-        hideKnock();
-        showWaiting('Waiting for Director…');
-        break;
-
-      case 'director-joined':
-        hideKnock();
+    case 'room-resumed':
+      applyMode(msg.mode);
+      renderRoom(msg.code, msg.key);
+      restoreShots(msg.code);
+      setupScreen.hidden = true;
+      if (msg.directorPresent) {
+        directorConnected = true;
         showLive();
-        liveStatusText.textContent = 'Director connected — starting…';
+        setLiveStatus('Partner is watching', 'live');
+        if (!peerHealthy()) await startWebRTC();
+      } else {
+        directorConnected = false;
+        closePeer();
+        showWaiting('Waiting for your partner…');
+      }
+      break;
+
+    case 'resume-failed':
+      // Old room is gone (expired while we were away) — open a fresh one
+      clearSession();
+      closePeer();
+      showToast('Your previous room ended — here’s a new one');
+      sendMsg({ type: 'create-room', mode: MODE });
+      break;
+
+    case 'knock':
+      showKnock();
+      break;
+
+    case 'knock-cancelled':
+      hideKnock();
+      break;
+
+    case 'director-joined':
+      hideKnock();
+      directorConnected = true;
+      showLive();
+      if (msg.resumed && msg.peerAlive && peerHealthy()) {
+        setLiveStatus('Partner is watching', 'live');
+      } else {
+        setLiveStatus('Partner connected…', 'waiting');
         await startWebRTC();
-        break;
+      }
+      break;
 
-      case 'answer':
-        await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
-        liveStatusText.textContent = 'Director is watching';
-        break;
+    case 'director-away':
+      setLiveStatus('Partner reconnecting…', 'waiting');
+      break;
 
-      case 'ice-candidate':
-        if (pc && msg.candidate) await pc.addIceCandidate(msg.candidate).catch(() => {});
-        break;
+    case 'director-gone':
+      directorConnected = false;
+      closePeer();
+      showWaiting('Your partner left — waiting…');
+      break;
 
-      case 'command':
-        handleCommand(msg.command, msg.data);
-        break;
+    case 'answer':
+      if (pc && pc.signalingState === 'have-local-offer') {
+        await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp }).catch(() => {});
+      }
+      break;
 
-      case 'peer-left':
-        pc?.close(); pc = null;
-        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-        micEnabled = false; audioSender = null;
-        document.getElementById('remote-mic-ind').hidden = true;
-        updateMicUI();
-        showWaiting('Director left — waiting for reconnect…');
-        break;
+    case 'ice-candidate':
+      if (pc && msg.candidate) await pc.addIceCandidate(msg.candidate).catch(() => {});
+      break;
 
-      case 'mic-state':
-        document.getElementById('remote-mic-ind').hidden = !msg.enabled;
-        break;
+    case 'command':
+      handleCommand(msg.command, msg.data);
+      break;
 
-      case 'session-expired':
-        pc?.close(); pc = null;
-        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-        micEnabled = false; audioSender = null;
-        setupScreen.hidden = false;
-        setupError.style.display = 'block';
-        setupError.textContent = msg.message;
-        startBtn.disabled    = false;
-        startBtn.textContent = 'Start New Room';
-        break;
+    case 'mic-state':
+      $('remote-mic-ind').hidden = !msg.enabled;
+      break;
 
-      case 'join-attempt':
-        addJoinLog(msg.outcome);
-        break;
+    case 'session-expired':
+      clearSession();
+      signal.stop();
+      closePeer();
+      hideKnock();
+      hideReview();
+      directorConnected = false;
+      waitingOverlay.hidden = true;
+      liveHudTop.hidden = true;
+      liveHudBottom.hidden = true;
+      setupScreen.hidden = false;
+      setupError.style.display = 'block';
+      setupError.textContent = msg.message;
+      startBtn.disabled    = false;
+      startBtn.textContent = 'Start New Room';
+      break;
 
-      case 'error':
-        showSetupError(msg.message);
-        break;
-    }
-  };
+    case 'error':
+      if (!roomCode) showSetupError(msg.message);
+      else showToast(msg.message);
+      break;
 
-  ws.onclose = () => {
-    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-    micEnabled = false;
-    showWaiting('Connection lost.');
-    document.getElementById('reload-btn').hidden = false;
-  };
+    case 'swap-request':
+      $('swap-modal').hidden = false;
+      break;
+
+    case 'swap-declined':
+      showToast('Your partner wants to keep their role');
+      break;
+
+    case 'swap-go':
+      goToRole(msg);
+      break;
+  }
+}
+
+// ── Swap roles ──────────────────────────────────────────────────────
+
+$('swap-btn').addEventListener('click', () => {
+  if (sendMsg({ type: 'swap-request' })) showToast('Asked your partner to switch roles');
+});
+$('swap-yes').addEventListener('click', () => { $('swap-modal').hidden = true; sendMsg({ type: 'swap-response', accept: true }); });
+$('swap-no').addEventListener('click',  () => { $('swap-modal').hidden = true; sendMsg({ type: 'swap-response', accept: false }); });
+
+// Hand over: this phone becomes the Director — same room, no rescanning.
+function goToRole({ role, code, token }) {
+  clearSession();
+  try { sessionStorage.setItem(role === 'director' ? 'picme_director' : 'picme_photographer', JSON.stringify({ code, token, mode: 'photo' })); } catch {}
+  signal.stop();
+  closePeer();
+  localStream?.getTracks().forEach(t => t.stop());
+  location.replace(role === 'director' ? '/director.html' : '/photographer.html');
 }
 
 // ── Knock buttons ───────────────────────────────────────────────────
 
-allowBtn.addEventListener('click', () => {
-  ws.send(JSON.stringify({ type: 'knock-response', allowed: true }));
+$('allow-btn').addEventListener('click', () => {
+  sendMsg({ type: 'knock-response', allowed: true });
   hideKnock();
 });
 
-denyBtn.addEventListener('click', () => {
-  ws.send(JSON.stringify({ type: 'knock-response', allowed: false }));
+$('deny-btn').addEventListener('click', () => {
+  sendMsg({ type: 'knock-response', allowed: false });
   hideKnock();
 });
 
 // ── WebRTC ──────────────────────────────────────────────────────────
 
+let videoSender = null, photoChannel = null;
+let rebuildTimer = null, lastRebuild = 0;
+
+function peerHealthy() {
+  return !!pc && ['connected', 'completed'].includes(pc.iceConnectionState);
+}
+
+function closePeer() {
+  clearTimeout(rebuildTimer);
+  stopQualityMonitor();
+  if (pc) { pc.onicecandidate = pc.oniceconnectionstatechange = pc.ontrack = null; pc.close(); }
+  pc = null; videoSender = null; audioSender = null; photoChannel = null;
+  $('qual-ind').hidden = true;
+  $('remote-mic-ind').hidden = true;
+  if (micEnabled) { stopMic(); sendMsg({ type: 'mic-state', enabled: false }); }
+}
+
+// If the direct video link breaks (e.g. switching Wi-Fi ↔ mobile data), rebuild it.
+function scheduleRebuild(delay) {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => {
+    if (!directorConnected || peerHealthy()) return;
+    if (Date.now() - lastRebuild < 4000) return scheduleRebuild(4000);
+    startWebRTC();
+  }, delay);
+}
+
 async function startWebRTC() {
+  lastRebuild = Date.now();
+  clearTimeout(rebuildTimer);
+  if (pc) { pc.onicecandidate = pc.oniceconnectionstatechange = pc.ontrack = null; pc.close(); }
+  stopQualityMonitor();
+
   const ice = await getICE();
-  pc = new RTCPeerConnection({ iceServers: ice, iceCandidatePoolSize: 10 });
-  for (const track of localStream.getTracks()) pc.addTrack(track, localStream);
+  await ensureCamera();
+  const conn = new RTCPeerConnection({ iceServers: ice, iceCandidatePoolSize: 4 });
+  pc = conn;
+  const videoTrack = localStream.getVideoTracks()[0];
+  videoSender = conn.addTrack(videoTrack, localStream);
 
-  // Pre-negotiate audio channel — no mic permission needed yet; replaceTrack() on tap
-  const audioTx = pc.addTransceiver('audio', { direction: 'sendrecv' });
+  // Two-way audio channel, negotiated up front; the mic track is attached on tap.
+  const audioTx = conn.addTransceiver('audio', { direction: 'sendrecv' });
   audioSender = audioTx.sender;
+  if (micEnabled && micStream) audioSender.replaceTrack(micStream.getAudioTracks()[0]).catch(() => {});
 
-  pc.ontrack = ({ receiver }) => {
+  // Direct phone-to-phone channel for sending the shots to the Director
+  photoChannel = conn.createDataChannel('photos', { ordered: true });
+  photoChannel.binaryType = 'arraybuffer';
+  photoChannel.bufferedAmountLowThreshold = 256 * 1024;
+  photoChannel.onmessage = onChannelMessage;
+
+  conn.ontrack = ({ receiver }) => {
     if (receiver.track.kind !== 'audio') return;
     const remoteAudio = new Audio();
     remoteAudio.srcObject = new MediaStream([receiver.track]);
     remoteAudio.autoplay = true;
     remoteAudio.play().catch(() => {});
-    // If play() ran while the track was still silent, resume when audio arrives
     receiver.track.addEventListener('unmute', () => remoteAudio.play().catch(() => {}));
   };
 
-  // Prefer H.264 — hardware-accelerated on most mobile devices
-  if (RTCRtpSender.getCapabilities) {
-    try {
-      const videoTx = pc.getTransceivers().find(t => t.sender.track?.kind === 'video');
-      if (videoTx) {
-        const caps = RTCRtpSender.getCapabilities('video');
-        const h264 = caps.codecs.filter(c => c.mimeType.toLowerCase() === 'video/h264');
-        const rest  = caps.codecs.filter(c => c.mimeType.toLowerCase() !== 'video/h264');
-        if (h264.length) videoTx.setCodecPreferences([...h264, ...rest]);
-      }
-    } catch {}
-  }
+  // Prefer H.264 — hardware-accelerated on most phones
+  try {
+    const videoTx = conn.getTransceivers().find(t => t.sender === videoSender);
+    const caps = RTCRtpSender.getCapabilities?.('video');
+    if (videoTx && caps) {
+      const h264 = caps.codecs.filter(c => c.mimeType.toLowerCase() === 'video/h264');
+      const rest = caps.codecs.filter(c => c.mimeType.toLowerCase() !== 'video/h264');
+      if (h264.length) videoTx.setCodecPreferences([...h264, ...rest]);
+    }
+  } catch {}
 
-  pc.onicecandidate = ({ candidate }) => {
-    if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
+  conn.onicecandidate = ({ candidate }) => {
+    if (candidate && conn === pc) sendMsg({ type: 'ice-candidate', candidate });
   };
 
-  pc.oniceconnectionstatechange = () => {
-    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+  conn.oniceconnectionstatechange = () => {
+    if (conn !== pc) return;
+    const state = conn.iceConnectionState;
+    if (state === 'connected' || state === 'completed') {
+      clearTimeout(rebuildTimer);
+      if (directorConnected) setLiveStatus('Partner is watching', 'live');
       setInitialBitrate();
-      detectConnectionType();
       startQualityMonitor();
+    } else if (state === 'disconnected') {
+      if (directorConnected) setLiveStatus('Connection unstable…', 'waiting');
+      scheduleRebuild(5000);
+    } else if (state === 'failed') {
+      scheduleRebuild(0);
     }
   };
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp }));
+  const offer = await conn.createOffer();
+  if (conn !== pc) return;
+  await conn.setLocalDescription(offer);
+  sendMsg({ type: 'offer', sdp: offer.sdp });
 }
 
-// ── Command handlers ────────────────────────────────────────────────
+// ── Commands from the Director ──────────────────────────────────────
+
+function buzz(ms) { try { navigator.vibrate?.(ms); } catch {} }
 
 function handleCommand(cmd, data) {
   switch (cmd) {
-    case 'move-left':     showIndicator('←'); break;
-    case 'move-right':    showIndicator('→'); break;
-    case 'move-up':       showIndicator('↑'); break;
-    case 'move-down':     showIndicator('↓'); break;
-    case 'move-closer':   showMoveOverlay('closer'); break;
-    case 'step-back':     showMoveOverlay('back');   break;
-    case 'focus':         applyFocus(data); break;
-    case 'capture':       capturePhoto(); break;
-    case 'torch':         applyTorch(data?.on ?? false); break;
-    case 'start-capture': startPhotographerCountdown(); break;
+    case 'move-left':     buzz(40); showCue('left');  break;
+    case 'move-right':    buzz(40); showCue('right'); break;
+    case 'move-up':       buzz(40); showCue('up');    break;
+    case 'move-down':     buzz(40); showCue('down');  break;
+    case 'move-closer':   buzz(40); showDepthCue('closer'); break;
+    case 'step-back':     buzz(40); showDepthCue('back');   break;
+    case 'hold':          buzz([30, 60, 30]); showDepthCue('hold'); break;
+    case 'torch':         applyTorch(!!data?.on); break;
+    case 'start-capture': buzz(80); startPhotographerCountdown(); break;
   }
 }
 
-// ── Countdown ───────────────────────────────────────────────────────
+// ── Keep the screen awake while PicMe is running (a propped phone would lock) ──
+
+let wakeLock = null;
+async function keepAwake() {
+  try {
+    if ('wakeLock' in navigator && !document.hidden && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && localStream) keepAwake(); });
+
+// Direction: glow + chevron on that edge of the screen. The middle of the frame stays clear.
+const CUE = {
+  left:  { label: 'Left',  points: '15 5 8 12 15 19' },
+  right: { label: 'Right', points: '9 5 16 12 9 19' },
+  up:    { label: 'Up',    points: '5 15 12 8 19 15' },
+  down:  { label: 'Down',  points: '5 9 12 16 19 9' },
+};
+function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+function clearCues() {
+  $('cue').classList.remove('show');
+  $('depth-cue').classList.remove('show');
+}
+
+function showCue(dir) {
+  if (MODE === 'tripod') return;
+  clearCues();
+  const cue = $('cue');
+  cue.dataset.dir = dir;
+  $('cue-chevron').setAttribute('points', CUE[dir].points);
+  $('cue-label').textContent = CUE[dir].label;
+  restartAnim(cue, 'show');
+}
+
+// Distance: autofocus-style brackets grow (move closer) or shrink (step back).
+function showDepthCue(dir) {
+  if (MODE === 'tripod') return;
+  clearCues();
+  const cue = $('depth-cue');
+  cue.dataset.dir = dir;
+  $('depth-label').textContent = dir === 'closer' ? 'Move closer' : dir === 'back' ? 'Step back' : 'Hold it — perfect!';
+  restartAnim(cue, 'show');
+}
+
+// ── Countdown → burst → pick & save ─────────────────────────────────
+
+let countdownTimer = null;
 
 function startPhotographerCountdown() {
-  countdownOverlay.hidden  = false;
-  frozenFramePhoto.hidden  = true;
-  freezeBar.hidden         = true;
-  countdownLabel.textContent = 'Get Ready!';
+  hideReview();
+  clearInterval(countdownTimer);
+  clearCues();
+  countdownOverlay.hidden = false;
+  $('shooting-frame').hidden = false;
+  countdownLabel.textContent = MODE === 'tripod' ? 'Smile!' : 'Hold still';
   let count = 3;
   animateCountNum(count);
 
-  const iv = setInterval(() => {
+  countdownTimer = setInterval(async () => {
     count--;
-    if (count <= 0) {
-      clearInterval(iv);
-      countdownOverlay.hidden = true;
-      capturePhoto();
-      showFreezeMessage();
-    } else {
-      animateCountNum(count);
-    }
+    if (count > 0) { animateCountNum(count); return; }
+    clearInterval(countdownTimer);
+    countdownOverlay.hidden = true;
+    $('shooting-frame').hidden = true;
+    flash();
+    const shots = await captureBurst(5, 140);
+    if (!shots.length) return;
+    const sent = sendShotsToDirector(shots);
+    setLastBurst(shots);
+    PicMeGallery.add(roomCode, shots.map(s => s.blob));
+    // Straight back to live — ready for the next shot. Shots wait behind the thumbnail.
+    if (sent) showToast(MODE === 'tripod' ? `${shots.length} shots sent` : 'Shots sent to your partner');
   }, 1000);
 }
+
+// Last burst lives behind the thumbnail (like a camera app); tap to review & save.
+let lastBurst = [];
+function setLastBurst(shots) {
+  lastBurst.forEach(s => { if (!shots.includes(s)) URL.revokeObjectURL(s.url); });
+  lastBurst = shots;
+  $('last-shot-img').src = shots[0].url;
+  $('last-shot-count').textContent = shots.length;
+  $('last-shot-count').hidden = shots.length < 2;
+  $('last-shot').hidden = false;
+}
+$('last-shot').addEventListener('click', () => {
+  if (lastBurst.length) showReview(lastBurst, lastBurst.length > 1 ? 'Pick your favorite, then tap Save' : 'Tap Save to keep this photo');
+});
 
 function animateCountNum(n) {
   countdownNum.textContent = n;
-  countdownNum.classList.remove('count-anim');
-  void countdownNum.offsetWidth;
-  countdownNum.classList.add('count-anim');
+  restartAnim(countdownNum, 'tick');
 }
 
-function showFreezeMessage() {
+function flash() {
+  restartAnim(captureFlash, 'go');
+}
+
+// Grab several full-resolution frames straight from the camera stream.
+async function captureBurst(count, gapMs) {
+  const w = viewfinder.videoWidth, h = viewfinder.videoHeight;
+  if (!w || !h) return [];
   const canvas = document.createElement('canvas');
-  canvas.width  = viewfinder.videoWidth  || 640;
-  canvas.height = viewfinder.videoHeight || 480;
-  canvas.getContext('2d').drawImage(viewfinder, 0, 0);
-  frozenFramePhoto.src    = canvas.toDataURL('image/jpeg', 0.92);
-  frozenFramePhoto.hidden = false;
-  freezeBar.hidden        = false;
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  const pending = [];
+  for (let i = 0; i < count; i++) {
+    if (i) await new Promise(r => setTimeout(r, gapMs));
+    ctx.drawImage(viewfinder, 0, 0, w, h);
+    pending.push(new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95)));
+  }
+  const blobs = (await Promise.all(pending)).filter(Boolean);
+  return blobs.map(blob => ({ blob, url: URL.createObjectURL(blob) }));
 }
 
-continueBtn.addEventListener('click', () => {
-  frozenFramePhoto.hidden = true;
-  freezeBar.hidden        = true;
-  ws.send(JSON.stringify({ type: 'unfreeze' }));
+let reviewShots = [], selectedShot = 0;
+
+function showReview(shots, hint) {
+  hideReview();
+  if (!shots.length) return;
+  reviewShots = shots;
+  $('save-all-btn').hidden = shots.length < 2;
+  $('save-all-btn').textContent = `Save all ${shots.length}`;
+  selectedShot = 0;
+  reviewHint.textContent = hint;
+  reviewThumbs.innerHTML = '';
+  reviewThumbs.hidden = shots.length < 2;
+  shots.forEach((shot, i) => {
+    const b = document.createElement('button');
+    b.className = 'thumb';
+    b.setAttribute('aria-label', `Shot ${i + 1}`);
+    b.innerHTML = `<img src="${shot.url}" alt="">`;
+    b.addEventListener('click', () => selectShot(i));
+    reviewThumbs.appendChild(b);
+  });
+  selectShot(0);
+  review.hidden = false;
+}
+
+function selectShot(i) {
+  selectedShot = i;
+  reviewImg.src = reviewShots[i].url;
+  [...reviewThumbs.children].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+}
+
+function hideReview() {
+  review.hidden = true;
+  reviewShots = [];
+  reviewImg.removeAttribute('src');
+}
+
+// Saving must happen inside a tap — that's what lets the phone open its save/share sheet.
+$('save-btn').addEventListener('click', async () => {
+  const shot = reviewShots[selectedShot];
+  if (!shot) return;
+  const file = new File([shot.blob], `picme-${Date.now()}.jpg`, { type: shot.blob.type || 'image/jpeg' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); } catch {}
+  } else {
+    const a = Object.assign(document.createElement('a'), { href: shot.url, download: file.name });
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('Photo downloaded');
+  }
 });
+
+$('continue-btn').addEventListener('click', hideReview);
+
+$('save-all-btn').addEventListener('click', async () => {
+  const files = reviewShots.slice(0, 30).map((s, i) =>
+    new File([s.blob], `picme-${Date.now()}-${i + 1}.jpg`, { type: s.blob.type || 'image/jpeg' }));
+  if (navigator.canShare?.({ files })) {
+    try { await navigator.share({ files }); } catch {}
+  } else {
+    for (const f of files) {
+      const url = URL.createObjectURL(f);
+      const a = Object.assign(document.createElement('a'), { href: url, download: f.name });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+    showToast(`${files.length} photos downloaded`);
+  }
+});
+
+// After a reload or a role swap, bring back the shots taken in this room
+async function restoreShots(room) {
+  if (lastBurst.length) return;
+  const saved = await PicMeGallery.list(room);
+  if (!saved.length) return;
+  setLastBurst(saved.slice(-30).reverse().map(r => ({ blob: r.blob, url: URL.createObjectURL(r.blob) })));
+}
+
+// ── Reference photo from the Director ───────────────────────────────
+
+let refIncoming = null, refUrl = null;
+function onChannelMessage({ data }) {
+  if (typeof data === 'string') {
+    let m; try { m = JSON.parse(data); } catch { return; }
+    if (m.type === 'ref') refIncoming = { size: m.size, mime: m.mime || 'image/jpeg', parts: [], received: 0 };
+    else if (m.type === 'ref-clear') clearRef();
+    return;
+  }
+  if (!refIncoming) return;
+  refIncoming.parts.push(data);
+  refIncoming.received += data.byteLength;
+  if (refIncoming.received >= refIncoming.size) {
+    const blob = new Blob(refIncoming.parts, { type: refIncoming.mime });
+    refIncoming = null;
+    showRef(blob);
+  }
+}
+
+function showRef(blob) {
+  if (refUrl) URL.revokeObjectURL(refUrl);
+  refUrl = URL.createObjectURL(blob);
+  $('ref-img').src = refUrl;
+  $('ref-ghost').src = refUrl;
+  $('ref-thumb').hidden = false;
+  buzz(40);
+  showToast('Your partner sent a reference — tap it to overlay');
+}
+
+function clearRef() {
+  $('ref-thumb').hidden = true;
+  $('ref-ghost').hidden = true;
+  $('ref-thumb').setAttribute('aria-pressed', 'false');
+  if (refUrl) { URL.revokeObjectURL(refUrl); refUrl = null; }
+}
+
+$('ref-thumb').addEventListener('click', () => {
+  const on = $('ref-ghost').hidden;
+  $('ref-ghost').hidden = !on;
+  $('ref-thumb').setAttribute('aria-pressed', String(on));
+});
+
+// ── Horizon level (motion sensor) ───────────────────────────────────
+
+let levelOn = false, levelAsking = false, roll = 0, rollInit = false, lastLevelSent = 0;
+const needsMotionPermission = typeof window.DeviceMotionEvent?.requestPermission === 'function';
+
+// iPhone only allows the motion sensor after asking, and only from a tap.
+async function enableLevel() {
+  if (levelOn || levelAsking || !window.DeviceMotionEvent) return;
+  if (needsMotionPermission) {
+    levelAsking = true;
+    try {
+      const answer = await DeviceMotionEvent.requestPermission();
+      levelAsking = false;
+      if (answer !== 'granted') return;
+    } catch {
+      levelAsking = false;
+      document.addEventListener('pointerdown', enableLevel, { once: true });
+      return;
+    }
+  }
+  levelOn = true;
+  window.addEventListener('devicemotion', onMotion);
+}
+startBtn.addEventListener('click', enableLevel);                 // same tap as Open Camera
+if (!needsMotionPermission) enableLevel();
+else document.addEventListener('pointerdown', enableLevel, { once: true });
+
+function onMotion(e) {
+  const g = e.accelerationIncludingGravity;
+  if (!g || g.x == null || g.y == null) return;
+  const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  const landscape = Math.abs(angle) === 90 || angle === 270;
+  const mag = Math.hypot(g.x, g.y, g.z || 0) || 1;
+  const upright = Math.hypot(g.x, g.y) / mag > 0.75;         // not lying flat
+  let r;
+  if (landscape) { const s = Math.sign(g.x) || 1; r = Math.atan2(s * g.y, s * g.x); }
+  else           { const s = Math.sign(g.y) || 1; r = Math.atan2(-s * g.x, s * g.y); }
+  r = r * 180 / Math.PI;
+  roll = rollInit ? roll * 0.8 + r * 0.2 : r;
+  rollInit = true;
+  const show = upright && Math.abs(roll) < 20;
+  const flat = Math.abs(roll) < 1;
+  const el = $('level');
+  el.style.setProperty('--roll', `${-roll}deg`);
+  el.classList.toggle('show', show && !liveHudTop.hidden);
+  el.classList.toggle('flat', flat);
+  const now = Date.now();
+  if (now - lastLevelSent > 200 && photoChannel?.readyState === 'open') {
+    lastLevelSent = now;
+    try { photoChannel.send(JSON.stringify({ type: 'level', roll: Math.round(roll * 10) / 10, show })); } catch {}
+  }
+}
+
+// ── Send shots to the Director (phone to phone, in 16 KB pieces) ────
+
+const CHUNK = 16 * 1024;
+
+function waitForDrain(ch) {
+  return new Promise(resolve => {
+    const done = () => { ch.removeEventListener('bufferedamountlow', done); clearTimeout(t); resolve(); };
+    const t = setTimeout(done, 5000);
+    ch.addEventListener('bufferedamountlow', done);
+  });
+}
+
+function sendShotsToDirector(shots) {
+  const ch = photoChannel;
+  if (!ch || ch.readyState !== 'open') {
+    if (directorConnected) showToast('Couldn’t send the photos to your partner');
+    return false;
+  }
+  (async () => {
+    const id = Date.now();
+    try {
+      ch.send(JSON.stringify({ type: 'burst', id, count: shots.length }));
+      for (let i = 0; i < shots.length; i++) {
+        const buf = await shots[i].blob.arrayBuffer();
+        ch.send(JSON.stringify({ type: 'shot', id, index: i, size: buf.byteLength, mime: shots[i].blob.type || 'image/jpeg' }));
+        for (let off = 0; off < buf.byteLength; off += CHUNK) {
+          if (ch.readyState !== 'open') return;
+          if (ch.bufferedAmount > 1024 * 1024) await waitForDrain(ch);
+          ch.send(buf.slice(off, off + CHUNK));
+        }
+      }
+    } catch {}
+  })();
+  return true;
+}
+
+// ── Native camera (full quality) ────────────────────────────────────
+// Opens the phone's own camera; the photo comes back here so it can be saved.
+
+const nativeInput = $('native-cam-input');
+$('native-cam-btn').addEventListener('click', () => {
+  nativeInput.value = '';
+  nativeInput.click();
+});
+nativeInput.addEventListener('change', () => {
+  const file = nativeInput.files?.[0];
+  ensureCamera();
+  if (!file) return;
+  const shots = [{ blob: file, url: URL.createObjectURL(file) }];
+  const sent = sendShotsToDirector(shots);
+  setLastBurst(shots);
+  PicMeGallery.add(roomCode, [file]);
+  showReview(shots, sent ? 'Sent to your partner — tap Save to keep it here too' : 'Tap Save to keep this photo');
+});
+window.addEventListener('focus', () => ensureCamera());
 
 // ── Indicator / overlay helpers ─────────────────────────────────────
 
-function showIndicator(symbol) {
-  indicator.textContent = symbol;
-  indicator.classList.remove('pop');
-  void indicator.offsetWidth;
-  indicator.classList.add('pop');
-}
 
-let moveOverlayTimer = null;
-function showMoveOverlay(direction) {
-  const overlay = document.getElementById('move-overlay');
-  overlay.classList.remove('fading-out');
-  overlay.dataset.dir = direction;
 
-  // ▶ for Move Closer (rows 4→3→2→1 symbols, small→large)
-  // ◀ for Step Back   (rows 1→2→3→4 symbols, large→small)
-  const sym    = direction === 'closer' ? '▶' : '◀';
-  const counts = direction === 'closer' ? [4, 3, 2, 1] : [1, 2, 3, 4];
-  [1, 2, 3, 4].forEach((n, idx) => {
-    const row = document.getElementById(`arrow-r${n}`);
-    row.innerHTML = '';
-    for (let k = 0; k < counts[idx]; k++) {
-      const s = document.createElement('span');
-      s.textContent = sym;
-      row.appendChild(s);
-    }
-  });
 
-  document.getElementById('move-overlay-text').textContent =
-    direction === 'closer' ? 'Move Closer!' : 'Step Back!';
-  overlay.hidden = false;
-  clearTimeout(moveOverlayTimer);
-  moveOverlayTimer = setTimeout(() => {
-    overlay.classList.add('fading-out');
-    setTimeout(() => { overlay.hidden = true; overlay.classList.remove('fading-out'); }, 300);
-  }, 1000);
-}
-
-async function adjustZoom(delta) {
-  currentZoom = Math.max(1, Math.min(5, currentZoom + delta));
-  zoomBadge.textContent = `${currentZoom.toFixed(1)}×`;
-  zoomBadge.classList.add('show');
-  clearTimeout(zoomTimer);
-  zoomTimer = setTimeout(() => zoomBadge.classList.remove('show'), 2200);
-  showIndicator(delta > 0 ? '＋' : '－');
-  if (!zoomCap) return;
-  const track = localStream.getVideoTracks()[0];
-  const z = Math.max(zoomCap.min, Math.min(zoomCap.max, currentZoom));
-  try { await track.applyConstraints({ advanced: [{ zoom: z }] }); } catch {}
-}
-
-async function applyFocus({ x, y }) {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  focusRing.style.left = `${x * vw}px`;
-  focusRing.style.top  = `${y * vh}px`;
-  focusRing.classList.remove('pop');
-  void focusRing.offsetWidth;
-  focusRing.classList.add('pop');
-  const track = localStream.getVideoTracks()[0];
-  try { await track.applyConstraints({ advanced: [{ focusMode: 'manual', pointOfInterest: { x, y } }] }); } catch {}
-}
 
 async function applyTorch(on) {
-  const track = localStream.getVideoTracks()[0];
+  const track = localStream?.getVideoTracks()[0];
   try { await track.applyConstraints({ advanced: [{ torch: on }] }); } catch {}
 }
 
 // ── Quality & connection monitoring ────────────────────────────────
 
 let qualMonitor = null;
+function stopQualityMonitor() { clearInterval(qualMonitor); qualMonitor = null; }
 
 async function setInitialBitrate() {
-  const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
-  if (!sender) return;
+  if (!videoSender) return;
   try {
-    const params = sender.getParameters();
+    const params = videoSender.getParameters();
     if (!params.encodings?.length) return;
-    params.encodings[0].maxBitrate = 4_000_000; // start at 4 Mbps
-    await sender.setParameters(params);
+    params.encodings[0].maxBitrate = 4_000_000;
+    params.degradationPreference = 'maintain-framerate'; // smooth over sharp while directing
+    await videoSender.setParameters(params);
   } catch {}
 }
 
+async function bestPairStats() {
+  const stats = await pc.getStats();
+  let bestPair = null;
+  stats.forEach(r => {
+    if (r.type === 'candidate-pair' && r.state === 'succeeded')
+      if (!bestPair || r.nominated) bestPair = r;
+  });
+  return { stats, bestPair };
+}
+
 function startQualityMonitor() {
-  if (qualMonitor) clearInterval(qualMonitor);
+  stopQualityMonitor();
   qualMonitor = setInterval(async () => {
-    if (!pc) { clearInterval(qualMonitor); return; }
+    if (!pc) return stopQualityMonitor();
     try {
-      const stats = await pc.getStats();
-      let bestPair = null;
-      stats.forEach(r => {
-        if (r.type === 'candidate-pair' && r.state === 'succeeded')
-          if (!bestPair || r.nominated) bestPair = r;
-      });
-      if (bestPair?.currentRoundTripTime != null)
-        updateQuality(bestPair.currentRoundTripTime * 1000);
+      const { bestPair } = await bestPairStats();
+      if (bestPair?.currentRoundTripTime != null) updateQuality(bestPair.currentRoundTripTime * 1000);
     } catch {}
   }, 3000);
 }
 
 async function updateQuality(rttMs) {
   updateQualityUI(rttMs);
-  const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
-  if (!sender) return;
+  if (!videoSender) return;
   try {
-    const params = sender.getParameters();
+    const params = videoSender.getParameters();
     if (!params.encodings?.length) return;
     const target = rttMs < 100 ? 4_000_000 : rttMs < 250 ? 2_000_000 : 800_000;
     if (params.encodings[0].maxBitrate === target) return;
     params.encodings[0].maxBitrate = target;
-    await sender.setParameters(params);
+    await videoSender.setParameters(params);
   } catch {}
 }
 
+// Only speak up when the connection is actually a problem.
 function updateQualityUI(rttMs) {
-  const el = document.getElementById('qual-ind');
-  if (!el) return;
-  el.hidden = false;
-  el.querySelector('.qi-rtt').textContent = `${Math.round(rttMs)}ms`;
-  const dot = el.querySelector('.qi-dot');
-  const lbl = el.querySelector('.qi-label');
-  if      (rttMs < 100) { dot.className = 'qi-dot excellent'; lbl.textContent = 'Excellent'; }
-  else if (rttMs < 250) { dot.className = 'qi-dot good';      lbl.textContent = 'Good'; }
-  else                  { dot.className = 'qi-dot poor';       lbl.textContent = 'Poor'; }
+  $('qual-ind').hidden = rttMs < 300;
 }
 
-async function detectConnectionType() {
-  if (!pc) return;
-  await new Promise(r => setTimeout(r, 1500)); // wait for stats to settle
-  try {
-    const stats = await pc.getStats();
-    let bestPair = null;
-    stats.forEach(r => {
-      if (r.type === 'candidate-pair' && r.state === 'succeeded')
-        if (!bestPair || r.nominated) bestPair = r;
-    });
-    if (!bestPair) return;
-    let candType = null;
-    stats.forEach(r => {
-      if (r.type === 'local-candidate' && r.id === bestPair.localCandidateId)
-        candType = r.candidateType;
-    });
-    if (candType === 'relay') showNetBadge();
-    else if (candType)        showNetBanner();
-  } catch {}
-}
 
-function showNetBanner() {
-  const el = document.getElementById('net-banner');
-  if (!el) return;
-  el.hidden = false;
-  setTimeout(() => {
-    el.style.opacity = '0';
-    setTimeout(() => { el.hidden = true; el.style.opacity = ''; }, 1000);
-  }, 4000);
-}
-
-function showNetBadge() {
-  const el = document.getElementById('net-badge');
-  if (el) el.hidden = false;
-}
-
-async function capturePhoto() {
-  captureFlash.classList.remove('flash');
-  void captureFlash.offsetWidth;
-  captureFlash.classList.add('flash');
-  showIndicator('✓');
-  const track = localStream.getVideoTracks()[0];
-  let blob;
-  if (typeof ImageCapture !== 'undefined') {
-    try {
-      const ic   = new ImageCapture(track);
-      const caps = await ic.getPhotoCapabilities();
-      const settings = {};
-      if (caps.imageWidth?.max)  settings.imageWidth  = caps.imageWidth.max;
-      if (caps.imageHeight?.max) settings.imageHeight = caps.imageHeight.max;
-      blob = await ic.takePhoto(Object.keys(settings).length ? settings : undefined);
-    } catch {}
-  }
-  if (!blob) {
-    const canvas = Object.assign(document.createElement('canvas'), {
-      width: viewfinder.videoWidth, height: viewfinder.videoHeight,
-    });
-    canvas.getContext('2d').drawImage(viewfinder, 0, 0);
-    blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.97));
-  }
-  const filename = `picme-${Date.now()}.jpg`;
-  const file = new File([blob], filename, { type: 'image/jpeg' });
-  if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: 'PicMe Photo' }).catch(() => {});
-  } else {
-    const url = URL.createObjectURL(blob);
-    Object.assign(document.createElement('a'), { href: url, download: filename }).click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }
-}
-
-// ── Native camera shortcut ────────────────────────────────────────
-
-document.getElementById('native-cam-btn').addEventListener('click', () => {
-  showMicToast('Switching to your camera — come back when done!');
-  setTimeout(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.setAttribute('capture', 'environment');
-    document.body.appendChild(input);
-    input.click();
-    setTimeout(() => input.remove(), 1000);
-  }, 350);
-});
 
 // ── Mic ────────────────────────────────────────────────────────────
 
-document.getElementById('mic-btn').addEventListener('click', toggleMic);
+$('mic-btn').addEventListener('click', toggleMic);
+
+function stopMic() {
+  audioSender?.replaceTrack(null).catch(() => {});
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  micEnabled = false;
+  updateMicUI();
+}
 
 async function toggleMic() {
   if (micEnabled) {
-    audioSender?.replaceTrack(null);
-    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-    micEnabled = false;
-    updateMicUI();
-    ws?.send(JSON.stringify({ type: 'mic-state', enabled: false }));
+    stopMic();
+    sendMsg({ type: 'mic-state', enabled: false });
     return;
   }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
-    await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
+    if (audioSender) await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
     micEnabled = true;
     updateMicUI();
-    ws?.send(JSON.stringify({ type: 'mic-state', enabled: true }));
+    sendMsg({ type: 'mic-state', enabled: true });
     if (pc) {
       try {
-        const stats = await pc.getStats();
-        let bestPair = null;
-        stats.forEach(r => {
-          if (r.type === 'candidate-pair' && r.state === 'succeeded')
-            if (!bestPair || r.nominated) bestPair = r;
-        });
-        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('High latency — audio may lag');
+        const { bestPair } = await bestPairStats();
+        if (bestPair?.currentRoundTripTime > 0.25) showToast('High latency — audio may lag');
       } catch {}
     }
   } catch {
-    showMicToast('Microphone access denied');
+    showToast('Microphone access denied');
   }
 }
 
 function updateMicUI() {
-  const btn = document.getElementById('mic-btn');
-  if (btn) btn.classList.toggle('mic-on', micEnabled);
+  $('mic-btn').setAttribute('aria-pressed', String(micEnabled));
 }
 
-function showMicToast(msg) {
+// ── Small helpers ──────────────────────────────────────────────────
+
+function showToast(msg) {
   const t = document.createElement('div');
-  t.className = 'mic-toast';
+  t.className = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
-  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
-  setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 250); }, 3000);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 250); }, 3000);
 }
 
-function addJoinLog(outcome) {
-  const log = document.getElementById('join-log');
-  if (!log || log.hidden) return;
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const labels = {
-    pending:   'Someone tried to join — pending',
-    allowed:   'Someone joined — allowed',
-    denied:    'Someone tried to join — denied',
-    cancelled: 'Someone tried to join — cancelled',
-  };
-  const el = document.createElement('div');
-  el.className = `join-log-entry outcome-${outcome}`;
-  el.textContent = `${time} · ${labels[outcome] || 'Join attempt'}`;
-  log.appendChild(el);
-  while (log.children.length > 3) log.removeChild(log.firstChild);
-  setTimeout(() => el.remove(), 8000);
-}
 
 function showSetupError(msg) {
+  setupScreen.hidden = false;
   setupError.style.display = 'block';
   setupError.textContent   = msg;
   startBtn.disabled        = false;
@@ -1475,8 +1253,10 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-// Pre-warm: auto-start camera if permission already granted (skips button tap)
+// Start straight away when resuming a room (reload or role swap), or if camera permission
+// was already granted.
 (async () => {
+  if (loadSession()) { startApp(); return; }
   try {
     const perm = await navigator.permissions.query({ name: 'camera' });
     if (perm.state === 'granted') startApp();

@@ -1,5 +1,5 @@
 // Bump this version with every deployment to clear old caches automatically.
-const VERSION = 'picme-v1';
+const VERSION = 'picme-v7';
 
 // Only truly static assets that never change between deployments.
 // HTML is intentionally excluded — it must always be fetched fresh.
@@ -35,12 +35,9 @@ self.addEventListener('fetch', e => {
   if (url.pathname.startsWith('/api/')) return;
   if (e.request.headers.get('upgrade') === 'websocket') return;
 
-  // HTML — always fetch from network, never serve from cache.
-  // e.request.mode === 'navigate' catches all top-level page navigations.
-  if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request));
-    return;
-  }
+  // Pages (HTML) are never touched: the browser loads them itself, so it can still show
+  // its own certificate / offline screens instead of a service-worker error.
+  if (e.request.mode === 'navigate') return;
 
   // Static assets (icons, manifest) — cache-first.
   if (url.pathname.startsWith('/icons/') || url.pathname === '/manifest.json') {

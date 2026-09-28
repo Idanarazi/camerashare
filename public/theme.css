@@ -1,0 +1,411 @@
+/* ─────────────────────────────────────────────────────────────────────
+   PicMe design system
+   Precise camera tool: off-black, bone white, one accent — viewfinder
+   yellow (the colour of autofocus brackets). High contrast so it reads
+   outdoors in sunlight. System font so it feels native and loads offline.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg:          #0A0A0B;
+  --surface:     #141416;
+  --surface-2:   #1D1D20;
+  --surface-3:   #28282C;
+  --line:        rgba(255,255,255,0.10);
+  --line-strong: rgba(255,255,255,0.18);
+
+  --text:        #F5F5F2;
+  --text-2:      rgba(245,245,242,0.74);
+  --text-3:      rgba(245,245,242,0.56);
+
+  --accent:      #FFD23F;   /* viewfinder yellow */
+  --accent-ink:  #191400;   /* text on yellow */
+  --accent-soft: rgba(255,210,63,0.14);
+  --ok:          #30D158;
+  --warn:        #FFD23F;
+  --danger:      #FF453A;
+
+  --scrim:       rgba(0,0,0,0.58);  /* chips over the live picture */
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+html, body { background: var(--bg); }
+body {
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button { font: inherit; color: inherit; }
+
+/* ── Wordmark ── */
+.wordmark { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.wordmark b { font-weight: inherit; color: var(--accent); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s var(--ease), background 0.15s, opacity 0.15s;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn-primary   { background: var(--accent); color: var(--accent-ink); }
+.btn-secondary { background: var(--surface-2); border-color: var(--line); color: var(--text); }
+.btn-ghost     { background: transparent; color: var(--text-2); min-height: 44px; }
+.btn-block     { width: 100%; }
+
+/* Round icon button (over the picture or in bars) */
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--scrim);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  transition: transform 0.12s var(--ease), background 0.15s, color 0.15s, border-color 0.15s;
+}
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn:disabled { opacity: 0.35; }
+.icon-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* ── Chips (status over the picture) ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: var(--scrim);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.chip.warn { color: var(--warn); border-color: rgba(255,210,63,0.4); }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+.dot.live    { background: var(--ok); }
+.dot.waiting { background: var(--warn); animation: blink 1.4s ease-in-out infinite; }
+.dot.off     { background: var(--danger); }
+@keyframes blink { 50% { opacity: 0.35; } }
+
+/* Reconnecting banner (both screens) */
+#conn-banner {
+  position: fixed;
+  top: calc(var(--safe-t) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 150px);
+  transform: translate(-50%, 8px);
+  z-index: 500;
+  max-width: calc(100% - 32px);
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s var(--ease);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── Shutter (camera-standard white ring) ── */
+.shutter {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 4px solid var(--text);
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+.shutter::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.12s var(--ease), background 0.15s;
+}
+.shutter:active::after { transform: scale(0.88); }
+.shutter:disabled { opacity: 0.35; cursor: default; }
+.shutter:disabled::after { transform: none; }
+
+/* ── Countdown: sits above the subject, never dims the picture ── */
+.countdown {
+  position: absolute;
+  top: calc(var(--safe-t) + 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgba(0,0,0,0.65), 0 0 2px rgba(0,0,0,0.6);
+}
+.countdown-num {
+  font-family: var(--font-display);
+  font-size: 84px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.countdown-num.tick { animation: tick 0.5s var(--ease); }
+@keyframes tick { from { transform: scale(1.35); opacity: 0.2; } to { transform: scale(1); opacity: 1; } }
+.countdown-label { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
+
+/* Yellow frame around the picture while the countdown runs */
+.shooting-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.shutter-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.shutter-flash.go { animation: flash 0.28s ease-out; }
+@keyframes flash { 0% { opacity: 0.7; } 100% { opacity: 0; } }
+
+/* ── Review (pick & save) ── */
+.review {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  animation: fade-in 0.2s ease;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.review-img {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  display: block;
+  padding-top: var(--safe-t);
+}
+.review-bar {
+  padding: 14px 16px calc(var(--safe-b) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+.review-hint { font-size: 14px; font-weight: 500; color: var(--text-2); text-align: center; }
+.review-thumbs { display: flex; gap: 8px; justify-content: center; min-height: 56px; }
+.thumb {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  border: 2px solid transparent;
+  background: var(--surface-2);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  transition: border-color 0.12s, transform 0.12s var(--ease);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb[aria-pressed="true"] { border-color: var(--accent); }
+.thumb:active { transform: scale(0.94); }
+.thumb.loading {
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+  cursor: default;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.review-actions { display: flex; gap: 10px; }
+.review-actions .btn { flex: 1; }
+
+/* ── Cards & sheets ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+}
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0,0,0,0.72);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 16px calc(var(--safe-b) + 16px);
+}
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 26px 22px 20px;
+  text-align: center;
+  animation: rise 0.3s var(--ease);
+}
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-card h2 { font-family: var(--font-display); font-size: 22px; font-weight: 750; letter-spacing: -0.02em; margin-bottom: 6px; }
+.modal-card p  { font-size: 15px; color: var(--text-2); margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions .btn { flex: 1; }
+
+.error-box {
+  font-size: 14px;
+  color: #FF8A80;
+  background: rgba(255,69,58,0.10);
+  border: 1px solid rgba(255,69,58,0.28);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* ── Horizon level (shared by the camera phone and the Director) ──
+   iPhone-camera style: hairline, see-through white; turns yellow when level. */
+.level {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 0;
+  margin-left: -75px;
+  z-index: 19;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.level.show { opacity: 1; }
+.level .tick, .level .bar {
+  position: absolute;
+  top: -0.5px;
+  height: 1px;
+  background: rgba(255,255,255,0.55);
+  transition: background 0.15s;
+}
+.level .tick { width: 20px; }
+.level .tick.l { left: 0; }
+.level .tick.r { right: 0; }
+.level .bar { left: 30px; right: 30px; transform: rotate(var(--roll, 0deg)); }
+.level.flat .tick, .level.flat .bar { background: rgba(255,210,63,0.9); }
+
+/* ── Rule-of-thirds grid (Director) ── */
+.grid-overlay { position: absolute; z-index: 18; pointer-events: none; }
+.grid-overlay i { position: absolute; background: rgba(255,255,255,0.38); box-shadow: 0 0 1px rgba(0,0,0,0.5); }
+.grid-overlay i:nth-child(1) { left: 33.333%; top: 0; bottom: 0; width: 1px; }
+.grid-overlay i:nth-child(2) { left: 66.667%; top: 0; bottom: 0; width: 1px; }
+.grid-overlay i:nth-child(3) { top: 33.333%; left: 0; right: 0; height: 1px; }
+.grid-overlay i:nth-child(4) { top: 66.667%; left: 0; right: 0; height: 1px; }
+
+/* ── Reference photo ("make it like this") ── */
+.ref-thumb {
+  width: 58px;
+  height: 76px;
+  padding: 0;
+  border-radius: 10px;
+  border: 2px solid var(--accent);
+  background: var(--surface-2);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.ref-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ref-thumb .ref-tag {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.03em;
+  text-align: center; padding: 2px 0;
+  background: var(--accent); color: var(--accent-ink);
+}
+.ref-ghost {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.38;
+  z-index: 5;
+  pointer-events: none;
+}
+.review-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; }
+.review-top .review-hint { text-align: left; }
+.link-btn {
+  background: none; border: none;
+  color: var(--accent);
+  font-size: 14px; font-weight: 700;
+  padding: 6px 2px;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}

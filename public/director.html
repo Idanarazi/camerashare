@@ -2,839 +2,352 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#080808">
+<meta name="theme-color" content="#0A0A0B">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<title>PicMe — Director</title>
+<link rel="stylesheet" href="/theme.css">
+<title>PicMe — In the photo</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  [hidden] { display: none !important; }
-  :focus-visible { outline: 2.5px solid #00A8FF; outline-offset: 2px; }
-
-  body {
-    background: #080808;
-    color: #fff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    height: 100dvh;
-    overflow: hidden;
-    overscroll-behavior: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  /* ── Logo ── */
-  .logo-text   { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-  .logo-camera { color: #fff; }
-  .logo-share  { color: #00A8FF; }
-
-  /* ── Join screen ── */
+  /* ── Join ── */
   #join-screen {
     height: 100dvh;
-    background: #080808;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    padding: 52px 24px 48px;
     gap: 14px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
+    padding: calc(var(--safe-t) + 40px) 24px calc(var(--safe-b) + 28px);
   }
-  #join-screen::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 700px;
-    height: 700px;
-    background: radial-gradient(ellipse at top, rgba(0,168,255,0.10) 0%, transparent 55%);
-    pointer-events: none;
+  .join-icon {
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 6px;
   }
-
-  .join-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 72px;
-    height: 72px;
-    background: linear-gradient(145deg, rgba(0,168,255,0.18), rgba(0,168,255,0.05));
-    border: 1px solid rgba(0,168,255,0.22);
-    border-radius: 20px;
-    box-shadow: 0 0 40px rgba(0,168,255,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
-    margin-bottom: 2px;
-  }
-  .join-title {
-    font-size: 36px;
-    font-weight: 900;
-    font-family: 'Barlow Condensed', sans-serif;
-    letter-spacing: -0.5px;
-    line-height: 1;
-  }
-  .join-title .pic { color: #fff; }
-  .join-title .me  { color: #00A8FF; }
-  .join-subtitle { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.30); letter-spacing: 2px; text-transform: uppercase; }
-  #join-screen > p { color: rgba(255,255,255,0.38); font-size: 14px; line-height: 1.6; max-width: 260px; }
-
-  /* Join form */
-  #join-form { display: contents; }
+  #join-screen h1 { font-family: var(--font-display); font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+  #join-screen > p { font-size: 16px; color: var(--text-2); max-width: 320px; margin-bottom: 10px; }
+  #join-form { display: flex; flex-direction: column; gap: 10px; }
+  #code-form { display: flex; flex-direction: column; gap: 10px; }
   #code-input {
     width: 100%;
-    max-width: 300px;
-    background: #111111;
-    border: 1.5px solid rgba(255,255,255,0.10);
-    border-radius: 18px;
-    color: #fff;
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 17px 16px;
-    text-align: center;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    margin-top: 4px;
-  }
-  #code-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.14); }
-  #code-input::placeholder { color: rgba(255,255,255,0.18); letter-spacing: 0; font-weight: 400; font-size: 14px; }
-  #join-btn {
-    background: linear-gradient(135deg, #00A8FF, #0080D0);
-    color: #fff;
-    border: none;
-    border-radius: 18px;
+    min-height: 54px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font: inherit;
     font-size: 17px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 19px 32px;
-    cursor: pointer;
-    width: 100%;
-    max-width: 300px;
-    touch-action: manipulation;
-    transition: opacity 0.15s, transform 0.1s;
-    box-shadow: 0 6px 32px rgba(0,168,255,0.45), 0 2px 8px rgba(0,168,255,0.2);
-    position: relative;
-  }
-  #join-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
-  }
-  #join-btn:active   { opacity: 0.85; transform: scale(0.97); }
-  #join-btn:disabled { background: rgba(0,168,255,0.30); box-shadow: none; }
-  #join-error { color: #FF453A; font-size: 13px; display: none; max-width: 300px; background: rgba(255,69,58,0.1); border: 1px solid rgba(255,69,58,0.18); border-radius: 12px; padding: 10px 14px; }
-
-  /* Approval wait sub-state */
-  #approval-wait {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    max-width: 300px;
-    background: #111111;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 24px;
-    padding: 28px 24px;
-    margin-top: 4px;
-  }
-  .approval-spinner { width: 48px; height: 48px; border: 2.5px solid rgba(0,168,255,0.18); border-top-color: #00A8FF; border-radius: 50%; animation: spin-ring 0.85s linear infinite; }
-  @keyframes spin-ring { to { transform: rotate(360deg); } }
-  .approval-title { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
-  .approval-desc  { font-size: 14px; color: rgba(255,255,255,0.38); line-height: 1.6; max-width: 240px; }
-  #cancel-knock-btn {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 14px;
-    color: rgba(255,255,255,0.55);
-    font-size: 15px;
     font-weight: 600;
-    font-family: inherit;
-    padding: 13px 28px;
-    min-height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.15s;
-  }
-  #cancel-knock-btn:active { background: rgba(255,255,255,0.12); }
-
-  /* Denied sub-state */
-  #denied-msg {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    max-width: 300px;
-    background: #111111;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 24px;
-    padding: 28px 24px;
-    margin-top: 4px;
-  }
-  .denied-icon  { display: flex; align-items: center; justify-content: center; }
-  .denied-title { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
-  .denied-desc  { font-size: 14px; color: rgba(255,255,255,0.38); line-height: 1.6; max-width: 240px; }
-  #try-again-btn {
-    background: rgba(255,255,255,0.07);
-    border: 1.5px solid rgba(255,255,255,0.10);
-    border-radius: 14px;
-    color: rgba(255,255,255,0.85);
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 13px 28px;
-    min-height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.15s;
-  }
-  #try-again-btn:active { background: rgba(255,255,255,0.12); }
-
-  /* ── Scan QR button ── */
-  #scan-qr-btn {
-    background: rgba(255,255,255,0.04);
-    border: 1.5px solid rgba(255,255,255,0.10);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.50);
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 15px 32px;
-    min-height: 44px;
-    cursor: pointer;
-    width: 100%;
-    max-width: 300px;
-    touch-action: manipulation;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  #scan-qr-btn:active { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
-
-  /* ── Control screen ── */
-  #control-screen {
-    display: none;
-    position: relative;
-    height: 100dvh;
-    overflow: hidden;
-    background: #040608;
-  }
-
-  /* Video layer */
-  #preview-wrap { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
-  #preview { width: 100%; height: 100%; object-fit: cover; display: block; }
-  #preview-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-  #connecting-msg {
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: rgba(255,255,255,0.60);
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 20px;
-    border-radius: 22px;
-    border: 1px solid rgba(255,255,255,0.10);
-  }
-
-  /* Live badge */
-  #live-badge {
-    display: none;
-    position: absolute;
-    top: max(14px, env(safe-area-inset-top));
-    left: 14px;
-    background: rgba(50,215,75,0.15);
-    border: 1px solid rgba(50,215,75,0.35);
-    color: #32D74B;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  /* Toggle button */
-  #toggle-btn {
-    position: absolute;
-    top: max(14px, env(safe-area-inset-top));
-    right: 14px;
-    z-index: 30;
-    background: rgba(0,0,0,0.60);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.80);
-    font-size: 12px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 8px 15px;
-    min-height: 36px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.2s;
-  }
-  #toggle-btn:active { background: rgba(255,255,255,0.14); }
-
-  /* Controls panel */
-  #controls-panel {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    z-index: 20;
-    background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 55%, transparent 100%);
-    padding: 14px 18px max(14px, env(safe-area-inset-bottom));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    transition: opacity 0.28s, transform 0.28s;
-  }
-  #controls-panel.controls-hidden {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(14px);
-  }
-
-  #tap-hint {
-    font-size: 11px;
-    color: rgba(255,255,255,0.38);
-    margin-bottom: -4px;
-    letter-spacing: 0.3px;
-  }
-
-  /* D-pad — circular buttons */
-  #dpad {
-    display: grid;
-    grid-template-columns: repeat(3, 52px);
-    grid-template-rows: repeat(3, 52px);
-    gap: 6px;
-  }
-  .arrow-btn {
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 50%;
-    color: rgba(255,255,255,0.92);
-    font-size: 20px;
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.1s, border-color 0.1s, transform 0.1s, color 0.1s;
-  }
-  .arrow-btn:active {
-    background: rgba(0,168,255,0.28);
-    border-color: rgba(0,168,255,0.55);
-    color: #00A8FF;
-    transform: scale(0.86);
-  }
-  .ghost { visibility: hidden; pointer-events: none; }
-  .center-label {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Paired button rows */
-  .btn-row {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    max-width: 296px;
-  }
-  .btn-row > button { flex: 1; min-width: 0; }
-
-  /* Distance buttons */
-  .dist-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.82);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.1s, border-color 0.1s, transform 0.1s;
-    letter-spacing: 0.1px;
-  }
-  .dist-btn:active {
-    background: rgba(0,168,255,0.20);
-    border-color: rgba(0,168,255,0.45);
-    transform: scale(0.95);
-  }
-
-  /* Torch */
-  #torch-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1.5px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.68);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    height: 44px;
-    width: 100%;
-    max-width: 296px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-  }
-  #torch-btn.torch-on {
-    background: rgba(255,214,10,0.10);
-    border-color: rgba(255,214,10,0.38);
-    color: #FFD60A;
-    box-shadow: 0 0 16px rgba(255,214,10,0.12);
-  }
-  #torch-btn:active { opacity: 0.72; }
-  #torch-btn:disabled { color: rgba(255,255,255,0.20); background: rgba(255,255,255,0.04); border-color: transparent; }
-
-  /* Mic button */
-  #mic-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1.5px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    color: rgba(255,255,255,0.68);
-    font-size: 13px;
-    font-weight: 600;
-    font-family: inherit;
-    height: 44px;
-    width: 100%;
-    max-width: 296px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-  }
-  #mic-btn.mic-on {
-    background: rgba(0,168,255,0.12);
-    border-color: rgba(0,168,255,0.40);
-    color: #00A8FF;
-    animation: mic-pulse 2s ease-in-out infinite;
-  }
-  @keyframes mic-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,255,0.35); }
-    50%       { box-shadow: 0 0 0 8px rgba(0,168,255,0); }
-  }
-  #mic-btn:active { opacity: 0.72; }
-  #mic-btn:disabled { color: rgba(255,255,255,0.20); background: rgba(255,255,255,0.04); border-color: transparent; animation: none; }
-
-  /* Capture */
-  #capture-btn {
-    background: linear-gradient(135deg, #FF375F 0%, #D91A40 100%);
-    border: none;
-    border-radius: 18px;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: inherit;
-    height: 56px;
-    width: 100%;
-    max-width: 296px;
-    cursor: pointer;
-    touch-action: manipulation;
-    letter-spacing: 0.4px;
-    box-shadow: 0 6px 28px rgba(255,55,95,0.55), 0 2px 8px rgba(255,55,95,0.25);
-    transition: opacity 0.1s, transform 0.1s, box-shadow 0.1s;
-    position: relative;
-  }
-  #capture-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
-  }
-  #capture-btn:active { opacity: 0.85; transform: scale(0.96); box-shadow: 0 2px 12px rgba(255,55,95,0.4); }
-  #capture-btn:disabled { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.30); box-shadow: none; }
-  #capture-btn:disabled::before { display: none; }
-
-  #status-footer {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.38);
     text-align: center;
-    letter-spacing: 0.2px;
+    padding: 0 14px;
+    outline: none;
+    user-select: text; -webkit-user-select: text;
   }
+  #code-input:focus { border-color: var(--accent); }
+  #code-input::placeholder { color: var(--text-3); font-weight: 500; }
+  .state-card { padding: 24px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .state-card .title { font-size: 19px; font-weight: 750; letter-spacing: -0.02em; }
+  .state-card .desc  { font-size: 15px; color: var(--text-2); max-width: 280px; }
+  .spinner { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--surface-3); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #join-error { display: none; }
 
-  /* ── Countdown overlay ── */
-  #dir-countdown {
+  /* ── QR scanner ── */
+  #qr-scanner { position: fixed; inset: 0; z-index: 300; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #qr-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #qr-ui { position: relative; z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px; width: 100%; }
+  #qr-frame {
+    width: 240px; height: 240px;
+    border-radius: 28px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.62);
+    position: relative;
+  }
+  #qr-frame .br { position: absolute; width: 44px; height: 44px; border: 0 solid var(--accent); }
+  #qr-frame .tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 28px; }
+  #qr-frame .tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 28px; }
+  #qr-frame .bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 28px; }
+  #qr-frame .brr{ bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 28px; }
+  #qr-hint { font-size: 16px; font-weight: 600; color: var(--text); text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,0.8); }
+  #qr-error { font-size: 14px; }
+
+  /* ── Live control screen ── */
+  #control-screen { display: none; position: relative; height: 100dvh; overflow: hidden; background: #000; }
+
+  /* The picture gets everything above the shutter bar */
+  #stage {
     position: absolute;
-    inset: 0;
-    z-index: 40;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    top: 0; left: 0; right: 0;
+    bottom: var(--bar-h, 140px);
+    touch-action: none;
   }
-  #dir-countdown-num {
-    font-size: 220px;
-    font-weight: 900;
-    font-family: 'Barlow Condensed', sans-serif;
-    line-height: 1;
-    color: #fff;
-    letter-spacing: -4px;
-    text-shadow:
-      0 0 80px rgba(0,168,255,0.60),
-      0 0 160px rgba(0,168,255,0.25),
-      0 0 240px rgba(0,168,255,0.10);
-  }
-  #dir-countdown-num.count-anim {
-    animation: count-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-  @keyframes count-in {
-    0%   { opacity: 0; transform: scale(2.4); }
-    40%  { opacity: 1; transform: scale(0.92); }
-    70%  { transform: scale(1.04); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-
-  /* ── Freeze screen ── */
-  #director-freeze { position: absolute; inset: 0; z-index: 50; }
-  #frozen-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 51; }
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  #freeze-badge {
-    position: absolute;
-    top: max(14px, env(safe-area-inset-top));
-    left: 14px;
-    z-index: 52;
-    background: rgba(0,0,0,0.58);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.85);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 13px;
-    pointer-events: none;
-    animation: fade-in 0.4s ease;
-  }
-  #done-btn {
-    position: absolute;
-    bottom: max(22px, env(safe-area-inset-bottom));
-    right: 16px;
-    z-index: 52;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 22px;
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    padding: 11px 24px;
-    min-height: 44px;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: background 0.15s, transform 0.1s;
-    animation: fade-in 0.4s ease;
-  }
-  #done-btn:active { background: rgba(255,255,255,0.26); transform: scale(0.96); }
-
-  /* ── Focus tap dot ── */
-  @keyframes tap-fade {
-    0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.35); }
-    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.8); }
-  }
-
-  /* ── Quality indicator ── */
-  @keyframes pulse-green  {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(50,215,75,0.5); }
-    50%       { box-shadow: 0 0 0 5px rgba(50,215,75,0); }
-  }
-  @keyframes pulse-yellow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,214,10,0.55); }
-    50%       { box-shadow: 0 0 0 5px rgba(255,214,10,0); }
-  }
-  #qual-ind {
-    position: absolute;
-    top: calc(max(14px, env(safe-area-inset-top)) + 34px);
-    left: 14px;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(0,0,0,0.58);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 20px;
-    padding: 6px 11px;
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.85);
-    pointer-events: none;
-  }
-  .qi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .qi-dot.excellent { background: #32D74B; animation: pulse-green  2.5s ease-in-out infinite; }
-  .qi-dot.good      { background: #FFD60A; animation: pulse-yellow 1.8s ease-in-out infinite; }
-  .qi-dot.poor      { background: #FF453A; }
-  .qi-label         { color: rgba(255,255,255,0.65); margin-left: 1px; }
-
-  /* ── Network banners ── */
-  #net-banner {
+  #preview { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  #connecting-msg {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 25;
-    background: rgba(50,215,75,0.10);
-    border: 1px solid rgba(50,215,75,0.30);
-    border-radius: 22px;
-    color: #32D74B;
-    font-size: 14px; font-weight: 600;
-    padding: 11px 22px;
-    pointer-events: none;
-    transition: opacity 1s ease;
-    white-space: nowrap;
-  }
-  #net-badge {
-    position: absolute;
-    bottom: max(14px, env(safe-area-inset-bottom));
-    left: 14px;
-    z-index: 5;
-    background: rgba(0,0,0,0.58);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.48);
-    font-size: 11px; font-weight: 600;
-    padding: 6px 13px;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  #remote-mic-ind {
-    position: absolute;
-    top: calc(max(14px, env(safe-area-inset-top)) + 72px);
-    left: 14px;
-    z-index: 5;
-    background: rgba(0,168,255,0.12);
-    border: 1px solid rgba(0,168,255,0.35);
-    border-radius: 20px;
-    padding: 6px 13px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #00A8FF;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .mic-toast {
-    position: fixed;
-    bottom: 200px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: #1C1C1E;
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 22px;
-    color: rgba(255,255,255,0.92);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    z-index: 300;
-    opacity: 0;
-    transition: opacity 0.22s, transform 0.22s;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  .mic-toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* ── QR Scanner overlay ── */
-  #qr-scanner {
-    position: fixed;
-    inset: 0;
-    z-index: 300;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  #qr-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  #qr-ui {
-    position: relative;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
-    padding: max(52px, env(safe-area-inset-top)) 24px max(36px, env(safe-area-inset-bottom));
-    width: 100%;
-  }
-  #qr-frame {
-    width: 224px;
-    height: 224px;
-    border: 2.5px solid #00A8FF;
-    border-radius: 24px;
-    box-shadow: 0 0 0 2000px rgba(0,0,0,0.70), 0 0 32px rgba(0,168,255,0.25);
-    flex-shrink: 0;
-  }
-  #qr-hint { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.72); text-align: center; }
-  #qr-error {
-    font-size: 14px;
-    font-weight: 600;
-    color: #FF453A;
-    background: rgba(255,69,58,0.10);
-    border: 1px solid rgba(255,69,58,0.25);
-    border-radius: 14px;
-    padding: 10px 18px;
-    text-align: center;
-  }
-  #qr-cancel-btn {
-    background: rgba(255,255,255,0.09);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.78);
     font-size: 15px;
     font-weight: 600;
-    font-family: inherit;
-    padding: 15px 44px;
-    min-height: 44px;
+    color: var(--text-2);
+    text-align: center;
+    max-width: 80%;
+    pointer-events: none;
+  }
+
+  .hud {
+    position: absolute;
+    top: calc(var(--safe-t) + 12px);
+    left: 12px; right: 12px;
+    z-index: 30;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+  }
+  .hud .left  { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .hud .right { display: flex; gap: 10px; pointer-events: auto; }
+
+  /* Edge arrows: tap to guide (or swipe anywhere on the picture) */
+  .edge {
+    position: absolute;
+    z-index: 25;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--scrim);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s, transform 0.12s var(--ease);
   }
-  #qr-cancel-btn:active { background: rgba(255,255,255,0.16); }
+  .edge svg { width: 24px; height: 24px; }
+  .edge:active { transform: scale(0.9); }
+  .edge.sent, .bar-btn.sent .icon-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  #edge-left  { left: 10px;  top: 50%; margin-top: -24px; }
+  #edge-right { right: 10px; top: 50%; margin-top: -24px; }
+  #edge-up    { top: calc(var(--safe-t) + 60px); left: 50%; margin-left: -24px; }
+  #edge-down  { bottom: 12px; left: 50%; margin-left: -24px; }
+  .edge { }
+
+  #gesture-hint {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 26;
+    height: 34px;
+    font-size: 14px;
+    transition: opacity 0.4s;
+  }
+
+  /* Shutter bar (+ shot strip above it) */
+  #controls-panel {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    padding: 12px 0 calc(var(--safe-b) + 18px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #bar-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 28px 0; }
+  #strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 16px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #strip::-webkit-scrollbar { display: none; }
+  #strip .thumb { width: 46px; height: 46px; border-radius: 9px; }
+  #strip .thumb.new { animation: pop-in 0.3s var(--ease); }
+  @keyframes pop-in { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* "Hold it!" */
+  #hold-btn {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 25;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 22px;
+    background: var(--scrim);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    display: inline-flex; align-items: center; gap: 7px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.12s var(--ease), background 0.15s, color 0.15s;
+  }
+  #hold-btn:active { transform: scale(0.94); }
+  #hold-btn.sent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  #ref-thumb { position: absolute; right: 12px; bottom: 12px; z-index: 25; }
+  .hud .right { gap: 8px; }
+
+  /* Partner phone is a tripod: no one to guide, so no guidance controls */
+  body.tripod-partner .photo-only { display: none !important; }
+  body:not(.tripod-partner) .tripod-only { display: none !important; }
+  .bar-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 72px; }
+  .bar-btn span { font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .bar-btn .icon-btn { background: var(--surface-2); width: 52px; height: 52px; }
+  .bar-btn .icon-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* Review sits over the whole screen */
+  #director-freeze { position: absolute; }
 </style>
 </head>
 <body>
 
-<!-- ── Join screen ── -->
+<!-- ── Join ── -->
 <div id="join-screen">
-  <div class="join-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
-  <h1 class="join-title"><span class="pic">Pic</span><span class="me">Me</span></h1>
-  <div class="join-subtitle">Director</div>
+  <div class="join-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="10" r="3"/><path d="M7 18c1-2.5 3-3.5 5-3.5s4 1 5 3.5"/></svg></div>
+  <h1>You're in<br>the photo</h1>
+  <p>Scan the code on your partner's phone. You'll see their camera live and guide them to the shot.</p>
 
-  <div id="join-form" style="display:contents">
-    <p>Enter the room code shown on the Photographer's phone, or scan their QR code.</p>
-    <input
-      type="text" id="code-input" placeholder="tiger-lake-7392-blue"
-      maxlength="25" autocomplete="off" autocorrect="off"
-      autocapitalize="none" spellcheck="false" inputmode="text"
-    >
-    <button id="join-btn">Join Room</button>
-    <button id="scan-qr-btn" type="button" aria-label="Scan photographer's QR code">Scan QR Code</button>
-    <div id="join-error"></div>
+  <div id="join-form">
+    <button id="scan-qr-btn" class="btn btn-primary btn-block">Scan Code</button>
+    <button id="show-code-btn" class="btn btn-ghost btn-block" aria-expanded="false">Enter code instead</button>
+    <div id="code-form" hidden>
+      <input type="text" id="code-input" placeholder="e.g. tiger-lake-7392-blue" maxlength="25"
+             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" aria-label="Room code">
+      <button id="join-btn" class="btn btn-secondary btn-block">Join</button>
+    </div>
   </div>
 
-  <div id="approval-wait" style="display:none">
-    <div class="approval-spinner"></div>
-    <div class="approval-title">Waiting for approval…</div>
-    <div class="approval-desc">The Photographer must allow your request before you can view the feed.</div>
-    <button id="cancel-knock-btn" aria-label="Cancel join request">Cancel</button>
+  <div id="approval-wait" class="state-card card" style="display:none">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="title">Waiting for your partner</div>
+    <div class="desc">They need to tap Allow on their phone.</div>
+    <button id="cancel-knock-btn" class="btn btn-secondary">Cancel</button>
   </div>
 
-  <div id="denied-msg" style="display:none">
-    <div class="denied-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FF453A" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
-    <div class="denied-title">Request declined</div>
-    <div class="denied-desc" id="denied-desc-text">The Photographer declined your request.</div>
-    <button id="try-again-btn" aria-label="Try joining again">Try Again</button>
+  <div id="denied-msg" class="state-card card" style="display:none">
+    <div class="title">Request declined</div>
+    <div class="desc" id="denied-desc-text">Your partner declined the request.</div>
+    <button id="try-again-btn" class="btn btn-secondary">Try Again</button>
   </div>
+
+  <div id="join-error" class="error-box" role="alert"></div>
 </div>
 
-<!-- ── QR Scanner overlay ── -->
+<!-- ── QR scanner ── -->
 <div id="qr-scanner" hidden>
   <video id="qr-video" autoplay playsinline muted></video>
   <div id="qr-ui">
-    <div id="qr-frame"></div>
-    <p id="qr-hint">Point camera at the Photographer's QR code</p>
-    <p id="qr-error" hidden>Invalid QR code — try again</p>
-    <button id="qr-cancel-btn" aria-label="Cancel QR scanner">Cancel</button>
+    <div id="qr-frame"><span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span></div>
+    <p id="qr-hint">Point at the code on your partner's phone</p>
+    <p id="qr-error" class="error-box" hidden>That's not a PicMe code — try again</p>
+    <button id="qr-cancel-btn" class="btn btn-secondary">Cancel</button>
   </div>
 </div>
 
-<!-- ── Control screen ── -->
+<!-- ── Live ── -->
 <div id="control-screen">
-
-  <div id="preview-wrap">
+  <div id="stage">
     <video id="preview" autoplay playsinline></video>
-    <div id="preview-overlay">
-      <div id="connecting-msg">Waiting for camera stream…</div>
+    <div id="connecting-msg">Waiting for the camera…</div>
+
+    <button class="edge photo-only" id="edge-up"    data-cmd="move-up"    aria-label="Guide up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 15 12 8 19 15"/></svg></button>
+    <button class="edge photo-only" id="edge-left"  data-cmd="move-left"  aria-label="Guide left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"/></svg></button>
+    <button class="edge photo-only" id="edge-right" data-cmd="move-right" aria-label="Guide right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg></button>
+    <button class="edge photo-only" id="edge-down"  data-cmd="move-down"  aria-label="Guide down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 12 16 19 9"/></svg></button>
+
+    <span class="chip" id="gesture-hint" hidden>Swipe to guide · Pinch for closer / back · Double-tap to hold</span>
+    <button id="hold-btn" class="photo-only" aria-label="Tell your partner to hold still"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>Hold it</button>
+
+    <div class="grid-overlay" id="grid" hidden aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="level" id="level" aria-hidden="true"><span class="tick l"></span><span class="bar"></span><span class="tick r"></span></div>
+    <button id="ref-thumb" class="ref-thumb" hidden aria-label="Remove the reference photo"><img id="ref-img" alt=""><span class="ref-tag">REF ✕</span></button>
+    <input type="file" id="ref-input" accept="image/*" hidden>
+
+    <div class="shooting-frame" id="shooting-frame" hidden></div>
+    <div class="countdown" id="dir-countdown" hidden>
+      <div class="countdown-num" id="dir-countdown-num">3</div>
+      <div class="countdown-label">Get ready</div>
     </div>
-    <div id="live-badge">● LIVE</div>
   </div>
 
-  <!-- Countdown overlay (over video, behind controls) -->
-  <div id="dir-countdown" hidden>
-    <div id="dir-countdown-num">3</div>
+  <div class="hud">
+    <div class="left">
+      <span class="chip" id="live-badge" style="display:none"><span class="dot live"></span>Live</span>
+      <span class="chip" id="remote-mic-ind" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/></svg>Partner speaking</span>
+      <span class="chip warn" id="qual-ind" hidden>Weak connection</span>
+    </div>
+    <div class="right">
+      <button id="grid-btn" class="icon-btn" aria-pressed="false" aria-label="Grid and level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
+      <button id="ref-btn" class="icon-btn" disabled aria-label="Send a reference photo — make it like this"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></button>
+      <button id="swap-btn" class="icon-btn photo-only" disabled aria-label="Switch roles — you take the photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+      <button id="torch-btn" class="icon-btn" disabled aria-pressed="false" aria-label="Partner's flashlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></button>
+      <button id="mic-btn" class="icon-btn photo-only" disabled aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+    </div>
   </div>
-
-  <!-- Freeze screen (frozen frame + minimal corner UI) -->
-  <div id="director-freeze" hidden>
-    <img id="frozen-frame" alt="">
-    <div id="freeze-badge" aria-live="polite">Frozen</div>
-    <button id="done-btn" aria-label="Dismiss frozen frame">Done</button>
-  </div>
-
-  <!-- Connection quality & network indicators -->
-  <div id="qual-ind" hidden>
-    <span class="qi-dot"></span>
-    <span class="qi-rtt"></span>
-    <span class="qi-label"></span>
-  </div>
-  <div id="net-banner" hidden>Same network — best quality</div>
-  <div id="net-badge"  hidden>Cross-network mode</div>
-  <div id="remote-mic-ind" hidden>Photographer speaking</div>
-
-  <button id="toggle-btn" aria-label="Toggle controls visibility">Hide Controls</button>
 
   <div id="controls-panel">
-    <div id="tap-hint">Tap video above to focus</div>
-
-    <div id="dpad">
-      <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-up"    aria-label="Tilt camera up">↑</button>
-      <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-left"  aria-label="Pan camera left">←</button>
-      <div class="center-label" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-      <button class="arrow-btn" data-cmd="move-right" aria-label="Pan camera right">→</button>
-      <div class="ghost"></div>
-      <button class="arrow-btn" data-cmd="move-down"  aria-label="Tilt camera down">↓</button>
-      <div class="ghost"></div>
+    <div id="strip" hidden aria-label="Your shots"></div>
+    <div id="bar-row">
+    <div class="bar-btn photo-only" id="step-back-wrap">
+      <button class="icon-btn" id="step-back-btn" aria-label="Tell your partner to step back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+      <span>Step back</span>
     </div>
-
-    <div class="btn-row">
-      <button class="dist-btn" id="move-closer-btn" aria-label="Tell photographer to move closer">Move Closer ›</button>
-      <button class="dist-btn" id="step-back-btn"   aria-label="Tell photographer to step back">‹ Step Back</button>
+    <button id="capture-btn" class="shutter" disabled aria-label="Take the shot (3 second countdown)"></button>
+    <div class="bar-btn photo-only" id="move-closer-wrap">
+      <button class="icon-btn" id="move-closer-btn" aria-label="Tell your partner to move closer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+      <span>Closer</span>
     </div>
-
-    <div class="btn-row">
-      <button id="torch-btn" disabled aria-label="Toggle photographer flashlight">Flashlight: Off</button>
-      <button id="mic-btn"   disabled aria-label="Toggle your microphone">Mic: Off</button>
+    <div class="bar-btn tripod-only" style="order:-1">
+      <button class="icon-btn" id="sound-btn" aria-pressed="true" aria-label="Countdown beeps on this phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path id="sound-waves" d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
+      <span id="sound-label">Beeps on</span>
     </div>
+    <div class="bar-btn tripod-only" style="order:3" aria-hidden="true"></div>
+    </div>
+  </div>
 
-    <button id="capture-btn" disabled aria-label="Start capture countdown">Capture</button>
+  <!-- Partner asks to switch roles -->
+  <div id="swap-modal" class="modal-scrim" hidden>
+    <div class="modal-card card" role="alertdialog" aria-labelledby="swap-title">
+      <h2 id="swap-title">Switch roles?</h2>
+      <p>Your partner wants to be in the photo. Your camera turns on and you'll take the shot.</p>
+      <div class="modal-actions">
+        <button id="swap-no" class="btn btn-secondary">Not now</button>
+        <button id="swap-yes" class="btn btn-primary">Switch</button>
+      </div>
+    </div>
+  </div>
 
-    <div id="status-footer">Connecting…</div>
+  <!-- Pick & save -->
+  <div id="director-freeze" class="review" hidden role="dialog" aria-label="Your shots">
+    <img id="frozen-frame" class="review-img" alt="Selected shot">
+    <div class="review-bar">
+      <div class="review-top">
+        <div id="dreview-hint" class="review-hint" aria-live="polite">Receiving photos…</div>
+        <button id="dsave-all-btn" class="link-btn" hidden>Save all</button>
+      </div>
+      <div id="dreview-thumbs" class="review-thumbs"></div>
+      <div class="review-actions">
+        <button id="done-btn" class="btn btn-secondary">Back to Live</button>
+        <button id="dsave-btn" class="btn btn-primary" disabled>Save Photo</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
-const WS_URL = `wss://${location.host}`;
+<div id="conn-banner" class="chip warn" hidden role="status"><span class="dot waiting"></span>Reconnecting…</div>
 
+<script src="/signal.js"></script>
+<script src="/gallery.js"></script>
+<script>
+// ── ICE servers (fetched from our server; credentials never live in this file) ──
 let iceConfig = null;
 async function getICE() {
   if (iceConfig) return iceConfig;
@@ -842,55 +355,88 @@ async function getICE() {
     const res = await fetch('/api/turn-credentials');
     iceConfig = await res.json();
   } catch {
-    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+    iceConfig = [{ urls: 'stun:stun.l.google.com:19302' }];
   }
   return iceConfig;
 }
 
-let ws, pc;
+let pc = null;
 let pendingCandidates = [];
 let remoteDescSet = false;
 let isLive = false;
-let controlsVisible = true;
 let torchOn = false;
 let micEnabled = false, audioSender = null, micStream = null;
+let joinCode = null;       // code we are joining (first join)
+let joinKey  = null;       // one-time key from a scanned QR → no Allow needed
+let photographerAway = false;
 
-const joinScreen      = document.getElementById('join-screen');
-const joinFormEls     = document.getElementById('join-form');
-const approvalWait    = document.getElementById('approval-wait');
-const deniedMsg       = document.getElementById('denied-msg');
-const codeInput       = document.getElementById('code-input');
-const joinBtn         = document.getElementById('join-btn');
-const joinError       = document.getElementById('join-error');
-const controlScreen   = document.getElementById('control-screen');
-const preview         = document.getElementById('preview');
-const connectingMsg   = document.getElementById('connecting-msg');
-const liveBadge       = document.getElementById('live-badge');
-const captureBtn      = document.getElementById('capture-btn');
-const statusFooter    = document.getElementById('status-footer');
-const controlsPanel   = document.getElementById('controls-panel');
-const toggleBtn       = document.getElementById('toggle-btn');
-const torchBtn        = document.getElementById('torch-btn');
-const dirCountdown    = document.getElementById('dir-countdown');
-const dirCountdownNum = document.getElementById('dir-countdown-num');
-const directorFreeze  = document.getElementById('director-freeze');
-const doneBtn         = document.getElementById('done-btn');
-const micBtn          = document.getElementById('mic-btn');
+const $ = (id) => document.getElementById(id);
+const joinScreen      = $('join-screen');
+const joinFormEls     = $('join-form');
+const approvalWait    = $('approval-wait');
+const deniedMsg       = $('denied-msg');
+const codeInput       = $('code-input');
+const joinBtn         = $('join-btn');
+const joinError       = $('join-error');
+const controlScreen   = $('control-screen');
+const preview         = $('preview');
+const connectingMsg   = $('connecting-msg');
+const liveBadge       = $('live-badge');
+const captureBtn      = $('capture-btn');
+const controlsPanel   = $('controls-panel');
+const torchBtn        = $('torch-btn');
+const dirCountdown    = $('dir-countdown');
+const dirCountdownNum = $('dir-countdown-num');
+const directorFreeze  = $('director-freeze');
+const doneBtn         = $('done-btn');
+const micBtn          = $('mic-btn');
 
-// ── Join sub-state helpers ───────────────────────────────────────────
+// ── Session (lets a dropped connection or a reload rejoin without knocking again) ──
+const SESSION_KEY = 'picme_director';
+function saveSession(code, token) { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ code, token })); } catch {} }
+function loadSession()  { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch {} }
+
+// ── Signaling ───────────────────────────────────────────────────────
+const signal = new PicMeSignal({
+  onOpen() {
+    const s = loadSession();
+    if (s?.code && s?.token) {
+      signal.send({ type: 'rejoin-room', code: s.code, token: s.token, peerAlive: peerHealthy() });
+    } else if (joinCode) {
+      signal.send({ type: 'join-room', code: joinCode, key: joinKey || undefined });
+    }
+  },
+  onMessage: handleMessage,
+  onStatus(state) {
+    $('conn-banner').hidden = !(state === 'reconnecting' && loadSession());
+  },
+});
+const sendMsg = (obj) => signal.send(obj);
+
+// ── Join sub-states ─────────────────────────────────────────────────
+
+function showJoinScreen() {
+  controlScreen.style.display = 'none';
+  joinScreen.style.display    = 'flex';
+}
 
 function showJoinForm(errorMsg) {
-  joinFormEls.style.display  = 'contents';
+  showJoinScreen();
+  joinFormEls.style.display  = 'flex';
   approvalWait.style.display = 'none';
   deniedMsg.style.display    = 'none';
   joinBtn.disabled    = false;
-  joinBtn.textContent = 'Join Room';
+  joinBtn.textContent = 'Join';
+  $('scan-qr-btn').disabled = false;
+  $('scan-qr-btn').textContent = 'Scan Code';
   joinError.style.display = errorMsg ? 'block' : 'none';
   joinError.textContent   = errorMsg || '';
 }
 
 function showApprovalWait() {
   joinFormEls.style.display  = 'none';
+  joinError.style.display    = 'none';
   approvalWait.style.display = 'flex';
   deniedMsg.style.display    = 'none';
 }
@@ -899,198 +445,368 @@ function showDenied(message) {
   joinFormEls.style.display  = 'none';
   approvalWait.style.display = 'none';
   deniedMsg.style.display    = 'flex';
-  document.getElementById('denied-desc-text').textContent = message;
-  ws?.close();
+  $('denied-desc-text').textContent = message;
+}
+
+function showControlScreen() {
+  joinScreen.style.display    = 'none';
+  controlScreen.style.display = 'block';
+  fitStage();
+}
+
+// Ends the session on this phone and returns to the join screen
+function endSession(message) {
+  clearSession();
+  joinCode = null; joinKey = null;
+  signal.stop();
+  closePeer();
+  directorFreeze.hidden = true;
+  dirCountdown.hidden = true;
+  countingDown = false;
+  showJoinForm(message);
 }
 
 // ── URL pre-fill ────────────────────────────────────────────────────
 
-const urlCode = new URLSearchParams(location.search).get('code');
+const params  = new URLSearchParams(location.search);
+const urlCode = params.get('code');
+const urlKey  = params.get('k');
 if (urlCode) codeInput.value = urlCode;
+// Don't keep the one-time key in the address bar (or in history)
+if (urlKey) { document.documentElement.dataset.scanJoin = '1'; history.replaceState(null, '', location.pathname); }
+
+$('show-code-btn').addEventListener('click', () => {
+  const form = $('code-form');
+  form.hidden = !form.hidden;
+  $('show-code-btn').setAttribute('aria-expanded', String(!form.hidden));
+  if (!form.hidden) codeInput.focus();
+});
 
 // ── Join / cancel / retry ───────────────────────────────────────────
 
-joinBtn.addEventListener('click', joinRoom);
+joinBtn.addEventListener('click', () => joinRoom());
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
 
-document.getElementById('cancel-knock-btn').addEventListener('click', () => {
-  ws?.send(JSON.stringify({ type: 'cancel-knock' }));
+$('cancel-knock-btn').addEventListener('click', () => {
+  sendMsg({ type: 'cancel-knock' });
+  joinCode = null; joinKey = null;
+  signal.stop();
   showJoinForm();
 });
 
-document.getElementById('try-again-btn').addEventListener('click', () => {
-  showJoinForm();
-});
+$('try-again-btn').addEventListener('click', () => showJoinForm());
 
-function joinRoom() {
+// key = one-time key from a scanned QR code (joins instantly). No key = typed code (partner must Allow).
+function joinRoom(key) {
   const code = codeInput.value.trim().toLowerCase().replace(/\s/g, '');
-  if (!code) { showJoinForm('Please enter a room code.'); return; }
-
+  if (!code) { showJoinForm('Please enter a code.'); return; }
+  clearSession();
+  joinCode = code;
+  joinKey  = key || null;
   joinBtn.disabled    = true;
   joinBtn.textContent = 'Joining…';
+  $('scan-qr-btn').disabled = true;
+  $('scan-qr-btn').textContent = 'Joining…';
   joinError.style.display = 'none';
+  signal.stop();
+  signal.connect();
+}
 
-  ws = new WebSocket(WS_URL);
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'join-room', code }));
+// ── Messages from the server ────────────────────────────────────────
 
-  ws.onmessage = async ({ data }) => {
-    const msg = JSON.parse(data);
-    switch (msg.type) {
+async function handleMessage(msg) {
+  switch (msg.type) {
 
-      case 'knock-sent':
-        showApprovalWait();
-        break;
+    case 'knock-sent':
+      showApprovalWait();
+      break;
 
-      case 'room-joined':
-        joinScreen.style.display    = 'none';
-        controlScreen.style.display = 'block';
-        statusFooter.textContent    = 'Waiting for camera stream…';
-        break;
+    case 'room-joined':
+      joinCode = null; joinKey = null;
+      applyPartnerMode(msg.mode);
+      saveSession(msg.code, msg.token);
+      restoreShots(msg.code);
+      showControlScreen();
+      if (!msg.resumed) setStatus('Waiting for the camera…');
+      photographerAway = msg.photographerPresent === false;
+      if (photographerAway) setStatus('Your partner is reconnecting…');
+      else if (msg.resumed && peerHealthy()) setStatus('Live');
+      break;
 
-      case 'offer':
-        await handleOffer(msg);
-        break;
+    case 'rejoin-failed':
+      endSession('That session has ended. Enter the code to join again.');
+      break;
 
-      case 'ice-candidate': {
-        const c = new RTCIceCandidate(msg.candidate);
-        if (remoteDescSet) await pc.addIceCandidate(c).catch(() => {});
-        else pendingCandidates.push(c);
-        break;
-      }
+    case 'offer':
+      await handleOffer(msg);
+      break;
 
-      case 'knock-denied':
-        showDenied(msg.message);
-        break;
-
-      case 'unfreeze':
-        directorFreeze.hidden = true;
-        captureBtn.disabled   = false;
-        break;
-
-      case 'peer-left':
-        isLive = false;
-        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-        micEnabled = false; audioSender = null;
-        liveBadge.style.display     = 'none';
-        connectingMsg.style.display = 'flex';
-        connectingMsg.textContent   = 'Photographer disconnected.';
-        captureBtn.disabled = true;
-        torchBtn.disabled   = true;
-        micBtn.disabled     = true;
-        document.getElementById('remote-mic-ind').hidden = true;
-        updateMicUI();
-        statusFooter.textContent = msg.message;
-        break;
-
-      case 'mic-state':
-        document.getElementById('remote-mic-ind').hidden = !msg.enabled;
-        break;
-
-      case 'session-expired':
-        if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-        micEnabled = false; audioSender = null;
-        pc?.close(); pc = null; isLive = false;
-        controlScreen.style.display = 'none';
-        joinScreen.style.display    = 'flex';
-        showJoinForm(msg.message);
-        break;
-
-      case 'error':
-        showJoinForm(msg.message);
-        break;
+    case 'ice-candidate': {
+      if (!msg.candidate) break;
+      if (pc && remoteDescSet) await pc.addIceCandidate(msg.candidate).catch(() => {});
+      else pendingCandidates.push(msg.candidate);
+      break;
     }
-  };
 
-  ws.onclose = () => {
-    if (isLive) {
-      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-      micEnabled = false; audioSender = null;
-      updateMicUI();
-      statusFooter.textContent = 'Connection lost — reload to reconnect.';
-      captureBtn.disabled = true;
-      torchBtn.disabled   = true;
-      micBtn.disabled     = true;
-    }
-  };
+    case 'knock-denied':
+      joinCode = null; joinKey = null;
+      signal.stop();
+      showDenied(msg.message);
+      break;
+
+    case 'photographer-away':
+      photographerAway = true;
+      setStatus('Your partner is reconnecting…');
+      break;
+
+    case 'photographer-back':
+      photographerAway = false;
+      if (peerHealthy()) setStatus('Live');
+      break;
+
+    case 'mic-state':
+      $('remote-mic-ind').hidden = !msg.enabled;
+      break;
+
+    case 'session-expired':
+      endSession(msg.message);
+      break;
+
+    case 'swap-request':
+      $('swap-modal').hidden = false;
+      break;
+
+    case 'swap-declined':
+      showToast('Your partner wants to keep their role');
+      break;
+
+    case 'swap-go':
+      goToRole(msg);
+      break;
+
+    case 'error':
+      if (loadSession()) { showToast(msg.message); break; }
+      joinCode = null; joinKey = null;
+      signal.stop();
+      showJoinForm(msg.message);
+      break;
+  }
+}
+
+function setStatus(text) {
+  if (!isLive || !peerHealthy()) {
+    connectingMsg.style.display = 'block';
+    connectingMsg.textContent = text;
+  }
 }
 
 // ── WebRTC ──────────────────────────────────────────────────────────
 
-async function handleOffer(msg) {
-  const ice = await getICE();
-  pc = new RTCPeerConnection({ iceServers: ice, iceCandidatePoolSize: 10 });
+function peerHealthy() {
+  return !!pc && ['connected', 'completed'].includes(pc.iceConnectionState);
+}
 
-  pc.ontrack = ({ streams, receiver }) => {
-    if (receiver.track.kind === 'video') {
+function setLive(live) {
+  isLive = live;
+  liveBadge.style.display     = live ? 'inline-flex' : 'none';
+  connectingMsg.style.display = live ? 'none'  : 'block';
+  if (live && partnerMode === 'photo') maybeShowGestureHint();
+  captureBtn.disabled = !live || countingDown;
+  $('swap-btn').disabled = !live;
+  $('ref-btn').disabled  = !live;
+  torchBtn.disabled   = !live;
+  micBtn.disabled     = !live;
+}
+
+function closePeer() {
+  stopQualityMonitor();
+  if (pc) { pc.onicecandidate = pc.oniceconnectionstatechange = pc.ontrack = null; pc.close(); }
+  pc = null; audioSender = null;
+  remoteDescSet = false; pendingCandidates = [];
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  micEnabled = false;
+  updateMicUI();
+  $('remote-mic-ind').hidden = true;
+  $('qual-ind').hidden = true;
+  setLive(false);
+}
+
+// Every offer is a fresh connection from the Photographer (first connect or a rebuild).
+async function handleOffer(msg) {
+  const hadMic = micEnabled ? micStream : null;
+  if (pc) { pc.onicecandidate = pc.oniceconnectionstatechange = pc.ontrack = null; pc.close(); }
+  pc = null; remoteDescSet = false; pendingCandidates = [];
+
+  const ice = await getICE();
+  const conn = new RTCPeerConnection({ iceServers: ice });
+  pc = conn;
+
+  conn.ontrack = ({ streams, track, receiver }) => {
+    if (conn !== pc) return;
+    if (track.kind === 'video') {
       try { receiver.playoutDelayHint = 0; } catch {}
-      preview.srcObject           = streams[0];
-      connectingMsg.style.display = 'none';
-      liveBadge.style.display     = 'block';
-      captureBtn.disabled = false;
-      torchBtn.disabled   = false;
-      micBtn.disabled     = false;
-      isLive = true;
-      statusFooter.textContent = 'Live — tap video to focus';
-    } else if (receiver.track.kind === 'audio') {
+      preview.srcObject = streams[0] || new MediaStream([track]);
+      preview.play().catch(() => {});
+      setLive(true);
+      setStatus('Live');
+    } else if (track.kind === 'audio') {
       const remoteAudio = new Audio();
-      remoteAudio.srcObject = new MediaStream([receiver.track]);
+      remoteAudio.srcObject = new MediaStream([track]);
       remoteAudio.autoplay = true;
       remoteAudio.play().catch(() => {});
+      track.addEventListener('unmute', () => remoteAudio.play().catch(() => {}));
     }
   };
 
-  pc.onicecandidate = ({ candidate }) => {
-    if (candidate) ws.send(JSON.stringify({ type: 'ice-candidate', candidate }));
+  conn.onicecandidate = ({ candidate }) => {
+    if (candidate && conn === pc) sendMsg({ type: 'ice-candidate', candidate });
   };
 
-  pc.oniceconnectionstatechange = () => {
-    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-      detectConnectionType();
+  conn.ondatachannel = ({ channel }) => {
+    if (conn === pc && channel.label === 'photos') setupPhotoChannel(channel);
+  };
+
+  conn.oniceconnectionstatechange = () => {
+    if (conn !== pc) return;
+    const state = conn.iceConnectionState;
+    if (state === 'connected' || state === 'completed') {
+      setLive(true);
+      if (!photographerAway) setStatus('Live');
       startQualityMonitor();
+    } else if (state === 'disconnected' || state === 'failed') {
+      setStatus('Connection unstable — reconnecting…');
     }
   };
 
-  await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+  await conn.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+  if (conn !== pc) return;
 
-  // Before createAnswer(), force the audio transceiver to sendrecv.
-  // Without this, createAnswer() emits a=recvonly (no sender track yet), which
-  // means ontrack never fires on the Photographer — so they never build an Audio
-  // element for the Director's voice and replaceTrack() has nowhere to deliver to.
-  const audioTx = pc.getTransceivers().find(t => t.receiver.track?.kind === 'audio');
+  // Answer with sendrecv audio so the Photographer can hear the Director's mic.
+  const audioTx = conn.getTransceivers().find(t => t.receiver.track?.kind === 'audio');
   if (audioTx) {
     audioTx.direction = 'sendrecv';
     audioSender = audioTx.sender;
+    if (hadMic) audioSender.replaceTrack(hadMic.getAudioTracks()[0]).catch(() => {});
   }
 
   remoteDescSet = true;
-  for (const c of pendingCandidates) await pc.addIceCandidate(c).catch(() => {});
+  for (const c of pendingCandidates) await conn.addIceCandidate(c).catch(() => {});
   pendingCandidates = [];
 
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp }));
+  const answer = await conn.createAnswer();
+  if (conn !== pc) return;
+  await conn.setLocalDescription(answer);
+  sendMsg({ type: 'answer', sdp: answer.sdp });
 }
 
 // ── Controls ────────────────────────────────────────────────────────
 
-toggleBtn.addEventListener('click', () => {
-  controlsVisible = !controlsVisible;
-  controlsPanel.classList.toggle('controls-hidden', !controlsVisible);
-  toggleBtn.textContent = controlsVisible ? 'Hide Controls' : 'Show Controls';
+// Keep the picture above the shutter bar so no part of the frame is covered.
+function fitStage() {
+  controlScreen.style.setProperty('--bar-h', `${controlsPanel.offsetHeight}px`);
+}
+new ResizeObserver(fitStage).observe(controlsPanel);
+window.addEventListener('resize', fitStage);
+
+// Light up the control that was used, so the Director knows it went through
+function flashSent(el) {
+  if (!el) return;
+  el.classList.remove('sent'); void el.offsetWidth; el.classList.add('sent');
+  clearTimeout(el._sentT);
+  el._sentT = setTimeout(() => el.classList.remove('sent'), 350);
+}
+const CMD_TARGET = {
+  'move-up': 'edge-up', 'move-down': 'edge-down', 'move-left': 'edge-left', 'move-right': 'edge-right',
+  'move-closer': 'move-closer-wrap', 'step-back': 'step-back-wrap', 'hold': 'hold-btn',
+};
+function guide(cmd) {
+  if (!isLive || partnerMode !== 'photo') return;
+  if (sendCmd(cmd)) {
+    flashSent($(CMD_TARGET[cmd]));
+    try { navigator.vibrate?.(15); } catch {}
+  }
+}
+
+document.querySelectorAll('.edge[data-cmd]').forEach(btn => {
+  btn.addEventListener('click', () => guide(btn.dataset.cmd));
+});
+$('move-closer-btn').addEventListener('click', () => guide('move-closer'));
+$('step-back-btn').addEventListener('click',   () => guide('step-back'));
+
+// ── Gestures on the picture: swipe = direction, pinch = closer / step back ──
+
+const stage = $('stage');
+const touches = new Map();
+let gesture = null;
+
+function pinchDistance() {
+  const [a, b] = [...touches.values()];
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+stage.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  try { stage.setPointerCapture(e.pointerId); } catch {}
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
+  if (touches.size === 1) gesture = { type: 'swipe', done: false };
+  else if (touches.size === 2) gesture = { type: 'pinch', d0: pinchDistance(), done: false };
 });
 
-document.querySelectorAll('.arrow-btn[data-cmd]').forEach(btn => {
-  btn.addEventListener('click', () => sendCmd(btn.dataset.cmd));
+stage.addEventListener('pointermove', e => {
+  const t = touches.get(e.pointerId);
+  if (!t || !gesture || gesture.done) return;
+  t.x = e.clientX; t.y = e.clientY;
+  if (gesture.type === 'pinch' && touches.size === 2) {
+    const ratio = pinchDistance() / gesture.d0;
+    if (ratio > 1.3)       { gesture.done = true; guide('move-closer'); gestureUsed(); }
+    else if (ratio < 0.77) { gesture.done = true; guide('step-back');   gestureUsed(); }
+  } else if (gesture.type === 'swipe' && touches.size === 1) {
+    const dx = t.x - t.x0, dy = t.y - t.y0;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 45) return;
+    gesture.done = true;
+    guide(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'move-left' : 'move-right') : (dy < 0 ? 'move-up' : 'move-down'));
+    gestureUsed();
+  }
 });
 
-document.getElementById('move-closer-btn').addEventListener('click', () => sendCmd('move-closer'));
-document.getElementById('step-back-btn').addEventListener('click',   () => sendCmd('step-back'));
+// Double-tap the picture = "Hold it!"
+let lastTap = 0;
+function endTouch(e) {
+  const t = touches.get(e.pointerId);
+  const wasTap = t && gesture?.type === 'swipe' && !gesture.done && Math.hypot(t.x - t.x0, t.y - t.y0) < 12;
+  touches.delete(e.pointerId);
+  if (!touches.size) gesture = null;
+  if (wasTap && e.type === 'pointerup' && partnerMode === 'photo') {
+    const now = Date.now();
+    if (now - lastTap < 320) { lastTap = 0; guide('hold'); gestureUsed(); }
+    else lastTap = now;
+  }
+}
+stage.addEventListener('pointerup', endTouch);
+stage.addEventListener('pointercancel', endTouch);
+
+// First-time hint, gone after the first gesture
+const HINT_KEY = 'picme_gestures_learned';
+function maybeShowGestureHint() {
+  let learned = false;
+  try { learned = !!localStorage.getItem(HINT_KEY); } catch {}
+  const hint = $('gesture-hint');
+  if (learned || !hint.hidden) return;
+  hint.hidden = false;
+  hint.style.opacity = '1';
+  setTimeout(() => { hint.style.opacity = '0'; setTimeout(() => { hint.hidden = true; }, 400); }, 7000);
+}
+function gestureUsed() {
+  try { localStorage.setItem(HINT_KEY, '1'); } catch {}
+  const hint = $('gesture-hint');
+  hint.style.opacity = '0';
+  setTimeout(() => { hint.hidden = true; }, 400);
+}
 
 torchBtn.addEventListener('click', () => {
   if (!isLive) return;
   torchOn = !torchOn;
-  torchBtn.textContent = torchOn ? 'Flashlight: On' : 'Flashlight: Off';
-  torchBtn.classList.toggle('torch-on', torchOn);
+  torchBtn.setAttribute('aria-pressed', String(torchOn));
   sendCmd('torch', { on: torchOn });
 });
 
@@ -1099,153 +815,413 @@ captureBtn.addEventListener('click', () => {
   startDirectorCapture();
 });
 
-// ── Countdown & freeze flow ──────────────────────────────────────────
+// ── Partner mode: "photo" (someone holds it) or "tripod" (propped up) ──
+
+let partnerMode = 'photo';
+function applyPartnerMode(mode) {
+  partnerMode = mode === 'tripod' ? 'tripod' : 'photo';
+  document.body.classList.toggle('tripod-partner', partnerMode === 'tripod');
+  fitStage();
+}
+
+// Countdown beeps play on this phone — the Director is the one counting the group down.
+let soundOn = true;
+try { soundOn = localStorage.getItem('picme_beeps') !== '0'; } catch {}
+function applySound() {
+  $('sound-btn').setAttribute('aria-pressed', String(soundOn));
+  $('sound-label').textContent = soundOn ? 'Beeps on' : 'Beeps off';
+  $('sound-waves').style.display = soundOn ? '' : 'none';
+}
+$('sound-btn').addEventListener('click', () => {
+  soundOn = !soundOn;
+  try { localStorage.setItem('picme_beeps', soundOn ? '1' : '0'); } catch {}
+  applySound();
+  if (soundOn) { unlockAudio(); beep(880, 120); }
+});
+applySound();
+
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch {}
+}
+function beep(freq, ms, vol = 0.3) {
+  if (!soundOn || !audioCtx) return;
+  try {
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + ms / 1000 + 0.02);
+  } catch {}
+}
+const beepsWanted = () => partnerMode === 'tripod' && soundOn;
+
+// ── Swap roles ──────────────────────────────────────────────────────
+
+$('swap-btn').addEventListener('click', () => {
+  if (sendMsg({ type: 'swap-request' })) showToast('Asked your partner to switch roles');
+});
+$('swap-yes').addEventListener('click', () => { $('swap-modal').hidden = true; sendMsg({ type: 'swap-response', accept: true }); });
+$('swap-no').addEventListener('click',  () => { $('swap-modal').hidden = true; sendMsg({ type: 'swap-response', accept: false }); });
+
+// Hand over: this phone becomes the camera — same room, no rescanning.
+function goToRole({ role, code, token }) {
+  clearSession();
+  try { sessionStorage.setItem(role === 'director' ? 'picme_director' : 'picme_photographer', JSON.stringify({ code, token, mode: 'photo' })); } catch {}
+  signal.stop();
+  closePeer();
+  location.replace(role === 'director' ? '/director.html' : '/photographer.html');
+}
+
+// ── Hold it! ────────────────────────────────────────────────────────
+
+$('hold-btn').addEventListener('click', () => guide('hold'));
+
+// ── Countdown: the live view never stops — shots land in the strip ──
+
+let countingDown = false;
 
 function startDirectorCapture() {
+  if (beepsWanted()) unlockAudio();   // runs inside the shutter tap, so the phone allows sound
+  countingDown = true;
   captureBtn.disabled = true;
-  sendCmd('start-capture'); // photographer starts its own countdown
+  sendCmd('start-capture'); // the camera phone runs its own countdown and takes the burst
 
   dirCountdown.hidden = false;
+  $('shooting-frame').hidden = false;
   let count = 3;
   animateDirCountNum(count);
+  if (beepsWanted()) beep(880, 140);
 
   const iv = setInterval(() => {
     count--;
-    if (count <= 0) {
-      clearInterval(iv);
-      dirCountdown.hidden = true;
-      showDirectorFreeze();
-    } else {
-      animateDirCountNum(count);
-    }
+    if (count > 0) { animateDirCountNum(count); if (beepsWanted()) beep(880, 140); return; }
+    clearInterval(iv);
+    dirCountdown.hidden = true;
+    $('shooting-frame').hidden = true;
+    if (beepsWanted()) { beep(1568, 90, 0.35); setTimeout(() => beep(1175, 160, 0.3), 90); }
+    shutterFlash();
+    countingDown = false;
+    if (isLive) captureBtn.disabled = false;   // ready for the next one straight away
   }, 1000);
 }
 
 function animateDirCountNum(n) {
   dirCountdownNum.textContent = n;
-  dirCountdownNum.classList.remove('count-anim');
-  void dirCountdownNum.offsetWidth;
-  dirCountdownNum.classList.add('count-anim');
+  dirCountdownNum.classList.remove('tick'); void dirCountdownNum.offsetWidth; dirCountdownNum.classList.add('tick');
 }
 
-function showDirectorFreeze() {
-  const canvas = document.createElement('canvas');
-  canvas.width  = preview.videoWidth  || 640;
-  canvas.height = preview.videoHeight || 480;
-  canvas.getContext('2d').drawImage(preview, 0, 0);
-  document.getElementById('frozen-frame').src = canvas.toDataURL('image/jpeg', 0.92);
+function shutterFlash() {
+  const f = document.createElement('div');
+  f.className = 'shutter-flash go';
+  f.style.position = 'absolute';
+  $('stage').appendChild(f);
+  setTimeout(() => f.remove(), 400);
+}
+
+// ── Shots from the camera phone → strip → viewer ─────────────────────
+
+let dShots = [], dSelected = 0, incoming = null;   // dShots: every shot this session, oldest first
+
+let photoCh = null;
+function setupPhotoChannel(ch) {
+  photoCh = ch;
+  ch.binaryType = 'arraybuffer';
+  ch.bufferedAmountLowThreshold = 256 * 1024;
+  const resendRef = () => { if (refBlob) sendRef(refBlob); };
+  if (ch.readyState === 'open') resendRef(); else ch.addEventListener('open', resendRef, { once: true });
+  ch.onmessage = ({ data }) => {
+    if (typeof data === 'string') {
+      let m; try { m = JSON.parse(data); } catch { return; }
+      if (m.type === 'level') { showLevel(m); return; }
+      if (m.type === 'burst') startIncoming(m.id, m.count);
+      else if (m.type === 'shot' && incoming?.id === m.id) {
+        incoming.cur = { index: m.index, size: m.size, mime: m.mime || 'image/jpeg', parts: [], received: 0 };
+      }
+      return;
+    }
+    const cur = incoming?.cur;
+    if (!cur) return;
+    cur.parts.push(data);
+    cur.received += data.byteLength;
+    if (cur.received >= cur.size) {
+      incoming.cur = null;
+      addShot(new Blob(cur.parts, { type: cur.mime }), cur.index);
+    }
+  };
+}
+
+function startIncoming(id, count) {
+  const strip = $('strip');
+  const slots = [];
+  // Newest burst goes to the front of the strip
+  for (let i = count - 1; i >= 0; i--) {
+    const b = document.createElement('button');
+    b.className = 'thumb loading';
+    b.disabled = true;
+    b.setAttribute('aria-label', 'Loading shot');
+    strip.prepend(b);
+    slots[i] = b;
+  }
+  strip.hidden = false;
+  strip.scrollLeft = 0;
+  incoming = { id, count, slots, cur: null };
+  fitStage();
+}
+
+function addShot(blob, index, restored) {
+  const shot = { blob, url: URL.createObjectURL(blob) };
+  if (!restored) PicMeGallery.add(loadSession()?.code, [blob]);
+  dShots.push(shot);
+  const n = dShots.length - 1;
+  const b = incoming?.slots?.[index];
+  if (b) {
+    b.className = 'thumb new';
+    b.dataset.i = n;
+    b.disabled = false;
+    b.setAttribute('aria-label', 'Open shot');
+    b.innerHTML = `<img src="${shot.url}" alt="">`;
+    b.addEventListener('click', () => openViewer(n));
+  }
+  if (!directorFreeze.hidden) renderViewerThumbs();
+}
+
+function openViewer(i) {
   directorFreeze.hidden = false;
+  renderViewerThumbs();
+  selectShot(i);
 }
 
-doneBtn.addEventListener('click', () => {
-  directorFreeze.hidden = true;
-  captureBtn.disabled   = false;
+function renderViewerThumbs() {
+  const thumbs = $('dreview-thumbs');
+  thumbs.innerHTML = '';
+  thumbs.style.justifyContent = dShots.length > 5 ? 'flex-start' : 'center';
+  thumbs.style.padding = '0 2px';
+  thumbs.style.overflowX = 'auto';
+  // Same order as the strip: newest burst first, shots in the order they were taken
+  const order = [...$('strip').children].filter(b => b.dataset.i !== undefined).map(b => +b.dataset.i);
+  for (const i of order) {
+    const b = document.createElement('button');
+    b.className = 'thumb';
+    b.dataset.i = i;
+    b.setAttribute('aria-label', `Shot ${i + 1}`);
+    b.setAttribute('aria-pressed', String(i === dSelected));
+    b.innerHTML = `<img src="${dShots[i].url}" alt="">`;
+    b.addEventListener('click', () => selectShot(i));
+    thumbs.appendChild(b);
+  }
+  $('dreview-hint').textContent = dShots.length > 1 ? 'Pick your favorite, then tap Save' : 'Tap Save to keep this photo';
+  $('dsave-btn').disabled = !dShots.length;
+  $('dsave-all-btn').hidden = dShots.length < 2;
+  $('dsave-all-btn').textContent = `Save all ${Math.min(dShots.length, 30)}`;
+}
+
+function selectShot(i) {
+  if (!dShots[i]) return;
+  dSelected = i;
+  $('frozen-frame').src = dShots[i].url;
+  [...$('dreview-thumbs').children].forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+}
+
+doneBtn.addEventListener('click', () => { directorFreeze.hidden = true; });
+
+// Saving must happen inside a tap — that's what lets the phone open its save/share sheet.
+$('dsave-btn').addEventListener('click', async () => {
+  const shot = dShots[dSelected];
+  if (!shot) return;
+  const file = new File([shot.blob], `picme-${Date.now()}.jpg`, { type: shot.blob.type || 'image/jpeg' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); } catch {}
+  } else {
+    const a = Object.assign(document.createElement('a'), { href: shot.url, download: file.name });
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('Photo downloaded');
+  }
 });
 
-// ── Tap-to-focus ────────────────────────────────────────────────────
-
-document.getElementById('preview-wrap').addEventListener('click', e => {
-  if (!isLive) return;
-  if (dirCountdown.hidden === false || directorFreeze.hidden === false) return;
-  const rect = e.currentTarget.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / rect.width;
-  const y = (e.clientY - rect.top)  / rect.height;
-  sendCmd('focus', { x, y });
-  spawnFocusDot(e.clientX, e.clientY);
+// Save every shot (newest first, up to 30) in one share sheet — "Save N Images" on iPhone
+$('dsave-all-btn').addEventListener('click', async () => {
+  const order = [...$('strip').children].filter(b => b.dataset.i !== undefined).map(b => +b.dataset.i).slice(0, 30);
+  const files = order.map((i, k) => new File([dShots[i].blob], `picme-${Date.now()}-${k + 1}.jpg`, { type: dShots[i].blob.type || 'image/jpeg' }));
+  if (navigator.canShare?.({ files })) {
+    try { await navigator.share({ files }); } catch {}
+  } else {
+    for (const f of files) {
+      const url = URL.createObjectURL(f);
+      const a = Object.assign(document.createElement('a'), { href: url, download: f.name });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+    showToast(`${files.length} photos downloaded`);
+  }
 });
 
-function spawnFocusDot(cx, cy) {
-  const el = document.createElement('div');
-  el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:52px;height:52px;border:2px solid #00A8FF;border-radius:6px;transform:translate(-50%,-50%);pointer-events:none;z-index:99;animation:tap-fade 0.85s ease-out forwards;`;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 850);
+// After a reload or a role swap, bring back the shots taken in this room
+async function restoreShots(room) {
+  if (dShots.length) return;
+  const saved = await PicMeGallery.list(room);
+  if (!saved.length || dShots.length) return;
+  const newestFirst = saved.slice(-40).reverse();
+  startIncoming('restored', newestFirst.length);
+  newestFirst.forEach((r, k) => addShot(r.blob, k, true));
+  incoming = null;
+}
+
+// ── Guides: rule-of-thirds grid + the camera phone's horizon level ──
+
+let guidesOn = false;
+try { guidesOn = localStorage.getItem('picme_guides') === '1'; } catch {}
+function applyGuides() {
+  $('grid-btn').setAttribute('aria-pressed', String(guidesOn));
+  $('grid').hidden = !guidesOn;
+  if (!guidesOn) $('level').classList.remove('show');
+  placeGrid();
+}
+$('grid-btn').addEventListener('click', () => {
+  guidesOn = !guidesOn;
+  try { localStorage.setItem('picme_guides', guidesOn ? '1' : '0'); } catch {}
+  applyGuides();
+});
+
+// The grid sits exactly on the picture (not on the black bars)
+function placeGrid() {
+  const box = preview.getBoundingClientRect(), st = stage.getBoundingClientRect();
+  const vw = preview.videoWidth, vh = preview.videoHeight;
+  const g = $('grid');
+  if (!vw || !vh || !box.width) { g.style.left = '0'; g.style.top = '0'; g.style.width = '100%'; g.style.height = '100%'; return; }
+  const scale = Math.min(box.width / vw, box.height / vh);
+  const w = vw * scale, h = vh * scale;
+  g.style.left = `${box.left - st.left + (box.width - w) / 2}px`;
+  g.style.top = `${box.top - st.top + (box.height - h) / 2}px`;
+  g.style.width = `${w}px`;
+  g.style.height = `${h}px`;
+}
+preview.addEventListener('loadedmetadata', placeGrid);
+preview.addEventListener('resize', placeGrid);
+new ResizeObserver(placeGrid).observe(stage);
+
+function showLevel({ roll, show }) {
+  const el = $('level');
+  el.style.setProperty('--roll', `${-roll}deg`);
+  el.classList.toggle('show', guidesOn && !!show && isLive);
+  el.classList.toggle('flat', Math.abs(roll) < 1);
+}
+
+// ── Reference photo: "make it like this" ─────────────────────────────
+
+let refBlob = null;
+$('ref-btn').addEventListener('click', () => { $('ref-input').value = ''; $('ref-input').click(); });
+$('ref-input').addEventListener('change', async () => {
+  const file = $('ref-input').files?.[0];
+  if (!file) return;
+  refBlob = await shrinkImage(file, 1280);
+  $('ref-img').src = URL.createObjectURL(refBlob);
+  $('ref-thumb').hidden = false;
+  if (sendRef(refBlob)) showToast('Reference sent to your partner');
+  else showToast('Reference will be sent when the camera reconnects');
+});
+$('ref-thumb').addEventListener('click', () => {
+  refBlob = null;
+  $('ref-thumb').hidden = true;
+  if (photoCh?.readyState === 'open') photoCh.send(JSON.stringify({ type: 'ref-clear' }));
+  showToast('Reference removed');
+});
+
+// Phone photos can be 5+ MB — a 1280px JPEG is plenty for a reference
+function shrinkImage(file, maxSide) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => resolve(b || file), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+function sendRef(blob) {
+  const ch = photoCh;
+  if (!ch || ch.readyState !== 'open') return false;
+  (async () => {
+    try {
+      const buf = await blob.arrayBuffer();
+      ch.send(JSON.stringify({ type: 'ref', size: buf.byteLength, mime: blob.type || 'image/jpeg' }));
+      for (let off = 0; off < buf.byteLength; off += 16384) {
+        if (ch.readyState !== 'open') return;
+        if (ch.bufferedAmount > 1024 * 1024) {
+          await new Promise(r => { const t = setTimeout(r, 5000); ch.addEventListener('bufferedamountlow', () => { clearTimeout(t); r(); }, { once: true }); });
+        }
+        ch.send(buf.slice(off, off + 16384));
+      }
+    } catch {}
+  })();
+  return true;
 }
 
 function sendCmd(command, data) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: 'command', command, data }));
+  const ok = sendMsg({ type: 'command', command, data });
+  if (!ok) showToast('Reconnecting — try again in a second');
+  return ok;
 }
 
 // ── Quality & connection monitoring ────────────────────────────────
 
 let qualMonitor = null;
+function stopQualityMonitor() { clearInterval(qualMonitor); qualMonitor = null; }
+
+async function bestPairStats() {
+  const stats = await pc.getStats();
+  let bestPair = null;
+  stats.forEach(r => {
+    if (r.type === 'candidate-pair' && r.state === 'succeeded')
+      if (!bestPair || r.nominated) bestPair = r;
+  });
+  return { stats, bestPair };
+}
 
 function startQualityMonitor() {
-  if (qualMonitor) clearInterval(qualMonitor);
+  stopQualityMonitor();
   qualMonitor = setInterval(async () => {
-    if (!pc) { clearInterval(qualMonitor); return; }
+    if (!pc) return stopQualityMonitor();
     try {
-      const stats = await pc.getStats();
-      let bestPair = null;
-      stats.forEach(r => {
-        if (r.type === 'candidate-pair' && r.state === 'succeeded')
-          if (!bestPair || r.nominated) bestPair = r;
-      });
-      if (bestPair?.currentRoundTripTime != null)
-        updateQualityUI(bestPair.currentRoundTripTime * 1000);
+      const { bestPair } = await bestPairStats();
+      if (bestPair?.currentRoundTripTime != null) updateQualityUI(bestPair.currentRoundTripTime * 1000);
     } catch {}
   }, 3000);
 }
 
+// Only speak up when the connection is actually a problem.
 function updateQualityUI(rttMs) {
-  const el = document.getElementById('qual-ind');
-  if (!el) return;
-  el.hidden = false;
-  el.querySelector('.qi-rtt').textContent = `${Math.round(rttMs)}ms`;
-  const dot = el.querySelector('.qi-dot');
-  const lbl = el.querySelector('.qi-label');
-  if      (rttMs < 100) { dot.className = 'qi-dot excellent'; lbl.textContent = 'Excellent'; }
-  else if (rttMs < 250) { dot.className = 'qi-dot good';      lbl.textContent = 'Good'; }
-  else                  { dot.className = 'qi-dot poor';       lbl.textContent = 'Poor'; }
+  $('qual-ind').hidden = rttMs < 300;
 }
 
-async function detectConnectionType() {
-  if (!pc) return;
-  await new Promise(r => setTimeout(r, 1500)); // let stats settle post-connect
-  try {
-    const stats = await pc.getStats();
-    let bestPair = null;
-    stats.forEach(r => {
-      if (r.type === 'candidate-pair' && r.state === 'succeeded')
-        if (!bestPair || r.nominated) bestPair = r;
-    });
-    if (!bestPair) return;
-    let candType = null;
-    stats.forEach(r => {
-      if (r.type === 'local-candidate' && r.id === bestPair.localCandidateId)
-        candType = r.candidateType;
-    });
-    if (candType === 'relay') showNetBadge();
-    else if (candType)        showNetBanner();
-  } catch {}
-}
 
-function showNetBanner() {
-  const el = document.getElementById('net-banner');
-  if (!el) return;
-  el.hidden = false;
-  setTimeout(() => {
-    el.style.opacity = '0';
-    setTimeout(() => { el.hidden = true; el.style.opacity = ''; }, 1000);
-  }, 4000);
-}
-
-function showNetBadge() {
-  const el = document.getElementById('net-badge');
-  if (el) el.hidden = false;
-}
 
 // ── QR Scanner ─────────────────────────────────────────────────────
 
 let qrStream = null, qrRaf = null;
 
-document.getElementById('scan-qr-btn').addEventListener('click', startQRScanner);
-document.getElementById('qr-cancel-btn').addEventListener('click', stopQRScanner);
+$('scan-qr-btn').addEventListener('click', startQRScanner);
+$('qr-cancel-btn').addEventListener('click', stopQRScanner);
 
 async function startQRScanner() {
-  document.getElementById('qr-scanner').hidden = false;
-  document.getElementById('qr-error').hidden = true;
-  const video = document.getElementById('qr-video');
+  $('qr-scanner').hidden = false;
+  $('qr-error').hidden = true;
+  const video = $('qr-video');
   try {
     qrStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -1253,7 +1229,7 @@ async function startQRScanner() {
     video.srcObject = qrStream;
     await video.play();
   } catch {
-    document.getElementById('qr-hint').textContent = 'Camera access denied';
+    $('qr-hint').textContent = 'Camera access denied';
     return;
   }
   const canvas = document.createElement('canvas');
@@ -1261,15 +1237,16 @@ async function startQRScanner() {
 
   // Load jsQR on demand
   if (!window.jsQR) {
-    await new Promise((res, rej) => {
+    const loaded = await new Promise((res) => {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
-      s.onload = res; s.onerror = rej;
+      s.onload = () => res(true); s.onerror = () => res(false);
       document.head.appendChild(s);
-    }).catch(() => {
-      document.getElementById('qr-hint').textContent = 'Scanner failed to load — check connection';
-      return;
     });
+    if (!loaded) {
+      $('qr-hint').textContent = 'Scanner failed to load — check your connection';
+      return;
+    }
   }
 
   function tick() {
@@ -1281,8 +1258,7 @@ async function startQRScanner() {
       const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
       if (code) {
-        const handled = onQRDetected(code.data);
-        if (handled) return;
+        if (onQRDetected(code.data)) return;
         // Invalid QR — pause briefly then resume
         setTimeout(() => { if (qrStream) qrRaf = requestAnimationFrame(tick); }, 1500);
         return;
@@ -1297,22 +1273,23 @@ function onQRDetected(data) {
   try {
     const url  = new URL(data);
     const code = url.searchParams.get('code');
+    const key  = url.searchParams.get('k');
     if (code && /^[a-z]+-[a-z]+-\d{4}-[a-z]+$/.test(code)) {
       stopQRScanner();
       codeInput.value = code;
-      joinRoom();
+      joinRoom(key);
       return true;
     }
   } catch {}
-  document.getElementById('qr-error').hidden = false;
+  $('qr-error').hidden = false;
   return false;
 }
 
 function stopQRScanner() {
   cancelAnimationFrame(qrRaf); qrRaf = null;
   if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
-  document.getElementById('qr-scanner').hidden = true;
-  document.getElementById('qr-hint').textContent = 'Point camera at the Photographer\'s QR code';
+  $('qr-scanner').hidden = true;
+  $('qr-hint').textContent = 'Point at the code on your partner\'s phone';
 }
 
 // ── Mic ────────────────────────────────────────────────────────────
@@ -1322,53 +1299,57 @@ micBtn.addEventListener('click', toggleMic);
 async function toggleMic() {
   if (!isLive) return;
   if (micEnabled) {
-    audioSender?.replaceTrack(null);
+    audioSender?.replaceTrack(null).catch(() => {});
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     micEnabled = false;
     updateMicUI();
-    ws?.send(JSON.stringify({ type: 'mic-state', enabled: false }));
+    sendMsg({ type: 'mic-state', enabled: false });
     return;
   }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
-    await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
+    if (audioSender) await audioSender.replaceTrack(micStream.getAudioTracks()[0]);
     micEnabled = true;
     updateMicUI();
-    ws?.send(JSON.stringify({ type: 'mic-state', enabled: true }));
-    if (pc) {
-      try {
-        const stats = await pc.getStats();
-        let bestPair = null;
-        stats.forEach(r => {
-          if (r.type === 'candidate-pair' && r.state === 'succeeded')
-            if (!bestPair || r.nominated) bestPair = r;
-        });
-        if (bestPair?.currentRoundTripTime > 0.25) showMicToast('High latency — audio may lag');
-      } catch {}
-    }
+    sendMsg({ type: 'mic-state', enabled: true });
+    try {
+      const { bestPair } = await bestPairStats();
+      if (bestPair?.currentRoundTripTime > 0.25) showToast('High latency — audio may lag');
+    } catch {}
   } catch {
-    showMicToast('Microphone access denied');
+    showToast('Microphone access denied');
   }
 }
 
 function updateMicUI() {
-  micBtn.classList.toggle('mic-on', micEnabled);
-  micBtn.textContent = micEnabled ? 'Mic: On' : 'Mic: Off';
+  micBtn.setAttribute('aria-pressed', String(micEnabled));
 }
 
-function showMicToast(msg) {
+function showToast(msg) {
   const t = document.createElement('div');
-  t.className = 'mic-toast';
+  t.className = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
-  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
-  setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 250); }, 3000);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 250); }, 3000);
 }
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+applyGuides();
+
+// Page reloaded mid-session? Rejoin the same room without knocking again.
+if (loadSession()) {
+  showControlScreen();
+  setStatus('Reconnecting…');
+  signal.connect();
+} else if (urlCode && urlKey) {
+  // Opened by scanning the QR with the phone's own camera → join straight away
+  joinRoom(urlKey);
 }
 </script>
 <script src="/help.js"></script>

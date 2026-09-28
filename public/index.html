@@ -2,242 +2,134 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#080808">
+<meta name="theme-color" content="#0A0A0B">
+<meta name="description" content="Stop retaking. Start directing. See your partner's camera live on your phone and guide them to the perfect shot.">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
 <title>PicMe</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  :focus-visible { outline: 2.5px solid #00A8FF; outline-offset: 2px; border-radius: 4px; }
-
-  body {
-    background: #080808;
-    color: #fff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 52px 20px 48px;
-    overscroll-behavior: none;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Ambient top glow */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 900px;
-    height: 900px;
-    background: radial-gradient(ellipse at top, rgba(0,168,255,0.10) 0%, transparent 52%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
   .page {
-    position: relative;
-    z-index: 1;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 360px;
-    gap: 0;
+    padding: calc(var(--safe-t) + 56px) 20px calc(var(--safe-b) + 20px);
+    max-width: 480px;
+    margin: 0 auto;
   }
+  .hero { margin-bottom: 28px; animation: rise 0.5s var(--ease) both; }
+  .hero .wordmark { font-size: 44px; }
+  .hero .tagline { margin-top: 10px; font-size: 20px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; }
+  .hero .tagline span { color: var(--text-3); display: block; }
 
-  /* ── Hero ── */
-  .hero {
-    text-align: center;
-    margin-bottom: 36px;
-    animation: fade-up 0.6s cubic-bezier(0.22,1,0.36,1) both;
-  }
-
-  .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 86px;
-    height: 86px;
-    background: linear-gradient(145deg, rgba(0,168,255,0.20) 0%, rgba(0,168,255,0.06) 100%);
-    border: 1px solid rgba(0,168,255,0.24);
-    border-radius: 26px;
-    margin-bottom: 20px;
-    box-shadow:
-      0 0 0 1px rgba(0,168,255,0.05),
-      0 0 48px rgba(0,168,255,0.10),
-      inset 0 1px 0 rgba(255,255,255,0.07);
-  }
-  .logo-mark span { line-height: 1; }
-
-  h1 {
-    font-size: 46px;
-    font-weight: 900;
-    font-family: 'Barlow Condensed', sans-serif;
-    letter-spacing: -1px;
-    line-height: 1;
-    margin-bottom: 10px;
-  }
-  h1 .pic { color: #fff; }
-  h1 .me  { color: #00A8FF; }
-
-  .tagline {
-    font-size: 15px;
-    color: rgba(255,255,255,0.40);
-    line-height: 1.55;
-    letter-spacing: 0.1px;
-  }
-
-  /* ── Role group (iOS-style list) ── */
-  .role-group {
-    width: 100%;
-    background: #111111;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 22px;
-    overflow: hidden;
-    margin-bottom: 20px;
-    animation: fade-up 0.65s 0.07s cubic-bezier(0.22,1,0.36,1) both;
-  }
-
-  a.role-card {
+  .roles { display: flex; flex-direction: column; gap: 12px; animation: rise 0.5s 0.06s var(--ease) both; }
+  .role {
     display: flex;
     align-items: center;
-    gap: 13px;
-    padding: 17px 16px;
+    gap: 16px;
+    padding: 20px 18px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
     text-decoration: none;
-    color: #fff;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    transition: background 0.12s;
-    cursor: pointer;
-    position: relative;
+    transition: transform 0.12s var(--ease), background 0.15s;
+    touch-action: manipulation;
   }
-  a.role-card:last-child { border-bottom: none; }
-  a.role-card:active { background: rgba(255,255,255,0.05); }
-
+  .role:active { transform: scale(0.98); background: var(--surface-2); }
+  .role.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .role.primary:active { background: #F2C52E; }
   .role-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.07);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
+    background: var(--surface-2);
   }
+  .role.primary .role-icon { background: rgba(0,0,0,0.12); }
   .role-body { flex: 1; min-width: 0; }
-  .role-name { font-size: 16px; font-weight: 700; line-height: 1.2; margin-bottom: 2px; }
-  .role-desc { font-size: 13px; color: rgba(255,255,255,0.40); line-height: 1.4; }
-  .role-chev { font-size: 20px; color: rgba(255,255,255,0.18); flex-shrink: 0; font-weight: 300; }
-  a.role-card:active .role-chev { color: #00A8FF; }
+  .role-name { font-size: 19px; font-weight: 750; letter-spacing: -0.02em; }
+  .role-desc { font-size: 14px; margin-top: 2px; opacity: 0.75; }
+  .role-chev { opacity: 0.6; }
 
-  /* ── Bottom ── */
-  .bottom {
-    width: 100%;
+  .tripod-link {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 12px;
-    animation: fade-up 0.65s 0.13s cubic-bezier(0.22,1,0.36,1) both;
-  }
-
-  .wifi-hint {
-    font-size: 12px;
-    color: rgba(255,255,255,0.28);
-    text-align: center;
-  }
-
-  #share-app-btn {
-    width: 100%;
-    background: rgba(0,168,255,0.08);
-    border: 1.5px solid rgba(0,168,255,0.20);
-    border-radius: 17px;
-    color: #00A8FF;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 16px 22px;
-    cursor: pointer;
+    margin-top: 12px;
+    padding: 14px 18px;
+    border-radius: var(--r-lg);
+    border: 1px dashed var(--line-strong);
+    color: var(--text);
+    text-decoration: none;
+    animation: rise 0.5s 0.09s var(--ease) both;
     touch-action: manipulation;
-    transition: background 0.12s, border-color 0.12s, transform 0.1s;
-    letter-spacing: 0.1px;
   }
-  #share-app-btn:active {
-    background: rgba(0,168,255,0.14);
-    border-color: rgba(0,168,255,0.38);
-    transform: scale(0.97);
-  }
+  .tripod-link:active { background: var(--surface); }
+  .tripod-link .t-icon { color: var(--accent); display: flex; }
+  .tripod-link b { font-size: 16px; font-weight: 700; display: block; }
+  .tripod-link span { font-size: 14px; color: var(--text-2); }
 
-  /* ── Toast ── */
-  .toast {
-    position: fixed;
-    bottom: 96px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: #1E1E1E;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px;
-    color: rgba(255,255,255,0.9);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    z-index: 300;
-    opacity: 0;
-    transition: opacity 0.22s, transform 0.22s;
-    white-space: nowrap;
-    pointer-events: none;
+  .steps {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    animation: rise 0.5s 0.12s var(--ease) both;
   }
-  .toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .step { font-size: 13px; color: var(--text-2); line-height: 1.35; }
+  .step b { display: block; font-size: 13px; color: var(--accent); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+  .bottom { margin-top: auto; padding-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .hint { font-size: 13px; color: var(--text-3); }
 </style>
 </head>
 <body>
 
-<div class="page">
+<main class="page">
   <div class="hero">
-    <div class="logo-mark"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
-    <h1><span class="pic">Pic</span><span class="me">Me</span></h1>
-    <p class="tagline">Stop retaking. Start directing.</p>
+    <div class="wordmark">Pic<b>Me</b></div>
+    <p class="tagline">Stop retaking.<span>Start directing.</span></p>
   </div>
 
-  <div class="role-group">
-    <a href="/photographer.html" class="role-card">
-      <div class="role-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
+  <nav class="roles" aria-label="Choose your role">
+    <a href="/director.html" class="role primary">
+      <div class="role-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="10" r="3"/><path d="M7 18c1-2.5 3-3.5 5-3.5s4 1 5 3.5"/></svg></div>
       <div class="role-body">
-        <div class="role-name">Photographer</div>
-        <div class="role-desc">Hold the phone. Receive live directions.</div>
+        <div class="role-name">I'm in the photo</div>
+        <div class="role-desc">See their camera live and call the shot</div>
       </div>
-      <div class="role-chev">›</div>
+      <svg class="role-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg>
     </a>
-    <a href="/director.html" class="role-card">
-      <div class="role-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+    <a href="/photographer.html" class="role">
+      <div class="role-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></div>
       <div class="role-body">
-        <div class="role-name">Director</div>
-        <div class="role-desc">See their view. Guide every angle.</div>
+        <div class="role-name">I'm taking the photo</div>
+        <div class="role-desc">Hold the phone — they'll guide you</div>
       </div>
-      <div class="role-chev">›</div>
+      <svg class="role-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg>
     </a>
-  </div>
+  </nav>
+
+  <a href="/photographer.html?mode=tripod" class="tripod-link">
+    <div class="t-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="7" rx="1.5"/><circle cx="12" cy="5.5" r="1.6"/><path d="M12 9v4M12 13l-6 9M12 13l6 9M12 13v9"/></svg></div>
+    <div><b>Group shot? Use Tripod mode</b><span>Prop a phone up, control it from yours — everyone's in the photo</span></div>
+  </a>
+
+  <section class="steps" aria-label="How it works">
+    <div class="step"><b>01</b>Photographer opens the camera</div>
+    <div class="step"><b>02</b>You scan their code</div>
+    <div class="step"><b>03</b>Guide, shoot, keep the best</div>
+  </section>
 
   <div class="bottom">
-    <p class="wifi-hint">Both phones need internet access</p>
-    <button id="share-app-btn">Share PicMe</button>
+    <button id="share-app-btn" class="btn btn-ghost">Share PicMe with a friend</button>
+    <p class="hint">Works in the browser — nothing to install</p>
   </div>
-</div>
+</main>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -247,15 +139,15 @@ if ('serviceWorker' in navigator) {
 document.getElementById('share-app-btn').addEventListener('click', async () => {
   const shareData = {
     title: 'PicMe',
-    text: 'Stop retaking. Start directing. Try PicMe — the app that lets someone else frame your perfect shot! 📸',
-    url: 'https://camerashare-production.up.railway.app',
+    text: 'Stop retaking. Start directing. See my camera live on your phone and guide the perfect shot 📸',
+    url: location.origin,
   };
   if (navigator.share) {
     try { await navigator.share(shareData); } catch {}
   } else {
     try {
       await navigator.clipboard.writeText(shareData.url);
-      showToast('✓ Link copied!');
+      showToast('Link copied');
     } catch {}
   }
 });
@@ -265,11 +157,8 @@ function showToast(msg) {
   t.className = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
-  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('toast-show')));
-  setTimeout(() => {
-    t.classList.remove('toast-show');
-    setTimeout(() => t.remove(), 250);
-  }, 2500);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 250); }, 2500);
 }
 </script>
 <script src="/help.js"></script>
