@@ -1,5 +1,5 @@
 // Bump this version with every deployment to clear old caches automatically.
-const VERSION = 'picme-v7';
+const VERSION = 'picme-v9';
 
 // Only truly static assets that never change between deployments.
 // HTML is intentionally excluded — it must always be fetched fresh.

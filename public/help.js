@@ -123,8 +123,8 @@
         ${row('swipe',   'Swipe to guide',      'Swipe on the picture the way the camera should move — left, right, up or down. Or tap the arrows at the edges.')}
         ${row('pinch',   'Pinch for distance',  'Spread two fingers: “move closer”. Pinch in: “step back”. The buttons next to the shutter do the same.')}
         ${row('hold',    'Hold it!',            'Tap Hold it (or double-tap the picture) when the frame is perfect and they should stop moving.')}
-        ${row('shutter', 'Take the shot',       'Tap the shutter. After a 3-second countdown your partner’s phone grabs a quick burst. Shoot again as often as you like — the live view never stops.')}
-        ${row('photos',  'Keep your favorite',  'Shots collect in the strip above the shutter. Tap one to see it big, then Save Photo — or Save all. They stay even if you reload or switch roles.')}
+        ${row('shutter', 'Take the shot',       'Tap the shutter. After a 3-second countdown your partner’s phone grabs a quick burst. Shoot again as often as you like — the live view never stops. Your partner can also shoot from their side; those photos land here too.')}
+        ${row('photos',  'Keep your favorite',  'Shots collect in the strip above the shutter. Tap one, then swipe through them: ♥ the keepers, delete the misses, Save one or Save all. Starting a new session clears them from the phone.')}
         ${row('grid',    'Grid & level',        'Tap the grid icon for rule-of-thirds lines and a live horizon level from your partner’s phone — it turns yellow when the shot is straight.')}
         ${row('ref',     'Make it like this',   'Tap the picture icon and choose a photo you love. Your partner sees it in the corner and can overlay it on their camera to match the framing.')}
         ${row('swap',    'Switch roles',        'Want to take one of them now? Tap the switch icon — once they agree, your phones swap. No rescanning.')}
@@ -136,7 +136,8 @@
         <p class="pmh-intro">You hold the phone. Your partner sees what you see and tells you exactly how to move.</p>
         ${row('qr',      'Show your code',      'Open the camera and let your partner scan the code. If someone types it instead, you’ll be asked to allow them.')}
         ${row('cue',     'Follow the cues',     'A glowing edge means move that way. Yellow corner brackets growing means move closer; shrinking means step back.')}
-        ${row('shutter', 'Hold still',          'When the countdown appears, keep steady — a burst of photos is taken at zero and sent to your partner. Your copies wait behind the thumbnail at the bottom.')}
+        ${row('shutter', 'Shoot it yourself',   'Tap the shutter for a photo right now — no timer. Hold it to keep shooting, about 3 a second. Every shot lands on your partner’s phone instantly.')}
+        ${row('hold',    'Hold still',          'When your partner starts a countdown, keep steady — a burst is taken at zero and sent to them. Your copies wait behind the thumbnail at the bottom left — tap it to swipe through, heart or delete them.')}
         ${row('grid',    'Level',               'A level line appears in the middle when the phone is nearly straight — it turns yellow when the horizon is level.')}
         ${row('ref',     'Reference photo',     'If your partner sends a photo to match, it appears in the corner. Tap it to overlay it on your camera.')}
         ${row('swap',    'Switch roles',        'Tap the switch icon to swap — you step into the photo and your partner takes over the camera.')}

@@ -87,12 +87,12 @@
     left: 12px; right: 12px;
     z-index: 10;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     pointer-events: none;
   }
-  .hud-top .left { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .hud-top .left { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 56px; }
   .hud-bottom {
     position: fixed;
     bottom: calc(var(--safe-b) + 16px);
@@ -103,7 +103,37 @@
     justify-content: space-between;
     pointer-events: none;
   }
-  .hud-bottom .icon-btn, .hud-top .icon-btn { pointer-events: auto; }
+  .hud-top .right { display: flex; align-items: center; gap: 10px; margin-top: -2px; }
+  .hud-bottom { align-items: center; }
+  .hud-bottom .icon-btn, .hud-top .icon-btn, .hud-bottom .shutter { pointer-events: auto; }
+  .slot { width: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+
+  /* Photographer's own shutter: tap = one photo, hold = keep shooting */
+  #snap-btn {
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #snap-btn.pressed::after { transform: scale(0.88); }
+  #snap-btn.firing { border-color: var(--accent); }
+  #snap-btn.firing::after { background: var(--accent); transform: scale(0.8); }
+  #snap-count {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 44px;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  /* Each shot: the picture blinks, like a camera app */
+  #viewfinder.blink { animation: vf-blink 0.14s ease-out; }
+  @keyframes vf-blink { 0% { opacity: 0.25; } 100% { opacity: 1; } }
+  #last-shot.pop { animation: pop 0.22s var(--ease); }
+  @keyframes pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
   .labeled { display: flex; flex-direction: column; align-items: center; gap: 5px; }
   .labeled span { font-size: 12px; font-weight: 600; color: var(--text); text-shadow: 0 1px 6px rgba(0,0,0,0.8); }
 
@@ -206,6 +236,17 @@
 </style>
 </head>
 <body>
+<button id="home-btn" class="icon-btn home-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></button>
+<div id="leave-modal" class="modal-scrim" hidden>
+  <div class="modal-card card" role="alertdialog" aria-labelledby="leave-title">
+    <h2 id="leave-title">End the session?</h2>
+    <p>Your partner will be disconnected. Your photos stay on this phone until you start a new session.</p>
+    <div class="modal-actions">
+      <button id="leave-no" class="btn btn-secondary">Stay</button>
+      <button id="leave-yes" class="btn btn-primary">End session</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Setup ── -->
 <div id="setup-screen">
@@ -267,17 +308,20 @@
     <span class="chip" id="remote-mic-ind" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/></svg>Partner speaking</span>
     <span class="chip warn" id="qual-ind" hidden>Weak connection</span>
   </div>
-  <button id="swap-btn" class="icon-btn photo-only" aria-label="Switch roles with your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+  <div class="right photo-only">
+  <button id="mic-btn" class="icon-btn" aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+  <button id="swap-btn" class="icon-btn" aria-label="Switch roles with your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+  </div>
 </div>
 <div class="hud-bottom" id="live-hud-bottom" hidden>
-  <div class="labeled photo-only">
-    <button id="mic-btn" class="icon-btn" aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-    <span>Talk</span>
+  <div class="slot">
+    <button id="last-shot" hidden aria-label="See your shots"><img id="last-shot-img" alt=""><span class="count" id="last-shot-count">5</span></button>
   </div>
-  <div class="labeled">
-    <button id="last-shot" hidden aria-label="See your last shots"><img id="last-shot-img" alt=""><span class="count" id="last-shot-count">5</span></button>
+  <div class="slot photo-only snap-wrap">
+    <span class="chip" id="snap-count" hidden>0</span>
+    <button id="snap-btn" class="shutter" aria-label="Take a photo — hold to keep shooting"></button>
   </div>
-  <div class="labeled photo-only">
+  <div class="slot labeled photo-only">
     <button id="native-cam-btn" class="icon-btn" aria-label="Take a full-quality photo with your camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
     <span>Full quality</span>
   </div>
@@ -306,26 +350,11 @@
 </div>
 <div class="shutter-flash" id="capture-flash"></div>
 
-<!-- Pick & save -->
-<div id="review" class="review" hidden role="dialog" aria-label="Your shots">
-  <img id="review-img" class="review-img" alt="Selected shot">
-  <div class="review-bar">
-    <div class="review-top">
-      <div id="review-hint" class="review-hint">Pick your favorite, then tap Save</div>
-      <button id="save-all-btn" class="link-btn" hidden>Save all</button>
-    </div>
-    <div id="review-thumbs" class="review-thumbs"></div>
-    <div class="review-actions">
-      <button id="continue-btn" class="btn btn-secondary">Back to Live</button>
-      <button id="save-btn" class="btn btn-primary">Save Photo</button>
-    </div>
-  </div>
-</div>
-
 <div id="conn-banner" class="chip warn" hidden role="status"><span class="dot waiting"></span>Reconnecting…</div>
 
 <script src="/signal.js"></script>
 <script src="/gallery.js"></script>
+<script src="/viewer.js"></script>
 <script>
 // ── ICE servers (fetched from our server; credentials never live in this file) ──
 let iceConfig = null;
@@ -362,10 +391,6 @@ const captureFlash     = $('capture-flash');
 const countdownOverlay = $('countdown-overlay');
 const countdownNum     = $('countdown-num');
 const countdownLabel   = $('countdown-label');
-const review           = $('review');
-const reviewImg        = $('review-img');
-const reviewThumbs     = $('review-thumbs');
-const reviewHint       = $('review-hint');
 
 // ── Session (lets a dropped connection or a reload return to the same room) ──
 const SESSION_KEY = 'picme_photographer';
@@ -509,6 +534,7 @@ async function handleMessage(msg) {
     case 'room-created':
       applyMode(msg.mode);
       saveSession(msg.code, msg.token);
+      startFreshShots(msg.code);
       renderRoom(msg.code, msg.key);
       setupScreen.hidden = true;
       directorConnected = false;
@@ -597,7 +623,7 @@ async function handleMessage(msg) {
       signal.stop();
       closePeer();
       hideKnock();
-      hideReview();
+      viewer.close();
       directorConnected = false;
       waitingOverlay.hidden = true;
       liveHudTop.hidden = true;
@@ -644,6 +670,28 @@ function goToRole({ role, code, token }) {
   closePeer();
   localStream?.getTracks().forEach(t => t.stop());
   location.replace(role === 'director' ? '/director.html' : '/photographer.html');
+}
+
+// ── Home ────────────────────────────────────────────────────────────
+
+$('home-btn').addEventListener('click', () => {
+  if (directorConnected) { $('leave-modal').hidden = false; return; }
+  leaveToHome();
+});
+$('leave-no').addEventListener('click', () => { $('leave-modal').hidden = true; });
+$('leave-yes').addEventListener('click', leaveToHome);
+
+function leaveToHome() {
+  $('leave-modal').hidden = true;
+  stopRapid();
+  if (loadSession()) sendMsg({ type: 'leave' });
+  clearSession();
+  setTimeout(() => {
+    signal.stop();
+    closePeer();
+    localStream?.getTracks().forEach(t => t.stop());
+    location.href = '/';
+  }, 150);
 }
 
 // ── Knock buttons ───────────────────────────────────────────────────
@@ -827,7 +875,8 @@ function showDepthCue(dir) {
 let countdownTimer = null;
 
 function startPhotographerCountdown() {
-  hideReview();
+  stopRapid();
+  viewer.close();
   clearInterval(countdownTimer);
   clearCues();
   countdownOverlay.hidden = false;
@@ -846,26 +895,61 @@ function startPhotographerCountdown() {
     const shots = await captureBurst(5, 140);
     if (!shots.length) return;
     const sent = sendShotsToDirector(shots);
-    setLastBurst(shots);
-    PicMeGallery.add(roomCode, shots.map(s => s.blob));
+    addShots(shots);
     // Straight back to live — ready for the next shot. Shots wait behind the thumbnail.
     if (sent) showToast(MODE === 'tripod' ? `${shots.length} shots sent` : 'Shots sent to your partner');
   }, 1000);
 }
 
-// Last burst lives behind the thumbnail (like a camera app); tap to review & save.
-let lastBurst = [];
-function setLastBurst(shots) {
-  lastBurst.forEach(s => { if (!shots.includes(s)) URL.revokeObjectURL(s.url); });
-  lastBurst = shots;
-  $('last-shot-img').src = shots[0].url;
-  $('last-shot-count').textContent = shots.length;
-  $('last-shot-count').hidden = shots.length < 2;
-  $('last-shot').hidden = false;
+// Every shot this session, newest first — { blob, url, id, fav, deleted }.
+// The newest one sits behind the thumbnail (like a camera app); tap it to swipe through them all.
+let pShots = [], shotsRoom = null;
+
+function addShots(shots, saved) {
+  shots.forEach(sh => { sh.id = sh.id ?? null; sh.fav = !!sh.fav; sh.deleted = false; });
+  pShots = [...shots, ...pShots];
+  if (!saved) PicMeGallery.add(shotsRoom, shots.map(sh => sh.blob)).then(ids => ids.forEach((id, k) => { shots[k].id = id; }));
+  updateLastShot();
+  viewer.refresh();
 }
-$('last-shot').addEventListener('click', () => {
-  if (lastBurst.length) showReview(lastBurst, lastBurst.length > 1 ? 'Pick your favorite, then tap Save' : 'Tap Save to keep this photo');
+
+function updateLastShot() {
+  const live = pShots.filter(sh => !sh.deleted);
+  $('last-shot').hidden = !live.length;
+  if (!live.length) return;
+  $('last-shot-img').src = live[0].url;
+  $('last-shot-count').textContent = live.length;
+  $('last-shot-count').hidden = live.length < 2;
+}
+
+const viewer = new PicMeViewer({
+  getShots: () => pShots,
+  toast: showToast,
+  onFav: (shot) => PicMeGallery.setFav(shot.id, shot.fav),
+  onDelete(shot) {
+    updateLastShot();
+    shot.deleteTimer = setTimeout(() => PicMeGallery.remove(shot.id), 4500);  // after the Undo chance
+  },
+  onUndo(shot) {
+    clearTimeout(shot.deleteTimer);
+    updateLastShot();
+  },
 });
+
+$('last-shot').addEventListener('click', () => {
+  const first = pShots.find(sh => !sh.deleted);
+  if (first) viewer.open(first);
+});
+
+// A new room starts empty — and earlier sessions' photos leave this phone
+function startFreshShots(room) {
+  viewer.close();
+  pShots.forEach(sh => URL.revokeObjectURL(sh.url));
+  pShots = [];
+  shotsRoom = room;
+  updateLastShot();
+  PicMeGallery.keepOnly(room);
+}
 
 function animateCountNum(n) {
   countdownNum.textContent = n;
@@ -893,80 +977,13 @@ async function captureBurst(count, gapMs) {
   return blobs.map(blob => ({ blob, url: URL.createObjectURL(blob) }));
 }
 
-let reviewShots = [], selectedShot = 0;
-
-function showReview(shots, hint) {
-  hideReview();
-  if (!shots.length) return;
-  reviewShots = shots;
-  $('save-all-btn').hidden = shots.length < 2;
-  $('save-all-btn').textContent = `Save all ${shots.length}`;
-  selectedShot = 0;
-  reviewHint.textContent = hint;
-  reviewThumbs.innerHTML = '';
-  reviewThumbs.hidden = shots.length < 2;
-  shots.forEach((shot, i) => {
-    const b = document.createElement('button');
-    b.className = 'thumb';
-    b.setAttribute('aria-label', `Shot ${i + 1}`);
-    b.innerHTML = `<img src="${shot.url}" alt="">`;
-    b.addEventListener('click', () => selectShot(i));
-    reviewThumbs.appendChild(b);
-  });
-  selectShot(0);
-  review.hidden = false;
-}
-
-function selectShot(i) {
-  selectedShot = i;
-  reviewImg.src = reviewShots[i].url;
-  [...reviewThumbs.children].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
-}
-
-function hideReview() {
-  review.hidden = true;
-  reviewShots = [];
-  reviewImg.removeAttribute('src');
-}
-
-// Saving must happen inside a tap — that's what lets the phone open its save/share sheet.
-$('save-btn').addEventListener('click', async () => {
-  const shot = reviewShots[selectedShot];
-  if (!shot) return;
-  const file = new File([shot.blob], `picme-${Date.now()}.jpg`, { type: shot.blob.type || 'image/jpeg' });
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); } catch {}
-  } else {
-    const a = Object.assign(document.createElement('a'), { href: shot.url, download: file.name });
-    document.body.appendChild(a); a.click(); a.remove();
-    showToast('Photo downloaded');
-  }
-});
-
-$('continue-btn').addEventListener('click', hideReview);
-
-$('save-all-btn').addEventListener('click', async () => {
-  const files = reviewShots.slice(0, 30).map((s, i) =>
-    new File([s.blob], `picme-${Date.now()}-${i + 1}.jpg`, { type: s.blob.type || 'image/jpeg' }));
-  if (navigator.canShare?.({ files })) {
-    try { await navigator.share({ files }); } catch {}
-  } else {
-    for (const f of files) {
-      const url = URL.createObjectURL(f);
-      const a = Object.assign(document.createElement('a'), { href: url, download: f.name });
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }
-    showToast(`${files.length} photos downloaded`);
-  }
-});
-
 // After a reload or a role swap, bring back the shots taken in this room
 async function restoreShots(room) {
-  if (lastBurst.length) return;
+  shotsRoom = room;
+  if (pShots.length) return;
   const saved = await PicMeGallery.list(room);
-  if (!saved.length) return;
-  setLastBurst(saved.slice(-30).reverse().map(r => ({ blob: r.blob, url: URL.createObjectURL(r.blob) })));
+  if (!saved.length || pShots.length) return;
+  addShots(saved.slice(-240).map(r => ({ blob: r.blob, url: URL.createObjectURL(r.blob), id: r.id, fav: r.fav })).reverse(), true);
 }
 
 // ── Reference photo from the Director ───────────────────────────────
@@ -1077,29 +1094,128 @@ function waitForDrain(ch) {
   });
 }
 
+// Shots go out one batch at a time, in order — rapid-fire shots queue up instead of
+// getting mixed together on the way.
+const sendQueue = [];
+let sending = false, sendSeq = 0, lastSendWarn = 0;
+
 function sendShotsToDirector(shots) {
   const ch = photoChannel;
   if (!ch || ch.readyState !== 'open') {
-    if (directorConnected) showToast('Couldn’t send the photos to your partner');
+    if (directorConnected && Date.now() - lastSendWarn > 4000) {
+      lastSendWarn = Date.now();
+      showToast('Couldn’t send the photos to your partner');
+    }
     return false;
   }
-  (async () => {
-    const id = Date.now();
+  sendQueue.push({ id: `${Date.now()}-${++sendSeq}`, shots });
+  pumpSends();
+  return true;
+}
+
+async function pumpSends() {
+  if (sending) return;
+  sending = true;
+  while (sendQueue.length) {
+    const { id, shots } = sendQueue.shift();
+    const ch = photoChannel;
+    if (!ch || ch.readyState !== 'open') { sendQueue.length = 0; break; }
     try {
       ch.send(JSON.stringify({ type: 'burst', id, count: shots.length }));
       for (let i = 0; i < shots.length; i++) {
         const buf = await shots[i].blob.arrayBuffer();
         ch.send(JSON.stringify({ type: 'shot', id, index: i, size: buf.byteLength, mime: shots[i].blob.type || 'image/jpeg' }));
         for (let off = 0; off < buf.byteLength; off += CHUNK) {
-          if (ch.readyState !== 'open') return;
+          if (ch.readyState !== 'open') throw new Error('closed');
           if (ch.bufferedAmount > 1024 * 1024) await waitForDrain(ch);
           ch.send(buf.slice(off, off + CHUNK));
         }
       }
     } catch {}
-  })();
-  return true;
+  }
+  sending = false;
 }
+
+// ── The Photographer's own shutter ──────────────────────────────────
+// Tap = one photo right now. Hold = keep shooting, about 3–4 a second.
+// Every shot goes straight to the Director, just like the countdown bursts.
+
+const snapBtn = $('snap-btn');
+const HOLD_DELAY = 350, RAPID_GAP = 250, HOLD_MAX = 40;
+const grabCanvas = document.createElement('canvas');
+let grabbing = false, holdTimer = null, rapidTimer = null, holdCount = 0, countHideTimer = null;
+
+async function grabFrame() {
+  const w = viewfinder.videoWidth, h = viewfinder.videoHeight;
+  if (!w || !h) return null;
+  if (grabCanvas.width !== w || grabCanvas.height !== h) { grabCanvas.width = w; grabCanvas.height = h; }
+  grabCanvas.getContext('2d').drawImage(viewfinder, 0, 0, w, h);
+  const blob = await new Promise(res => grabCanvas.toBlob(res, 'image/jpeg', 0.92));
+  return blob ? { blob, url: URL.createObjectURL(blob) } : null;
+}
+
+// Take one photo and send it. Skips (rather than piling up) if the phone is still busy with the last one.
+async function snapOne() {
+  if (grabbing) return false;
+  grabbing = true;
+  try {
+    restartAnim(viewfinder, 'blink');
+    const shot = await grabFrame();
+    if (!shot) return false;
+    try { photoChannel?.readyState === 'open' && photoChannel.send(JSON.stringify({ type: 'snap' })); } catch {}
+    sendShotsToDirector([shot]);
+    addShots([shot]);
+    restartAnim($('last-shot'), 'pop');
+    return true;
+  } finally {
+    grabbing = false;
+  }
+}
+
+function showSnapCount() {
+  clearTimeout(countHideTimer);
+  $('snap-count').textContent = holdCount;
+  $('snap-count').hidden = false;
+}
+
+function startRapid() {
+  holdTimer = null;
+  snapBtn.classList.add('firing');
+  buzz(15);
+  showSnapCount();
+  rapidTimer = setInterval(async () => {
+    if (holdCount >= HOLD_MAX) { stopRapid(); return; }
+    if (await snapOne()) { holdCount++; if (rapidTimer) showSnapCount(); }
+  }, RAPID_GAP);
+}
+
+function stopRapid() {
+  const wasRapid = !!rapidTimer;
+  clearTimeout(holdTimer); holdTimer = null;
+  clearInterval(rapidTimer); rapidTimer = null;
+  snapBtn.classList.remove('pressed', 'firing');
+  if (wasRapid) {
+    showSnapCount();
+    countHideTimer = setTimeout(() => { $('snap-count').hidden = true; }, 900);
+    if (holdCount > 1 && photoChannel?.readyState === 'open') showToast(`${holdCount} photos sent to your partner`);
+  }
+}
+
+snapBtn.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  e.preventDefault();
+  try { snapBtn.setPointerCapture(e.pointerId); } catch {}
+  stopRapid();
+  holdCount = 0;
+  snapBtn.classList.add('pressed');
+  snapOne().then(ok => { if (ok) { holdCount++; if (rapidTimer) showSnapCount(); } });
+  holdTimer = setTimeout(startRapid, HOLD_DELAY);
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => snapBtn.addEventListener(t, stopRapid));
+snapBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+// Keyboard / accessibility "click" (no pointer involved)
+snapBtn.addEventListener('click', (e) => { if (e.detail === 0) snapOne(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopRapid(); });
 
 // ── Native camera (full quality) ────────────────────────────────────
 // Opens the phone's own camera; the photo comes back here so it can be saved.
@@ -1115,9 +1231,9 @@ nativeInput.addEventListener('change', () => {
   if (!file) return;
   const shots = [{ blob: file, url: URL.createObjectURL(file) }];
   const sent = sendShotsToDirector(shots);
-  setLastBurst(shots);
-  PicMeGallery.add(roomCode, [file]);
-  showReview(shots, sent ? 'Sent to your partner — tap Save to keep it here too' : 'Tap Save to keep this photo');
+  addShots(shots);
+  viewer.open(shots[0]);
+  if (sent) showToast('Sent to your partner too');
 });
 window.addEventListener('focus', () => ensureCamera());
 

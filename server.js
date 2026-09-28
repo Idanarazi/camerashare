@@ -33,7 +33,12 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Pages, scripts and styles are always re-checked, so phones never run an old version after an update
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, file) {
+    if (/\.(html|js|css|json)$/.test(file)) res.set('Cache-Control', 'no-cache');
+  },
+}));
 
 // ── ICE servers (STUN + TURN) ────────────────────────────────────────
 // Preferred: METERED_API_KEY → temporary credentials from Metered's API.
@@ -200,10 +205,10 @@ function clearTimer(room, key) {
   if (room[key]) { clearTimeout(room[key]); room[key] = null; }
 }
 
-function expireRoom(code) {
+function expireRoom(code, message = 'Session ended — please start a new room.') {
   const room = rooms.get(code);
   if (!room) return;
-  const msg = { type: 'session-expired', message: 'Session ended — please start a new room.' };
+  const msg = { type: 'session-expired', message };
   send(room.photographer, msg);
   send(room.director,     msg);
   send(room.pendingDirector, msg);
@@ -483,6 +488,24 @@ wss.on('connection', (ws, req) => {
         send(oldD, { type: 'swap-go', role: 'photographer', code, token: room.photographerToken });
         send(oldP, { type: 'swap-go', role: 'director',     code, token: room.directorToken });
         console.log(`[room] roles swapped: ${code}`);
+        break;
+      }
+
+      // Someone tapped Home and chose to leave
+      case 'leave': {
+        const code = ws.roomCode;
+        const room = rooms.get(code);
+        if (!room) break;
+        if (ws.role === 'director' && room.director === ws) {
+          ws.role = null; ws.roomCode = null;
+          releaseDirector(room, code);            // camera phone goes back to showing its code
+          console.log(`[room] director left: ${code}`);
+        } else if (ws.role === 'photographer' && room.photographer === ws) {
+          ws.role = null; ws.roomCode = null;
+          room.photographer = null;
+          expireRoom(code, 'Your partner ended the session.');
+          console.log(`[room] photographer ended: ${code}`);
+        }
         break;
       }
 

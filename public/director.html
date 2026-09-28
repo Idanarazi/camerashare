@@ -107,7 +107,7 @@
     align-items: flex-start;
     pointer-events: none;
   }
-  .hud .left  { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .hud .left  { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 56px; }
   .hud .right { display: flex; gap: 10px; pointer-events: auto; }
 
   /* Edge arrows: tap to guide (or swipe anywhere on the picture) */
@@ -204,10 +204,20 @@
   .bar-btn .icon-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
   /* Review sits over the whole screen */
-  #director-freeze { position: absolute; }
 </style>
 </head>
 <body>
+<button id="home-btn" class="icon-btn home-btn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></button>
+<div id="leave-modal" class="modal-scrim" hidden>
+  <div class="modal-card card" role="alertdialog" aria-labelledby="leave-title">
+    <h2 id="leave-title">Leave this session?</h2>
+    <p>You’ll stop seeing your partner’s camera. Their phone goes back to showing its code, so you can scan again anytime.</p>
+    <div class="modal-actions">
+      <button id="leave-no" class="btn btn-secondary">Stay</button>
+      <button id="leave-yes" class="btn btn-primary">Leave</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Join ── -->
 <div id="join-screen">
@@ -324,28 +334,13 @@
       </div>
     </div>
   </div>
-
-  <!-- Pick & save -->
-  <div id="director-freeze" class="review" hidden role="dialog" aria-label="Your shots">
-    <img id="frozen-frame" class="review-img" alt="Selected shot">
-    <div class="review-bar">
-      <div class="review-top">
-        <div id="dreview-hint" class="review-hint" aria-live="polite">Receiving photos…</div>
-        <button id="dsave-all-btn" class="link-btn" hidden>Save all</button>
-      </div>
-      <div id="dreview-thumbs" class="review-thumbs"></div>
-      <div class="review-actions">
-        <button id="done-btn" class="btn btn-secondary">Back to Live</button>
-        <button id="dsave-btn" class="btn btn-primary" disabled>Save Photo</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div id="conn-banner" class="chip warn" hidden role="status"><span class="dot waiting"></span>Reconnecting…</div>
 
 <script src="/signal.js"></script>
 <script src="/gallery.js"></script>
+<script src="/viewer.js"></script>
 <script>
 // ── ICE servers (fetched from our server; credentials never live in this file) ──
 let iceConfig = null;
@@ -387,8 +382,6 @@ const controlsPanel   = $('controls-panel');
 const torchBtn        = $('torch-btn');
 const dirCountdown    = $('dir-countdown');
 const dirCountdownNum = $('dir-countdown-num');
-const directorFreeze  = $('director-freeze');
-const doneBtn         = $('done-btn');
 const micBtn          = $('mic-btn');
 
 // ── Session (lets a dropped connection or a reload rejoin without knocking again) ──
@@ -460,7 +453,7 @@ function endSession(message) {
   joinCode = null; joinKey = null;
   signal.stop();
   closePeer();
-  directorFreeze.hidden = true;
+  viewer.close();
   dirCountdown.hidden = true;
   countingDown = false;
   showJoinForm(message);
@@ -525,7 +518,8 @@ async function handleMessage(msg) {
       joinCode = null; joinKey = null;
       applyPartnerMode(msg.mode);
       saveSession(msg.code, msg.token);
-      restoreShots(msg.code);
+      if (shotsRoom !== msg.code) startFreshShots(msg.code, !msg.resumed);
+      if (msg.resumed) restoreShots(msg.code);
       showControlScreen();
       if (!msg.resumed) setStatus('Waiting for the camera…');
       photographerAway = msg.photographerPresent === false;
@@ -881,6 +875,22 @@ function goToRole({ role, code, token }) {
   location.replace(role === 'director' ? '/director.html' : '/photographer.html');
 }
 
+// ── Home ────────────────────────────────────────────────────────────
+
+$('home-btn').addEventListener('click', () => {
+  if (loadSession() && isLive) { $('leave-modal').hidden = false; return; }
+  leaveToHome();
+});
+$('leave-no').addEventListener('click', () => { $('leave-modal').hidden = true; });
+$('leave-yes').addEventListener('click', leaveToHome);
+
+function leaveToHome() {
+  $('leave-modal').hidden = true;
+  if (loadSession()) sendMsg({ type: 'leave' });
+  clearSession();
+  setTimeout(() => { signal.stop(); closePeer(); location.href = '/'; }, 150);
+}
+
 // ── Hold it! ────────────────────────────────────────────────────────
 
 $('hold-btn').addEventListener('click', () => guide('hold'));
@@ -919,9 +929,9 @@ function animateDirCountNum(n) {
   dirCountdownNum.classList.remove('tick'); void dirCountdownNum.offsetWidth; dirCountdownNum.classList.add('tick');
 }
 
-function shutterFlash() {
+function shutterFlash(soft) {
   const f = document.createElement('div');
-  f.className = 'shutter-flash go';
+  f.className = 'shutter-flash ' + (soft ? 'soft' : 'go');
   f.style.position = 'absolute';
   $('stage').appendChild(f);
   setTimeout(() => f.remove(), 400);
@@ -929,7 +939,8 @@ function shutterFlash() {
 
 // ── Shots from the camera phone → strip → viewer ─────────────────────
 
-let dShots = [], dSelected = 0, incoming = null;   // dShots: every shot this session, oldest first
+// dShots: every shot this session, oldest first — { blob, url, id, fav, deleted }
+let dShots = [], incoming = null, shotsRoom = null;
 
 let photoCh = null;
 function setupPhotoChannel(ch) {
@@ -942,6 +953,7 @@ function setupPhotoChannel(ch) {
     if (typeof data === 'string') {
       let m; try { m = JSON.parse(data); } catch { return; }
       if (m.type === 'level') { showLevel(m); return; }
+      if (m.type === 'snap')  { shutterFlash(true); return; }   // partner pressed their own shutter
       if (m.type === 'burst') startIncoming(m.id, m.count);
       else if (m.type === 'shot' && incoming?.id === m.id) {
         incoming.cur = { index: m.index, size: m.size, mime: m.mime || 'image/jpeg', parts: [], received: 0 };
@@ -977,101 +989,75 @@ function startIncoming(id, count) {
   fitStage();
 }
 
-function addShot(blob, index, restored) {
-  const shot = { blob, url: URL.createObjectURL(blob) };
-  if (!restored) PicMeGallery.add(loadSession()?.code, [blob]);
+function addShot(blob, index, saved) {
+  const shot = { blob, url: URL.createObjectURL(blob), id: saved?.id ?? null, fav: !!saved?.fav, deleted: false };
+  if (!saved) PicMeGallery.add(shotsRoom, [blob]).then(ids => { shot.id = ids[0] ?? null; if (shot.fav) PicMeGallery.setFav(shot.id, true); });
   dShots.push(shot);
   const n = dShots.length - 1;
   const b = incoming?.slots?.[index];
   if (b) {
-    b.className = 'thumb new';
+    b.className = 'thumb new' + (shot.fav ? ' fav' : '');
     b.dataset.i = n;
     b.disabled = false;
     b.setAttribute('aria-label', 'Open shot');
     b.innerHTML = `<img src="${shot.url}" alt="">`;
-    b.addEventListener('click', () => openViewer(n));
+    b.addEventListener('click', () => viewer.open(shot));
+    shot.thumb = b;
   }
-  if (!directorFreeze.hidden) renderViewerThumbs();
+  viewer.refresh();
 }
 
-function openViewer(i) {
-  directorFreeze.hidden = false;
-  renderViewerThumbs();
-  selectShot(i);
+// Strip order = display order: newest burst first, shots in the order they were taken
+function stripShots() {
+  return [...$('strip').children].filter(b => b.dataset.i !== undefined).map(b => dShots[+b.dataset.i]);
 }
 
-function renderViewerThumbs() {
-  const thumbs = $('dreview-thumbs');
-  thumbs.innerHTML = '';
-  thumbs.style.justifyContent = dShots.length > 5 ? 'flex-start' : 'center';
-  thumbs.style.padding = '0 2px';
-  thumbs.style.overflowX = 'auto';
-  // Same order as the strip: newest burst first, shots in the order they were taken
-  const order = [...$('strip').children].filter(b => b.dataset.i !== undefined).map(b => +b.dataset.i);
-  for (const i of order) {
-    const b = document.createElement('button');
-    b.className = 'thumb';
-    b.dataset.i = i;
-    b.setAttribute('aria-label', `Shot ${i + 1}`);
-    b.setAttribute('aria-pressed', String(i === dSelected));
-    b.innerHTML = `<img src="${dShots[i].url}" alt="">`;
-    b.addEventListener('click', () => selectShot(i));
-    thumbs.appendChild(b);
-  }
-  $('dreview-hint').textContent = dShots.length > 1 ? 'Pick your favorite, then tap Save' : 'Tap Save to keep this photo';
-  $('dsave-btn').disabled = !dShots.length;
-  $('dsave-all-btn').hidden = dShots.length < 2;
-  $('dsave-all-btn').textContent = `Save all ${Math.min(dShots.length, 30)}`;
+function updateStripVisibility() {
+  const any = dShots.some(s => !s.deleted) || $('strip').querySelector('.loading');
+  $('strip').hidden = !any;
+  fitStage();
 }
 
-function selectShot(i) {
-  if (!dShots[i]) return;
-  dSelected = i;
-  $('frozen-frame').src = dShots[i].url;
-  [...$('dreview-thumbs').children].forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
-}
-
-doneBtn.addEventListener('click', () => { directorFreeze.hidden = true; });
-
-// Saving must happen inside a tap — that's what lets the phone open its save/share sheet.
-$('dsave-btn').addEventListener('click', async () => {
-  const shot = dShots[dSelected];
-  if (!shot) return;
-  const file = new File([shot.blob], `picme-${Date.now()}.jpg`, { type: shot.blob.type || 'image/jpeg' });
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); } catch {}
-  } else {
-    const a = Object.assign(document.createElement('a'), { href: shot.url, download: file.name });
-    document.body.appendChild(a); a.click(); a.remove();
-    showToast('Photo downloaded');
-  }
+const viewer = new PicMeViewer({
+  getShots: stripShots,
+  toast: showToast,
+  onFav(shot) {
+    shot.thumb?.classList.toggle('fav', shot.fav);
+    PicMeGallery.setFav(shot.id, shot.fav);
+  },
+  onDelete(shot) {
+    if (shot.thumb) shot.thumb.hidden = true;
+    updateStripVisibility();
+    // Really delete once the Undo chance has passed
+    shot.deleteTimer = setTimeout(() => PicMeGallery.remove(shot.id), 4500);
+  },
+  onUndo(shot) {
+    clearTimeout(shot.deleteTimer);
+    if (shot.thumb) shot.thumb.hidden = false;
+    updateStripVisibility();
+  },
 });
 
-// Save every shot (newest first, up to 30) in one share sheet — "Save N Images" on iPhone
-$('dsave-all-btn').addEventListener('click', async () => {
-  const order = [...$('strip').children].filter(b => b.dataset.i !== undefined).map(b => +b.dataset.i).slice(0, 30);
-  const files = order.map((i, k) => new File([dShots[i].blob], `picme-${Date.now()}-${k + 1}.jpg`, { type: dShots[i].blob.type || 'image/jpeg' }));
-  if (navigator.canShare?.({ files })) {
-    try { await navigator.share({ files }); } catch {}
-  } else {
-    for (const f of files) {
-      const url = URL.createObjectURL(f);
-      const a = Object.assign(document.createElement('a'), { href: url, download: f.name });
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }
-    showToast(`${files.length} photos downloaded`);
-  }
-});
+// A new session starts with an empty strip — and the previous session's photos leave this phone
+function startFreshShots(room, isNewSession) {
+  viewer.close();
+  dShots.forEach(s => URL.revokeObjectURL(s.url));
+  dShots = [];
+  incoming = null;
+  $('strip').innerHTML = '';
+  updateStripVisibility();
+  shotsRoom = room;
+  if (isNewSession) PicMeGallery.keepOnly(room);
+}
 
 // After a reload or a role swap, bring back the shots taken in this room
 async function restoreShots(room) {
   if (dShots.length) return;
   const saved = await PicMeGallery.list(room);
-  if (!saved.length || dShots.length) return;
-  const newestFirst = saved.slice(-40).reverse();
+  if (!saved.length || dShots.length || shotsRoom !== room) return;
+  const newestFirst = saved.slice(-240).reverse();
   startIncoming('restored', newestFirst.length);
-  newestFirst.forEach((r, k) => addShot(r.blob, k, true));
+  newestFirst.forEach((r, k) => addShot(r.blob, k, r));
   incoming = null;
 }
 
