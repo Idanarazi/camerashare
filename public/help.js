@@ -48,7 +48,7 @@
   .pmh-head { display: flex; align-items: center; padding: 14px 20px 0; flex-shrink: 0; }
   .pmh-title { flex: 1; font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
   .pmh-close {
-    width: 34px; height: 34px; border-radius: 50%;
+    width: 44px; height: 44px; border-radius: 50%;
     background: var(--surface-2); border: none; color: var(--text-2);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; touch-action: manipulation; padding: 0;
@@ -183,11 +183,8 @@
 
     if (location.pathname.indexOf('photographer') !== -1) showTab('photo');
 
-    let onboarded = false;
-    try { onboarded = !!localStorage.getItem('picme_onboarded'); } catch {}
-    // Someone arriving by scanning a code is mid-task — don't block them with the sheet
-    const arrivingByScan = new URLSearchParams(location.search).has('k') || document.documentElement.dataset.scanJoin === '1';
-    if (!onboarded && !arrivingByScan) setTimeout(open, 600);
+    // The sheet never opens by itself — first-timers get one short tip at the moment it's needed
+    // (on the live screens), and everything else lives behind the ? button.
 
     // Hide the ? while live (it would sit on top of controls)
     function watch(el, isLive) {

@@ -133,16 +133,137 @@
   #edge-down  { bottom: 12px; left: 50%; margin-left: -24px; }
   .edge { }
 
+  /* First-time tip: how to guide, in two short lines */
   #gesture-hint {
     position: absolute;
     bottom: 70px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 26;
-    height: 34px;
-    font-size: 14px;
+    height: auto;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+    border-radius: var(--r-md);
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
     transition: opacity 0.4s;
   }
+  #gesture-hint b { font-size: 15px; font-weight: 700; }
+  #gesture-hint span { font-size: 13px; font-weight: 500; color: var(--text-2); }
+  @media (prefers-reduced-motion: reduce) { #strip .thumb.new { animation: none; } }
+
+  /* First time live: a ghost finger shows the swipe */
+  #swipe-demo {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 180px; height: 56px;
+    margin: -28px 0 0 -90px;
+    z-index: 26;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  #swipe-demo .finger {
+    position: absolute;
+    top: 8px; left: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(245,245,242,0.85);
+    box-shadow: 0 0 0 6px rgba(245,245,242,0.25), 0 2px 12px rgba(0,0,0,0.5);
+    animation: demo-swipe 1.8s var(--ease) infinite;
+  }
+  #swipe-demo .trail {
+    position: absolute;
+    top: 25px; left: 20px;
+    height: 6px; width: 140px;
+    border-radius: 3px;
+    background: linear-gradient(to right, transparent, rgba(255,210,63,0.9));
+    transform-origin: left center;
+    animation: demo-trail 1.8s var(--ease) infinite;
+  }
+  @keyframes demo-swipe {
+    0%   { transform: translateX(0);     opacity: 0; }
+    12%  { transform: translateX(0);     opacity: 1; }
+    62%  { transform: translateX(140px); opacity: 1; }
+    80%, 100% { transform: translateX(140px); opacity: 0; }
+  }
+  @keyframes demo-trail {
+    0%, 12% { transform: scaleX(0); opacity: 1; }
+    62%     { transform: scaleX(1); opacity: 1; }
+    80%, 100% { transform: scaleX(1); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #swipe-demo .finger { animation: none; transform: translateX(140px); }
+    #swipe-demo .trail  { animation: none; }
+  }
+
+  /* After every guide: what your partner was just told */
+  #sent-label {
+    position: absolute;
+    top: calc(var(--safe-t) + 124px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 27;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+    font-weight: 700;
+    white-space: nowrap;
+    transition: opacity 0.25s;
+  }
+
+  /* Tools: grid, reference photo and flashlight, tucked into one button */
+  #tools-btn { position: relative; }
+  #tools-btn[aria-expanded="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  #tools-btn[aria-expanded="true"] circle { fill: var(--text); }
+  .tools-dot { position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%;
+               background: var(--accent); box-shadow: 0 0 0 2px var(--bg); }
+  .tools-menu {
+    position: absolute;
+    top: calc(var(--safe-t) + 70px);
+    right: 12px;
+    z-index: 40;
+    width: min(290px, calc(100% - 24px));
+    padding: 6px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+    transform-origin: top right;
+    pointer-events: auto;   /* the top bar lets touches through to the picture; the menu must not */
+    animation: menu-in 0.18s var(--ease);
+  }
+  @keyframes menu-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: none;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .tool-row:active { background: var(--surface-2); }
+  .tool-row:disabled { opacity: 0.4; cursor: default; }
+  .tool-row > svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--text-2); }
+  .tool-row .t-label { flex: 1; min-width: 0; font-size: 15px; font-weight: 650; }
+  .tool-row .t-label small { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-3); margin-top: 1px; }
+  .tool-row .t-state { font-size: 13px; font-weight: 700; color: var(--text-3); }
+  .tool-row[aria-pressed="true"] > svg, .tool-row[aria-pressed="true"] .t-state, .tool-row.on > svg, .tool-row.on .t-state { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) { .tools-menu { animation: none; } }
+
+  /* Countdown sits above the picture; the guide arrows step aside while it runs */
+  #dir-countdown { top: calc(var(--safe-t) + 64px); }
+  #control-screen.counting .edge { opacity: 0; pointer-events: none; }
 
   /* Shutter bar (+ shot strip above it) */
   #controls-panel {
@@ -226,7 +347,7 @@
   <p>Scan the code on your partner's phone. You'll see their camera live and guide them to the shot.</p>
 
   <div id="join-form">
-    <button id="scan-qr-btn" class="btn btn-primary btn-block">Scan Code</button>
+    <button id="scan-qr-btn" class="btn btn-primary btn-block">Scan code</button>
     <button id="show-code-btn" class="btn btn-ghost btn-block" aria-expanded="false">Enter code instead</button>
     <div id="code-form" hidden>
       <input type="text" id="code-input" placeholder="e.g. tiger-lake-7392-blue" maxlength="25"
@@ -245,7 +366,7 @@
   <div id="denied-msg" class="state-card card" style="display:none">
     <div class="title">Request declined</div>
     <div class="desc" id="denied-desc-text">Your partner declined the request.</div>
-    <button id="try-again-btn" class="btn btn-secondary">Try Again</button>
+    <button id="try-again-btn" class="btn btn-secondary">Try again</button>
   </div>
 
   <div id="join-error" class="error-box" role="alert"></div>
@@ -273,7 +394,9 @@
     <button class="edge photo-only" id="edge-right" data-cmd="move-right" aria-label="Guide right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg></button>
     <button class="edge photo-only" id="edge-down"  data-cmd="move-down"  aria-label="Guide down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 12 16 19 9"/></svg></button>
 
-    <span class="chip" id="gesture-hint" hidden>Swipe to guide · Pinch for closer / back · Double-tap to hold</span>
+    <span class="chip" id="gesture-hint" hidden><b>Swipe the picture to steer their camera</b><span>They’ll see an arrow. Pinch for closer or back.</span></span>
+    <div id="swipe-demo" hidden aria-hidden="true"><span class="trail"></span><span class="finger"></span></div>
+    <span class="chip" id="sent-label" hidden role="status"></span>
     <button id="hold-btn" class="photo-only" aria-label="Tell your partner to hold still"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>Hold it</button>
 
     <div class="grid-overlay" id="grid" hidden aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -295,11 +418,14 @@
       <span class="chip warn" id="qual-ind" hidden>Weak connection</span>
     </div>
     <div class="right">
-      <button id="grid-btn" class="icon-btn" aria-pressed="false" aria-label="Grid and level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
-      <button id="ref-btn" class="icon-btn" disabled aria-label="Send a reference photo — make it like this"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></button>
+      <button id="tools-btn" class="icon-btn" aria-expanded="false" aria-controls="tools-menu" aria-label="Tools: grid, reference photo, flashlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.4" fill="#141416"/><circle cx="15" cy="17" r="2.4" fill="#141416"/></svg><span class="tools-dot" hidden></span></button>
       <button id="swap-btn" class="icon-btn photo-only" disabled aria-label="Switch roles — you take the photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
-      <button id="torch-btn" class="icon-btn" disabled aria-pressed="false" aria-label="Partner's flashlight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></button>
       <button id="mic-btn" class="icon-btn photo-only" disabled aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+    </div>
+    <div id="tools-menu" class="tools-menu" hidden role="menu" aria-label="Tools">
+      <button id="grid-btn" class="tool-row" role="menuitemcheckbox" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg><span class="t-label">Grid &amp; level<small>Straight horizon, rule of thirds</small></span><span class="t-state">Off</span></button>
+      <button id="ref-btn" class="tool-row" role="menuitem" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="t-label">Reference photo<small>Show them a shot to copy</small></span><span class="t-state">Choose</span></button>
+      <button id="torch-btn" class="tool-row" role="menuitemcheckbox" disabled aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span class="t-label">Their flashlight<small>For low light</small></span><span class="t-state">Off</span></button>
     </div>
   </div>
 
@@ -422,7 +548,7 @@ function showJoinForm(errorMsg) {
   joinBtn.disabled    = false;
   joinBtn.textContent = 'Join';
   $('scan-qr-btn').disabled = false;
-  $('scan-qr-btn').textContent = 'Scan Code';
+  $('scan-qr-btn').textContent = 'Scan code';
   joinError.style.display = errorMsg ? 'block' : 'none';
   joinError.textContent   = errorMsg || '';
 }
@@ -456,6 +582,7 @@ function endSession(message) {
   viewer.close();
   dirCountdown.hidden = true;
   countingDown = false;
+  $('control-screen').classList.remove('counting');
   showJoinForm(message);
 }
 
@@ -610,6 +737,7 @@ function setLive(live) {
   $('ref-btn').disabled  = !live;
   torchBtn.disabled   = !live;
   micBtn.disabled     = !live;
+  if (!live) openTools(false);
 }
 
 function closePeer() {
@@ -713,12 +841,28 @@ const CMD_TARGET = {
   'move-up': 'edge-up', 'move-down': 'edge-down', 'move-left': 'edge-left', 'move-right': 'edge-right',
   'move-closer': 'move-closer-wrap', 'step-back': 'step-back-wrap', 'hold': 'hold-btn',
 };
+const CMD_LABEL = {
+  'move-left': 'Move left', 'move-right': 'Move right', 'move-up': 'Move up', 'move-down': 'Move down',
+  'move-closer': 'Move closer', 'step-back': 'Step back', 'hold': 'Hold it',
+};
 function guide(cmd) {
   if (!isLive || partnerMode !== 'photo') return;
   if (sendCmd(cmd)) {
     flashSent($(CMD_TARGET[cmd]));
+    showSent(cmd);
+    gestureUsed();
     try { navigator.vibrate?.(15); } catch {}
   }
+}
+
+// Say exactly what the partner was just told — this is how guiding clicks for first-timers
+function showSent(cmd) {
+  const el = $('sent-label');
+  el.textContent = `Sent: ${CMD_LABEL[cmd] || cmd}`;
+  el.hidden = false;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; el._t = setTimeout(() => { el.hidden = true; }, 250); }, 1100);
 }
 
 document.querySelectorAll('.edge[data-cmd]').forEach(btn => {
@@ -788,13 +932,23 @@ function maybeShowGestureHint() {
   if (learned || !hint.hidden) return;
   hint.hidden = false;
   hint.style.opacity = '1';
-  setTimeout(() => { hint.style.opacity = '0'; setTimeout(() => { hint.hidden = true; }, 400); }, 7000);
+  const demo = $('swipe-demo');
+  demo.hidden = false;
+  demo.style.opacity = '1';
+  // Stays until they try it (or 15 seconds pass)
+  clearTimeout(hint._t);
+  hint._t = setTimeout(hideGestureHint, 15000);
+}
+function hideGestureHint() {
+  for (const el of [$('gesture-hint'), $('swipe-demo')]) {
+    if (el.hidden) continue;
+    el.style.opacity = '0';
+    setTimeout(() => { el.hidden = true; }, 400);
+  }
 }
 function gestureUsed() {
   try { localStorage.setItem(HINT_KEY, '1'); } catch {}
-  const hint = $('gesture-hint');
-  hint.style.opacity = '0';
-  setTimeout(() => { hint.hidden = true; }, 400);
+  hideGestureHint();
 }
 
 torchBtn.addEventListener('click', () => {
@@ -802,7 +956,36 @@ torchBtn.addEventListener('click', () => {
   torchOn = !torchOn;
   torchBtn.setAttribute('aria-pressed', String(torchOn));
   sendCmd('torch', { on: torchOn });
+  updateTools();
+  closeToolsSoon();
 });
+
+// ── Tools menu ──────────────────────────────────────────────────────
+
+const toolsBtn = $('tools-btn'), toolsMenu = $('tools-menu');
+function openTools(open) {
+  toolsMenu.hidden = !open;
+  toolsBtn.setAttribute('aria-expanded', String(open));
+  clearTimeout(toolsMenu._t);
+}
+function closeToolsSoon() { clearTimeout(toolsMenu._t); toolsMenu._t = setTimeout(() => openTools(false), 350); }
+toolsBtn.addEventListener('click', () => openTools(toolsMenu.hidden));
+document.addEventListener('pointerdown', (e) => {
+  if (!toolsMenu.hidden && !toolsMenu.contains(e.target) && !toolsBtn.contains(e.target)) openTools(false);
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openTools(false); });
+
+// Each row shows its state; the Tools button gets a dot while any tool is on
+function updateTools() {
+  const gridOn = $('grid-btn').getAttribute('aria-pressed') === 'true';
+  const flashOn = torchBtn.getAttribute('aria-pressed') === 'true';
+  const refOn = !!refBlob;
+  $('grid-btn').querySelector('.t-state').textContent = gridOn ? 'On' : 'Off';
+  torchBtn.querySelector('.t-state').textContent = flashOn ? 'On' : 'Off';
+  $('ref-btn').querySelector('.t-state').textContent = refOn ? 'Change' : 'Choose';
+  $('ref-btn').classList.toggle('on', refOn);
+  toolsBtn.querySelector('.tools-dot').hidden = !(gridOn || flashOn || refOn);
+}
 
 captureBtn.addEventListener('click', () => {
   if (!isLive) return;
@@ -902,6 +1085,9 @@ let countingDown = false;
 function startDirectorCapture() {
   if (beepsWanted()) unlockAudio();   // runs inside the shutter tap, so the phone allows sound
   countingDown = true;
+  $('control-screen').classList.add('counting');
+  hideGestureHint();
+  openTools(false);
   captureBtn.disabled = true;
   sendCmd('start-capture'); // the camera phone runs its own countdown and takes the burst
 
@@ -920,6 +1106,7 @@ function startDirectorCapture() {
     if (beepsWanted()) { beep(1568, 90, 0.35); setTimeout(() => beep(1175, 160, 0.3), 90); }
     shutterFlash();
     countingDown = false;
+    $('control-screen').classList.remove('counting');
     if (isLive) captureBtn.disabled = false;   // ready for the next one straight away
   }, 1000);
 }
@@ -1067,6 +1254,7 @@ let guidesOn = false;
 try { guidesOn = localStorage.getItem('picme_guides') === '1'; } catch {}
 function applyGuides() {
   $('grid-btn').setAttribute('aria-pressed', String(guidesOn));
+  updateTools();
   $('grid').hidden = !guidesOn;
   if (!guidesOn) $('level').classList.remove('show');
   placeGrid();
@@ -1075,6 +1263,7 @@ $('grid-btn').addEventListener('click', () => {
   guidesOn = !guidesOn;
   try { localStorage.setItem('picme_guides', guidesOn ? '1' : '0'); } catch {}
   applyGuides();
+  closeToolsSoon();
 });
 
 // The grid sits exactly on the picture (not on the black bars)
@@ -1104,19 +1293,21 @@ function showLevel({ roll, show }) {
 // ── Reference photo: "make it like this" ─────────────────────────────
 
 let refBlob = null;
-$('ref-btn').addEventListener('click', () => { $('ref-input').value = ''; $('ref-input').click(); });
+$('ref-btn').addEventListener('click', () => { openTools(false); $('ref-input').value = ''; $('ref-input').click(); });
 $('ref-input').addEventListener('change', async () => {
   const file = $('ref-input').files?.[0];
   if (!file) return;
   refBlob = await shrinkImage(file, 1280);
   $('ref-img').src = URL.createObjectURL(refBlob);
   $('ref-thumb').hidden = false;
+  updateTools();
   if (sendRef(refBlob)) showToast('Reference sent to your partner');
   else showToast('Reference will be sent when the camera reconnects');
 });
 $('ref-thumb').addEventListener('click', () => {
   refBlob = null;
   $('ref-thumb').hidden = true;
+  updateTools();
   if (photoCh?.readyState === 'open') photoCh.send(JSON.stringify({ type: 'ref-clear' }));
   showToast('Reference removed');
 });

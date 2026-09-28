@@ -13,24 +13,175 @@
 <title>PicMe</title>
 <style>
   .page {
-    height: 100dvh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    padding: calc(var(--safe-t) + 56px) 20px calc(var(--safe-b) + 20px);
+    padding: calc(var(--safe-t) + 28px) 20px calc(var(--safe-b) + 20px);
     max-width: 480px;
     margin: 0 auto;
   }
-  .hero { margin-bottom: 28px; animation: rise 0.5s var(--ease) both; }
-  .hero .wordmark { font-size: 44px; }
-  .hero .tagline { margin-top: 10px; font-size: 20px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; }
-  .hero .tagline span { color: var(--text-3); display: block; }
+  .hero { animation: rise 0.5s var(--ease) both; }
+  .hero .wordmark { font-size: 40px; }
+  .hero .tagline { margin-top: 6px; font-size: 19px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; }
+  .hero .tagline span { color: var(--text-3); }
 
-  .roles { display: flex; flex-direction: column; gap: 12px; animation: rise 0.5s 0.06s var(--ease) both; }
+  /* ── The demo: two phones, one shot. The one bold thing on this page. ── */
+  .demo {
+    --pw: 112px; --ph: 200px; --t: 6s; --gap: 44px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: var(--gap);
+    margin: 20px 0 22px;
+    animation: rise 0.5s 0.05s var(--ease) both;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 0; width: var(--pw); }
+  .phone-wrap figcaption { font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+  .phone {
+    position: relative;
+    width: var(--pw); height: var(--ph);
+    border-radius: 22px;
+    background: #1c1c20;
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 5px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+  }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 17px; overflow: hidden; background: #000; }
+
+  /* The picture both phones share: a lakeside at sunset, someone waiting for their photo */
+  .world {
+    position: absolute; top: 0; bottom: 0; left: -40%; width: 180%;
+    background: linear-gradient(#1b2542 0%, #3a3b62 40%, #c9805a 60%, #1c3342 61%, #12212b 100%);
+    animation: pan var(--t) var(--ease) infinite;
+  }
+  .sun { position: absolute; left: 41%; top: 53%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%;
+         background: #f2b36f; opacity: 0.8; filter: blur(0.3px); }
+  .shine { position: absolute; left: 41%; top: 63%; width: 26px; height: 3px; border-radius: 2px; background: rgba(242,179,111,0.45);
+           box-shadow: 4px 7px 0 -0.5px rgba(242,179,111,0.3), -3px 13px 0 -1px rgba(242,179,111,0.2); }
+  .person { position: absolute; left: calc(50% + 26px); bottom: 14%; width: 30px; margin-left: -15px; }
+  .person::before { content: ''; display: block; width: 13px; height: 13px; margin: 0 auto 2px; border-radius: 50%; background: #0a0c11; }
+  .person::after  { content: ''; display: block; width: 30px; height: 44px; border-radius: 14px 14px 4px 4px; background: #0a0c11; }
+  @keyframes pan {
+    0%, 36%   { transform: translateX(0); }
+    54%, 94%  { transform: translateX(-26px); }
+    100%      { transform: translateX(0); }
+  }
+  /* Whole scene dips out for a moment when the loop restarts */
+  .screen .reset { position: absolute; inset: 0; background: #000; opacity: 0; animation: reset var(--t) linear infinite; z-index: 9; }
+  @keyframes reset { 0% { opacity: 1; } 5% { opacity: 0; } 93% { opacity: 0; } 100% { opacity: 1; } }
+
+  /* Your phone: finger swipes right… */
+  .finger { position: absolute; top: 46%; left: 22%; width: 20px; height: 20px; margin-top: -10px; border-radius: 50%;
+            background: rgba(245,245,242,0.9); box-shadow: 0 0 0 4px rgba(245,245,242,0.25); opacity: 0; z-index: 4;
+            animation: finger var(--t) var(--ease) infinite; }
+  @keyframes finger {
+    0%, 11% { opacity: 0; transform: translateX(0); }
+    14%     { opacity: 1; transform: translateX(0); }
+    27%     { opacity: 1; transform: translateX(48px); }
+    32%, 100% { opacity: 0; transform: translateX(48px); }
+  }
+  .trail { position: absolute; top: 46%; left: calc(22% + 10px); width: 48px; height: 4px; margin-top: -2px; border-radius: 2px;
+           background: linear-gradient(to right, transparent, var(--accent)); transform-origin: left; opacity: 0; z-index: 3;
+           animation: trail var(--t) var(--ease) infinite; }
+  @keyframes trail {
+    0%, 14% { opacity: 1; transform: scaleX(0); }
+    27%     { opacity: 1; transform: scaleX(1); }
+    33%, 100% { opacity: 0; transform: scaleX(1); }
+  }
+  /* …and it says what was sent */
+  .sent { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5; white-space: nowrap;
+          padding: 3px 7px; border-radius: 8px; background: var(--accent); color: var(--accent-ink);
+          font-size: 8.5px; font-weight: 800; opacity: 0; animation: sent var(--t) linear infinite; }
+  @keyframes sent { 0%, 26% { opacity: 0; } 28%, 48% { opacity: 1; } 52%, 100% { opacity: 0; } }
+  .mini-shutter { position: absolute; bottom: 9px; left: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
+                  border: 2px solid var(--text); z-index: 5; }
+  .mini-shutter::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: var(--text);
+                         animation: press var(--t) var(--ease) infinite; }
+  @keyframes press { 0%, 64% { transform: scale(1); } 67% { transform: scale(0.72); } 71%, 100% { transform: scale(1); } }
+  .thumb-in { position: absolute; bottom: 11px; left: 10px; width: 18px; height: 18px; border-radius: 4px; overflow: hidden; z-index: 5;
+              border: 1.5px solid var(--text); opacity: 0; animation: thumb var(--t) var(--ease) infinite;
+              background: linear-gradient(#3a3b62 0%, #c9805a 55%, #1c3342 56%); }
+  .thumb-in::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 6px; height: 8px; margin-left: -3px; border-radius: 3px 3px 1px 1px; background: #0a0c11; }
+  @keyframes thumb { 0%, 80% { opacity: 0; transform: scale(0.6); } 83% { opacity: 1; transform: scale(1.2); } 86%, 92% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; } }
+
+  /* The gold moment: the photo flies straight back to you */
+  .fly {
+    position: absolute; left: 50%; top: 0; z-index: 7;
+    width: 30px; height: 24px; margin: -12px 0 0 -15px;
+    border-radius: 4px; border: 2px solid var(--text);
+    background: linear-gradient(#3a3b62 0%, #c9805a 55%, #1c3342 56%);
+    box-shadow: 0 0 14px rgba(255,210,63,0.75), 0 6px 14px rgba(0,0,0,0.5);
+    opacity: 0; pointer-events: none;
+    animation: fly var(--t) cubic-bezier(0.55, 0, 0.35, 1) infinite;
+  }
+  .fly::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 7px; height: 9px; margin-left: -3.5px; border-radius: 3px 3px 1px 1px; background: #0a0c11; }
+  /* from the middle of their screen (x +78, y 100) to your thumbnail (x -109, y 174) */
+  @keyframes fly {
+    0%, 70% { opacity: 0; transform: translate(78px, 100px) scale(0.6); }
+    72%     { opacity: 1; transform: translate(78px, 100px) scale(1.15); }
+    74%     { opacity: 1; transform: translate(78px, 100px) scale(1); }
+    81%     { opacity: 1; transform: translate(-109px, 174px) scale(0.6); }
+    83%, 100% { opacity: 0; transform: translate(-109px, 174px) scale(0.6); }
+  }
+  .instant {
+    position: absolute; left: 50%; top: 52px; z-index: 7;
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 10px 5px 8px; border-radius: 999px;
+    background: var(--text); color: var(--bg);
+    font-size: 11px; font-weight: 800; white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    opacity: 0; transform: translateX(-50%);
+    animation: instant var(--t) var(--ease) infinite;
+  }
+  .instant svg { width: 12px; height: 12px; color: #C99A00; }
+  @keyframes instant {
+    0%, 71%  { opacity: 0; transform: translate(-50%, 6px) scale(0.9); }
+    74%, 92% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    96%, 100% { opacity: 0; transform: translate(-50%, 0) scale(1); }
+  }
+
+  /* The live link between the phones */
+  .link { position: absolute; top: calc(var(--ph) * 0.46); left: 50%; width: var(--gap); margin-left: calc(var(--gap) / -2); height: 2px; z-index: 2; }
+  .link::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(to right, rgba(245,245,242,0.22) 0 4px, transparent 4px 8px); }
+  .link::after  { content: ''; position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+                  box-shadow: 0 0 10px var(--accent); opacity: 0; animation: travel var(--t) var(--ease) infinite; }
+  @keyframes travel { 0%, 26% { opacity: 0; transform: translateX(-6px); } 28% { opacity: 1; } 34% { opacity: 1; transform: translateX(38px); } 37%, 100% { opacity: 0; transform: translateX(38px); } }
+
+  /* Their phone: the arrow shows on the right edge… */
+  .cue { position: absolute; top: 0; bottom: 0; right: 0; width: 55%; z-index: 4; display: flex; align-items: center; justify-content: flex-end;
+         padding-right: 6px; color: var(--accent); background: linear-gradient(to left, rgba(255,210,63,0.42), transparent);
+         opacity: 0; animation: cue var(--t) linear infinite; }
+  .cue svg { width: 24px; height: 24px; animation: nudge var(--t) ease-in-out infinite; }
+  @keyframes cue { 0%, 33% { opacity: 0; } 36%, 52% { opacity: 1; } 57%, 100% { opacity: 0; } }
+  @keyframes nudge { 0%, 36% { transform: none; } 40% { transform: translateX(4px); } 44% { transform: none; } 48% { transform: translateX(4px); } 52%, 100% { transform: none; } }
+  /* …then "Hold it": the brackets lock on */
+  .brk { position: absolute; inset: 24% 18%; z-index: 4; opacity: 0; animation: brk var(--t) var(--ease) infinite; }
+  .brk i { position: absolute; width: 14px; height: 14px; border: 0 solid var(--accent); }
+  .brk i:nth-child(1) { top: 0; left: 0;     border-width: 2.5px 0 0 2.5px; border-top-left-radius: 3px; }
+  .brk i:nth-child(2) { top: 0; right: 0;    border-width: 2.5px 2.5px 0 0; border-top-right-radius: 3px; }
+  .brk i:nth-child(3) { bottom: 0; left: 0;  border-width: 0 0 2.5px 2.5px; border-bottom-left-radius: 3px; }
+  .brk i:nth-child(4) { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; border-bottom-right-radius: 3px; }
+  @keyframes brk { 0%, 55% { opacity: 0; transform: scale(1.25); } 59% { opacity: 1; transform: scale(1); } 68% { opacity: 1; transform: scale(1); } 72%, 100% { opacity: 0; transform: scale(1); } }
+
+  /* Both: the shot */
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 8; animation: shot var(--t) ease-out infinite; }
+  @keyframes shot { 0%, 69% { opacity: 0; } 70% { opacity: 0.75; } 76%, 100% { opacity: 0; } }
+
+  /* Reduce Motion: one still frame that tells the whole story */
+  @media (prefers-reduced-motion: reduce) {
+    .demo *, .demo *::before, .demo *::after { animation: none !important; }
+    .world { transform: translateX(-26px); }
+    .sent, .cue, .thumb-in, .instant { opacity: 1; }
+    .link::after { opacity: 1; transform: translateX(16px); }
+  }
+
+  /* ── Choose your role ── */
+  .roles { display: flex; flex-direction: column; gap: 12px; animation: rise 0.5s 0.08s var(--ease) both; }
   .role {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 20px 18px;
+    padding: 18px;
     border-radius: var(--r-lg);
     background: var(--surface);
     border: 1px solid var(--line);
@@ -53,38 +204,40 @@
   .role-body { flex: 1; min-width: 0; }
   .role-name { font-size: 19px; font-weight: 750; letter-spacing: -0.02em; }
   .role-desc { font-size: 14px; margin-top: 2px; opacity: 0.75; }
-  .role-chev { opacity: 0.6; }
+  .role-chev { opacity: 0.6; flex-shrink: 0; }
 
-  .tripod-link {
+  /* ── More: a quiet grouped list ── */
+  .more {
+    margin-top: 16px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    animation: rise 0.5s 0.11s var(--ease) both;
+  }
+  .more-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    padding: 14px 18px;
-    border-radius: var(--r-lg);
-    border: 1px dashed var(--line-strong);
+    gap: 14px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 18px;
+    background: none;
+    border: 0;
     color: var(--text);
+    font: inherit;
+    text-align: left;
     text-decoration: none;
-    animation: rise 0.5s 0.09s var(--ease) both;
+    cursor: pointer;
     touch-action: manipulation;
   }
-  .tripod-link:active { background: var(--surface); }
-  .tripod-link .t-icon { color: var(--accent); display: flex; }
-  .tripod-link b { font-size: 16px; font-weight: 700; display: block; }
-  .tripod-link span { font-size: 14px; color: var(--text-2); }
-
-  .steps {
-    margin-top: 28px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    animation: rise 0.5s 0.12s var(--ease) both;
-  }
-  .step { font-size: 13px; color: var(--text-2); line-height: 1.35; }
-  .step b { display: block; font-size: 13px; color: var(--accent); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
-
-  .bottom { margin-top: auto; padding-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .hint { font-size: 13px; color: var(--text-3); }
+  .more-row + .more-row { border-top: 1px solid var(--line); }
+  .more-row:active { background: var(--surface-2); }
+  .more-row .m-icon { width: 24px; display: flex; justify-content: center; color: var(--accent); flex-shrink: 0; }
+  .more-row .m-body { flex: 1; min-width: 0; }
+  .more-row .m-body b { display: block; font-size: 16px; font-weight: 700; color: var(--text); }
+  .more-row .m-body > span { display: block; font-size: 13px; color: var(--text-2); margin-top: 1px; }
+  .more-row .role-chev { color: var(--text-3); opacity: 1; }
 </style>
 </head>
 <body>
@@ -92,7 +245,32 @@
 <main class="page">
   <div class="hero">
     <div class="wordmark">Pic<b>Me</b></div>
-    <p class="tagline">Stop retaking.<span>Start directing.</span></p>
+    <p class="tagline">Stop retaking. <span>Start directing.</span></p>
+  </div>
+
+  <div class="demo" role="img" aria-label="How PicMe works: on your phone you swipe right on the live picture; your partner's phone shows an arrow to move right, the shot lines up, and the photo lands on your phone instantly.">
+    <figure class="phone-wrap" aria-hidden="true">
+      <div class="phone"><div class="screen">
+        <div class="world"><span class="sun"></span><span class="shine"></span><span class="person"></span></div>
+        <span class="trail"></span><span class="finger"></span>
+        <span class="sent">Sent: Move right</span>
+        <span class="thumb-in"></span><span class="mini-shutter"></span>
+        <span class="flash"></span><span class="reset"></span>
+      </div></div>
+      <figcaption>You, in the photo</figcaption>
+    </figure>
+    <span class="link" aria-hidden="true"></span>
+    <span class="fly" aria-hidden="true"></span>
+    <span class="instant" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Instantly on your phone</span>
+    <figure class="phone-wrap" aria-hidden="true">
+      <div class="phone"><div class="screen">
+        <div class="world"><span class="sun"></span><span class="shine"></span><span class="person"></span></div>
+        <div class="cue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg></div>
+        <div class="brk"><i></i><i></i><i></i><i></i></div>
+        <span class="flash"></span><span class="reset"></span>
+      </div></div>
+      <figcaption>Them, holding the phone</figcaption>
+    </figure>
   </div>
 
   <nav class="roles" aria-label="Choose your role">
@@ -108,26 +286,23 @@
       <div class="role-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.2"/></svg></div>
       <div class="role-body">
         <div class="role-name">I'm taking the photo</div>
-        <div class="role-desc">Hold the phone — they'll guide you</div>
+        <div class="role-desc">Hold the phone, they'll guide you</div>
       </div>
       <svg class="role-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg>
     </a>
   </nav>
 
-  <a href="/photographer.html?mode=tripod" class="tripod-link">
-    <div class="t-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="7" rx="1.5"/><circle cx="12" cy="5.5" r="1.6"/><path d="M12 9v4M12 13l-6 9M12 13l6 9M12 13v9"/></svg></div>
-    <div><b>Group shot? Use Tripod mode</b><span>Prop a phone up, control it from yours — everyone's in the photo</span></div>
-  </a>
-
-  <section class="steps" aria-label="How it works">
-    <div class="step"><b>01</b>Photographer opens the camera</div>
-    <div class="step"><b>02</b>You scan their code</div>
-    <div class="step"><b>03</b>Guide, shoot, keep the best</div>
-  </section>
-
-  <div class="bottom">
-    <button id="share-app-btn" class="btn btn-ghost">Share PicMe with a friend</button>
-    <p class="hint">Works in the browser — nothing to install</p>
+  <div class="more">
+    <a href="/photographer.html?mode=tripod" class="more-row tripod-link">
+      <span class="m-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="7" rx="1.5"/><circle cx="12" cy="5.5" r="1.6"/><path d="M12 9v4M12 13l-6 9M12 13l6 9M12 13v9"/></svg></span>
+      <span class="m-body"><b>Group shot? Tripod mode</b><span>Prop a phone up and run it from yours</span></span>
+      <svg class="role-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg>
+    </a>
+    <button id="share-app-btn" class="more-row">
+      <span class="m-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></span>
+      <span class="m-body"><b>Share PicMe with a friend</b><span>Works in their browser, nothing to install</span></span>
+      <svg class="role-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"/></svg>
+    </button>
   </div>
 </main>
 

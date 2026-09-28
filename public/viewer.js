@@ -14,7 +14,7 @@
      * onDelete(shot) / onUndo(shot) / onFav(shot): let the page update its own strip & storage
      * closeLabel: text for the close button ("Back to Live")
      */
-    constructor({ getShots, onDelete, onUndo, onFav, onClose, toast, closeLabel = 'Back to Live' }) {
+    constructor({ getShots, onDelete, onUndo, onFav, onClose, toast, closeLabel = 'Back to live' }) {
       Object.assign(this, { getShots, onDelete, onUndo, onFav, onClose, toast });
       this.favOnly = false;
       this.list = [];
@@ -36,16 +36,41 @@
             <button class="icon-btn v-del" aria-label="Delete this photo">${ICON.trash}</button>
           </div>
         </div>
-        <div class="v-undo" hidden><span>Photo deleted</span><button class="link-btn v-undo-btn">Undo</button></div>
+        <div class="v-undo" hidden><span class="v-undo-text">Photo deleted</span><button class="link-btn v-undo-btn">Undo</button></div>
         <div class="review-bar">
           <div class="review-top">
             <button class="link-btn v-filter" aria-pressed="false">♥ Favorites</button>
-            <button class="link-btn v-saveall">Save all</button>
+            <div class="review-top-right">
+              <button class="link-btn v-select">Select</button>
+              <button class="link-btn v-saveall">Save all</button>
+            </div>
           </div>
           <div class="v-scrub"><div class="v-thumbs"></div></div>
           <div class="review-actions">
             <button class="btn btn-secondary v-close">${closeLabel}</button>
-            <button class="btn btn-primary v-save">Save Photo</button>
+            <button class="btn btn-primary v-save">Save photo</button>
+          </div>
+        </div>
+        <div class="v-picker" hidden role="dialog" aria-label="Select photos">
+          <div class="vp-top">
+            <button class="link-btn vp-all">Select all</button>
+            <span class="vp-count" aria-live="polite">Select photos</span>
+            <button class="link-btn vp-done">Done</button>
+          </div>
+          <div class="vp-grid"></div>
+          <div class="vp-bar">
+            <button class="btn btn-secondary vp-del" disabled>Delete</button>
+            <button class="btn btn-primary vp-save" disabled>Save</button>
+          </div>
+        </div>
+        <div class="modal-scrim vp-confirm" hidden>
+          <div class="modal-card card" role="alertdialog" aria-labelledby="vp-confirm-title">
+            <h2 id="vp-confirm-title">Delete photos?</h2>
+            <p class="vp-confirm-text">They’ll be removed from this phone.</p>
+            <div class="modal-actions">
+              <button class="btn btn-secondary vp-confirm-no">Cancel</button>
+              <button class="btn btn-danger vp-confirm-yes">Delete</button>
+            </div>
           </div>
         </div>`;
       document.body.appendChild(el);
@@ -61,6 +86,26 @@
       q('.v-del').addEventListener('click', () => this.deleteCurrent());
       q('.v-undo-btn').addEventListener('click', () => this.undo());
       this.filterBtn.addEventListener('click', () => this.toggleFilter());
+
+      // Select mode: pick several photos, then save or delete them together
+      this.picker = q('.v-picker'); this.grid = q('.vp-grid'); this.selected = new Set();
+      q('.v-select').addEventListener('click', () => this.openPicker());
+      q('.vp-done').addEventListener('click', () => this.closePicker());
+      q('.vp-all').addEventListener('click', () => {
+        const all = this.selected.size < this.list.length;
+        this.selected = new Set(all ? this.list : []);
+        this.renderPicker();
+      });
+      q('.vp-save').addEventListener('click', () => this.save([...this.pickOrder()]));
+      q('.vp-del').addEventListener('click', () => {
+        const n = this.selected.size;
+        if (!n) return;
+        q('#vp-confirm-title').textContent = n === 1 ? 'Delete 1 photo?' : n === this.list.length ? `Delete all ${n} photos?` : `Delete ${n} photos?`;
+        q('.vp-confirm-yes').textContent = n === 1 ? 'Delete photo' : `Delete ${n}`;
+        q('.vp-confirm').hidden = false;
+      });
+      q('.vp-confirm-no').addEventListener('click', () => { q('.vp-confirm').hidden = true; });
+      q('.vp-confirm-yes').addEventListener('click', () => { q('.vp-confirm').hidden = true; this.deleteSelected(); });
 
       // Swiping is native scrolling with snap points — smooth on every phone
       let raf = 0;
@@ -115,6 +160,8 @@
     }
 
     close() {
+      this.closePicker();
+      this.el.querySelector('.vp-confirm').hidden = true;
       clearTimeout(this.refreshTimer);
       this.peek.hidden = true;
       this.peekWant = null;
@@ -180,6 +227,7 @@
       this.filterBtn.setAttribute('aria-pressed', String(this.favOnly));
       this.saveAllBtn.textContent = `Save ${this.favOnly ? 'favorites' : 'all'} ${Math.min(this.list.length, 30)}`;
       this.saveAllBtn.hidden = this.list.length < 2;
+      if (!this.picker.hidden) this.renderPicker();
       this.index = idx;
       this.peek.hidden = true;
       this.peekWant = null;
@@ -343,13 +391,84 @@
       const next = this.list[this.index + 1] || this.list[this.index - 1];
       shot.deleted = true;
       this.onDelete?.(shot);
-      this.lastDeleted = shot;
-      this.showUndo();
+      this.lastDeleted = [shot];
+      this.showUndo('Photo deleted');
       this.render(next);
     }
 
-    showUndo() {
+    // ── Select mode ──
+    openPicker() {
+      this.selected = new Set();
+      this.picker.hidden = false;
+      this.renderPicker(true);
+    }
+
+    closePicker() {
+      if (this.picker.hidden) return;
+      this.picker.hidden = true;
+      this.selected.clear();
+    }
+
+    // Selected photos in the order they're shown
+    pickOrder() { return this.list.filter(sh => this.selected.has(sh)); }
+
+    renderPicker(rebuild) {
+      // drop anything that's gone (deleted, or filtered out)
+      for (const sh of [...this.selected]) if (!this.list.includes(sh)) this.selected.delete(sh);
+      const cells = this.grid.children;
+      if (rebuild || cells.length !== this.list.length || [...cells].some((c, k) => c._shot !== this.list[k])) {
+        this.grid.innerHTML = '';
+        this.list.forEach((shot, i) => {
+          const c = document.createElement('button');
+          c.className = 'vp-cell';
+          c._shot = shot;
+          c.setAttribute('aria-label', `Photo ${i + 1}`);
+          const img = document.createElement('img');
+          img.alt = ''; img.draggable = false; img.decoding = 'async';
+          if (shot.thumbUrl) img.src = shot.thumbUrl; else PicMeViewer.makeThumb(shot).then(u => { img.src = u; });
+          c.appendChild(img);
+          c.insertAdjacentHTML('beforeend', '<span class="vp-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12.5 10 17 19 7.5"/></svg></span>' + (shot.fav ? '<span class="vp-fav" aria-hidden="true">♥</span>' : ''));
+          c.addEventListener('click', () => {
+            if (this.selected.has(shot)) this.selected.delete(shot); else this.selected.add(shot);
+            this.renderPicker();
+          });
+          this.grid.appendChild(c);
+        });
+      }
+      for (const c of this.grid.children) {
+        const on = this.selected.has(c._shot);
+        c.classList.toggle('sel', on);
+        c.setAttribute('aria-pressed', String(on));
+      }
+      const n = this.selected.size, q = (x) => this.el.querySelector(x);
+      q('.vp-count').textContent = n ? `${n} selected` : 'Select photos';
+      q('.vp-all').textContent = n === this.list.length && n ? 'Deselect all' : 'Select all';
+      q('.vp-save').textContent = n ? `Save ${n}` : 'Save';
+      q('.vp-del').textContent = n ? `Delete ${n}` : 'Delete';
+      q('.vp-save').disabled = q('.vp-del').disabled = !n;
+    }
+
+    deleteSelected() {
+      const shots = this.pickOrder();
+      if (!shots.length) return;
+      const keep = this.list.find(sh => !this.selected.has(sh) && this.list.indexOf(sh) >= this.index) ||
+                   [...this.list].reverse().find(sh => !this.selected.has(sh));
+      shots.forEach(sh => { sh.deleted = true; this.onDelete?.(sh); });
+      try { navigator.vibrate?.(20); } catch {}
+      this.closePicker();
+      this.lastDeleted = shots;
+      if (keep) {
+        this.showUndo(shots.length === 1 ? 'Photo deleted' : `${shots.length} photos deleted`);
+        this.render(keep);
+      } else {
+        this.toast?.(shots.length === 1 ? 'Photo deleted' : `${shots.length} photos deleted`);
+        this.render();   // nothing left — the viewer closes
+      }
+    }
+
+    showUndo(text) {
       const bar = this.el.querySelector('.v-undo');
+      if (text) this.el.querySelector('.v-undo-text').textContent = text;
       bar.hidden = false;
       clearTimeout(this.undoTimer);
       this.undoTimer = setTimeout(() => this.hideUndo(), 4000);
@@ -362,14 +481,13 @@
     }
 
     undo() {
-      const shot = this.lastDeleted;
-      if (!shot) return;
-      shot.deleted = false;
+      const shots = [].concat(this.lastDeleted || []);
+      if (!shots.length) return;
+      shots.forEach(sh => { sh.deleted = false; this.onUndo?.(sh); });
       this.lastDeleted = null;
-      this.onUndo?.(shot);
       this.hideUndo();
       if (this.el.hidden) this.el.hidden = false;
-      this.render(shot);
+      this.render(shots[0]);
     }
 
     // Saving must happen inside a tap — that's what lets the phone open its save/share sheet.

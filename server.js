@@ -205,7 +205,7 @@ function clearTimer(room, key) {
   if (room[key]) { clearTimeout(room[key]); room[key] = null; }
 }
 
-function expireRoom(code, message = 'Session ended — please start a new room.') {
+function expireRoom(code, message = 'This session ended. Start a new one to keep shooting.') {
   const room = rooms.get(code);
   if (!room) return;
   const msg = { type: 'session-expired', message };
@@ -301,7 +301,7 @@ wss.on('connection', (ws, req) => {
     // Rate-limit all join/create attempts
     if (msg.type === 'join-room' || msg.type === 'create-room') {
       if (!checkWsRate(ip)) {
-        send(ws, { type: 'error', message: 'Too many attempts — please wait 5 minutes.' });
+        send(ws, { type: 'error', message: 'Too many tries. Wait 5 minutes, then try again.' });
         return;
       }
     }
@@ -355,21 +355,21 @@ wss.on('connection', (ws, req) => {
         const code = (typeof msg.code === 'string' ? msg.code : '').toLowerCase().replace(/\s/g, '');
         const room = rooms.get(code);
         if (!room) {
-          send(ws, { type: 'error', message: 'Room not found. Check the code and try again.' });
+          send(ws, { type: 'error', message: 'No session with that code. Check the code on your partner’s screen and try again.' });
           return;
         }
         if (!room.photographer) {
-          send(ws, { type: 'error', message: 'The Photographer is reconnecting — try again in a moment.' });
+          send(ws, { type: 'error', message: 'Your partner’s camera is reconnecting. Try again in a moment.' });
           return;
         }
         if (room.director) {
-          send(ws, { type: 'error', message: 'Room already has a Director connected.' });
+          send(ws, { type: 'error', message: 'Someone else is already connected to this camera.' });
           return;
         }
         // Scanned the QR in person → the one-time key proves they're standing there. No knock.
         if (typeof msg.key === 'string' && room.joinKey && tokensMatch(msg.key, room.joinKey)) {
           if (room.pendingDirector) {
-            send(room.pendingDirector, { type: 'knock-denied', message: 'Someone else joined by scanning the code.' });
+            send(room.pendingDirector, { type: 'knock-denied', message: 'Someone else joined by scanning the code first.' });
             room.pendingDirector.role = null; room.pendingDirector.roomCode = null;
             room.pendingDirector = null;
             send(room.photographer, { type: 'knock-cancelled' });
@@ -379,7 +379,7 @@ wss.on('connection', (ws, req) => {
           return;
         }
         if (room.pendingDirector) {
-          send(ws, { type: 'error', message: 'Another request is already pending approval.' });
+          send(ws, { type: 'error', message: 'Someone else is already waiting to join. Try again in a moment.' });
           return;
         }
         room.pendingDirector = ws; ws.role = 'pending-director'; ws.roomCode = code;
@@ -418,7 +418,7 @@ wss.on('connection', (ws, req) => {
           console.log(`[room] approved: ${ws.roomCode}`);
         } else {
           pending.role = null; pending.roomCode = null;
-          send(pending, { type: 'knock-denied', message: 'The Photographer declined your request.' });
+          send(pending, { type: 'knock-denied', message: 'Your partner didn’t let you join.' });
           console.log(`[room] denied: ${ws.roomCode}`);
         }
         break;
@@ -530,7 +530,7 @@ wss.on('connection', (ws, req) => {
       room.photographer = null;
       send(room.director,        { type: 'photographer-away' });
       if (room.pendingDirector) {
-        send(room.pendingDirector, { type: 'knock-denied', message: 'The Photographer disconnected.' });
+        send(room.pendingDirector, { type: 'knock-denied', message: 'Your partner’s camera disconnected.' });
         room.pendingDirector.role = null; room.pendingDirector.roomCode = null;
         room.pendingDirector = null;
       }

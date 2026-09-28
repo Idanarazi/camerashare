@@ -129,6 +129,24 @@
     font-weight: 800;
     color: var(--accent);
   }
+  /* First-time tip above the shutter */
+  #snap-tip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    transition: opacity 0.3s;
+  }
+
+  /* Reduce Motion: cues still fade in and out, but nothing nudges, grows or pops */
+  @media (prefers-reduced-motion: reduce) {
+    #cue.show svg, #depth-cue.show .brackets, #last-shot.pop, #viewfinder.blink { animation: none !important; }
+    #depth-cue[data-dir="closer"] .brackets { inset: 12%; }
+    #depth-cue[data-dir="back"]   .brackets { inset: 34%; }
+    #depth-cue[data-dir="hold"]   .brackets { inset: 18%; }
+  }
+
   /* Each shot: the picture blinks, like a camera app */
   #viewfinder.blink { animation: vf-blink 0.14s ease-out; }
   @keyframes vf-blink { 0% { opacity: 0.25; } 100% { opacity: 1; } }
@@ -157,7 +175,7 @@
                            background: linear-gradient(to right, rgba(255,210,63,0.38), transparent); }
   #cue[data-dir="right"] { top: 0; bottom: 0; right: 0; width: 45%; justify-content: flex-end; padding-right: 14px; flex-direction: row-reverse;
                            background: linear-gradient(to left, rgba(255,210,63,0.38), transparent); }
-  #cue[data-dir="up"]    { left: 0; right: 0; top: 0; height: 32%; flex-direction: column; justify-content: flex-start; padding-top: calc(var(--safe-t) + 56px);
+  #cue[data-dir="up"]    { left: 0; right: 0; top: 0; height: 32%; flex-direction: column; justify-content: flex-start; padding-top: calc(var(--safe-t) + 116px);
                            background: linear-gradient(to bottom, rgba(255,210,63,0.38), transparent); }
   #cue[data-dir="down"]  { left: 0; right: 0; bottom: 0; height: 32%; flex-direction: column-reverse; justify-content: flex-start; padding-bottom: calc(var(--safe-b) + 96px);
                            background: linear-gradient(to top, rgba(255,210,63,0.38), transparent); }
@@ -184,7 +202,7 @@
   .br.brr{ bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 6px; }
   #depth-label {
     position: absolute;
-    top: calc(var(--safe-t) + 60px);
+    top: calc(var(--safe-t) + 124px);   /* below the status chip */
     left: 50%;
     transform: translateX(-50%);
     font-size: 17px; font-weight: 800;
@@ -255,7 +273,7 @@
   <p class="photo-only">Open your camera. Your partner scans a code and sees exactly what you see — then guides you to the shot.</p>
   <h1 class="tripod-only">Tripod mode</h1>
   <p class="tripod-only">Prop this phone up facing the group. Whoever scans the code controls the camera from their own phone — no need to come back to this one.</p>
-  <button id="start-btn" class="btn btn-primary btn-block">Open Camera</button>
+  <button id="start-btn" class="btn btn-primary btn-block">Open camera</button>
   <div id="setup-error" class="error-box" role="alert"></div>
 </div>
 
@@ -267,7 +285,7 @@
   <div class="qr-card card">
     <h2 class="photo-only">Have your partner scan this</h2>
     <h2 class="tripod-only">Scan to control this camera</h2>
-    <div class="sub">With their phone camera or the PicMe app</div>
+    <div class="sub">They can scan it with their phone’s camera</div>
     <img id="qr-img" src="" alt="QR code to join" width="220" height="220">
     <div class="code-line">or enter code<span id="qr-code-text">——</span></div>
   </div>
@@ -319,6 +337,7 @@
   </div>
   <div class="slot photo-only snap-wrap">
     <span class="chip" id="snap-count" hidden>0</span>
+    <span class="chip" id="snap-tip" hidden>Tap to shoot. Hold to keep shooting.</span>
     <button id="snap-btn" class="shutter" aria-label="Take a photo — hold to keep shooting"></button>
   </div>
   <div class="slot labeled photo-only">
@@ -438,6 +457,28 @@ function showLive() {
   waitingOverlay.hidden = true;
   liveHudTop.hidden     = false;
   liveHudBottom.hidden  = false;
+  maybeShowSnapTip();
+}
+
+// First time live: one short tip above the shutter, gone once it's used
+const SNAP_TIP_KEY = 'picme_snap_learned';
+function maybeShowSnapTip() {
+  if (MODE === 'tripod') return;
+  let learned = false;
+  try { learned = !!localStorage.getItem(SNAP_TIP_KEY); } catch {}
+  const tip = $('snap-tip');
+  if (learned || !tip.hidden) return;
+  tip.hidden = false;
+  tip.style.opacity = '1';
+  clearTimeout(tip.timer);
+  tip.timer = setTimeout(hideSnapTip, 8000);
+}
+function hideSnapTip(learned) {
+  if (learned) { try { localStorage.setItem(SNAP_TIP_KEY, '1'); } catch {} }
+  const tip = $('snap-tip');
+  if (tip.hidden) return;
+  tip.style.opacity = '0';
+  setTimeout(() => { tip.hidden = true; }, 300);
 }
 
 function setLiveStatus(text, dot) {
@@ -566,7 +607,7 @@ async function handleMessage(msg) {
       // Old room is gone (expired while we were away) — open a fresh one
       clearSession();
       closePeer();
-      showToast('Your previous room ended — here’s a new one');
+      showToast('Your last session ended, so here’s a new one');
       sendMsg({ type: 'create-room', mode: MODE });
       break;
 
@@ -632,7 +673,7 @@ async function handleMessage(msg) {
       setupError.style.display = 'block';
       setupError.textContent = msg.message;
       startBtn.disabled    = false;
-      startBtn.textContent = 'Start New Room';
+      startBtn.textContent = 'Start new session';
       break;
 
     case 'error':
@@ -1206,6 +1247,7 @@ snapBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   try { snapBtn.setPointerCapture(e.pointerId); } catch {}
   stopRapid();
+  hideSnapTip(true);
   holdCount = 0;
   snapBtn.classList.add('pressed');
   snapOne().then(ok => { if (ok) { holdCount++; if (rapidTimer) showSnapCount(); } });
@@ -1362,7 +1404,7 @@ function showSetupError(msg) {
   setupError.style.display = 'block';
   setupError.textContent   = msg;
   startBtn.disabled        = false;
-  startBtn.textContent     = 'Try Again';
+  startBtn.textContent     = 'Try again';
 }
 
 if ('serviceWorker' in navigator) {
