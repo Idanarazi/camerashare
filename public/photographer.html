@@ -797,7 +797,7 @@ async function startWebRTC() {
   // Direct phone-to-phone channel for sending the shots to the Director
   photoChannel = conn.createDataChannel('photos', { ordered: true });
   photoChannel.binaryType = 'arraybuffer';
-  photoChannel.bufferedAmountLowThreshold = 256 * 1024;
+  photoChannel.bufferedAmountLowThreshold = 64 * 1024;
   photoChannel.onmessage = onChannelMessage;
 
   conn.ontrack = ({ receiver }) => {
@@ -1002,20 +1002,38 @@ function flash() {
 }
 
 // Grab several full-resolution frames straight from the camera stream.
+// Grab the frames quickly (cheap copies), then compress them one at a time — compressing
+// five big photos at once makes the phone stutter, and the live video with it.
+const JPEG_QUALITY = 0.9;   // visually the same as 0.95, about 40% smaller to send
 async function captureBurst(count, gapMs) {
   const w = viewfinder.videoWidth, h = viewfinder.videoHeight;
   if (!w || !h) return [];
+  const frames = [];
+  for (let i = 0; i < count; i++) {
+    if (i) await new Promise(r => setTimeout(r, gapMs));
+    frames.push(await copyFrame(w, h));
+  }
   const canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
-  const pending = [];
-  for (let i = 0; i < count; i++) {
-    if (i) await new Promise(r => setTimeout(r, gapMs));
-    ctx.drawImage(viewfinder, 0, 0, w, h);
-    pending.push(new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95)));
+  const shots = [];
+  for (const f of frames) {
+    if (!f) continue;
+    ctx.drawImage(f, 0, 0, w, h);
+    f.close?.();
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
+    if (blob) shots.push({ blob, url: URL.createObjectURL(blob) });
+    await new Promise(r => setTimeout(r, 0));   // let the camera and video breathe between photos
   }
-  const blobs = (await Promise.all(pending)).filter(Boolean);
-  return blobs.map(blob => ({ blob, url: URL.createObjectURL(blob) }));
+  return shots;
+}
+
+async function copyFrame(w, h) {
+  try { if (window.createImageBitmap) return await createImageBitmap(viewfinder); } catch {}
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(viewfinder, 0, 0, w, h);
+  return c;
 }
 
 // After a reload or a role swap, bring back the shots taken in this room
@@ -1154,9 +1172,20 @@ function sendShotsToDirector(shots) {
   return true;
 }
 
+// Photos travel on the same connection as the live video. Sent all at once they crowd it out
+// and the picture freezes, so they go at a steady pace: a share of what the connection can
+// carry (measured every few seconds), never the whole pipe.
+let photoBudget = 2_500_000 / 8;          // bytes per second until we've measured the link
+const SEND_QUEUE_MAX = 128 * 1024;        // keep the outgoing buffer short so video isn't stuck behind it
+function setPhotoBudget(availableBps) {
+  if (!availableBps) return;
+  photoBudget = Math.min(6_000_000, Math.max(1_200_000, availableBps * 0.35)) / 8;
+}
+
 async function pumpSends() {
   if (sending) return;
   sending = true;
+  let windowStart = performance.now(), windowBytes = 0;
   while (sendQueue.length) {
     const { id, shots } = sendQueue.shift();
     const ch = photoChannel;
@@ -1168,8 +1197,15 @@ async function pumpSends() {
         ch.send(JSON.stringify({ type: 'shot', id, index: i, size: buf.byteLength, mime: shots[i].blob.type || 'image/jpeg' }));
         for (let off = 0; off < buf.byteLength; off += CHUNK) {
           if (ch.readyState !== 'open') throw new Error('closed');
-          if (ch.bufferedAmount > 1024 * 1024) await waitForDrain(ch);
-          ch.send(buf.slice(off, off + CHUNK));
+          if (ch.bufferedAmount > SEND_QUEUE_MAX) await waitForDrain(ch);
+          // stay within the photo budget
+          const elapsed = (performance.now() - windowStart) / 1000;
+          const ahead = windowBytes / photoBudget - elapsed;
+          if (ahead > 0.02) await new Promise(r => setTimeout(r, ahead * 1000));
+          if (performance.now() - windowStart > 2000) { windowStart = performance.now(); windowBytes = 0; }
+          const piece = buf.slice(off, off + CHUNK);
+          ch.send(piece);
+          windowBytes += piece.byteLength;
         }
       }
     } catch {}
@@ -1191,7 +1227,7 @@ async function grabFrame() {
   if (!w || !h) return null;
   if (grabCanvas.width !== w || grabCanvas.height !== h) { grabCanvas.width = w; grabCanvas.height = h; }
   grabCanvas.getContext('2d').drawImage(viewfinder, 0, 0, w, h);
-  const blob = await new Promise(res => grabCanvas.toBlob(res, 'image/jpeg', 0.92));
+  const blob = await new Promise(res => grabCanvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
   return blob ? { blob, url: URL.createObjectURL(blob) } : null;
 }
 
@@ -1323,6 +1359,7 @@ function startQualityMonitor() {
     try {
       const { bestPair } = await bestPairStats();
       if (bestPair?.currentRoundTripTime != null) updateQuality(bestPair.currentRoundTripTime * 1000);
+      setPhotoBudget(bestPair?.availableOutgoingBitrate);
     } catch {}
   }, 3000);
 }
