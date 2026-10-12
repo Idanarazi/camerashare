@@ -1,0 +1,116 @@
+// Settings: a short list. Look, shooting, photos, help.
+import Constants from 'expo-constants';
+import { router } from 'expo-router';
+import { Share, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Icon } from '@/components/icon';
+import { TopBar, useScrollEdge, useTopBarHeight } from '@/components/top-bar';
+import { Group, Row, RoundButton, Segmented } from '@/components/ui';
+import { Appearance, useSettings } from '@/lib/settings';
+import { type, WEBSITE } from '@/lib/theme';
+
+export default function SettingsScreen() {
+  const { settings, set, t } = useSettings();
+  const insets = useSafeAreaInsets();
+  const { y, onScroll } = useScrollEdge();
+  const barH = useTopBarHeight();
+  // The big title scrolls away; a small one fades into the bar as it goes, like iOS Settings.
+  const smallTitle = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [24, 48], [0, 1], 'clamp') }));
+
+  const toggle = (value: boolean, onChange: (v: boolean) => void, label: string) => (
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      accessibilityLabel={label}
+      trackColor={{ true: t.accent, false: t.surface3 }}
+      ios_backgroundColor={t.surface3}
+      thumbColor="#FFFFFF"
+    />
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+    <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={[styles.page, { paddingTop: barH, paddingBottom: insets.bottom + 32 }]}>
+      <Text style={[type.display(31), { color: t.text, marginBottom: -4 }]} accessibilityRole="header">
+        Settings
+      </Text>
+
+      <Group label="Look">
+        <Row
+          icon="sun"
+          label="Appearance"
+          right={
+            <Segmented<Appearance>
+              label="Appearance"
+              value={settings.appearance}
+              onChange={(v) => set('appearance', v)}
+              options={[
+                { value: 'auto', label: 'Auto' },
+                { value: 'dark', label: 'Dark' },
+                { value: 'light', label: 'Bright' },
+              ]}
+            />
+          }
+        />
+      </Group>
+
+      <Group label="Shooting">
+        <Row icon="sound" label="Countdown beeps" note="A beep before each photo" right={toggle(settings.beeps, (v) => set('beeps', v), 'Countdown beeps')} />
+        <Row icon="level" label="Grid & level" note="Helps keep photos straight" right={toggle(settings.grid, (v) => set('grid', v), 'Grid and level')} />
+        <Row
+          icon="cam"
+          label="Photos per shot"
+          note="Taken in a quick burst"
+          right={
+            <Segmented<3 | 5 | 10>
+              label="Photos per shot"
+              value={settings.burst}
+              onChange={(v) => set('burst', v)}
+              options={[
+                { value: 3, label: '3' },
+                { value: 5, label: '5' },
+                { value: 10, label: '10' },
+              ]}
+            />
+          }
+        />
+      </Group>
+
+      <Group label="Photos">
+        <Row icon="heart" label="Save favorites to Photos" note="Photos you ♥ go to your iPhone's Photos app" right={toggle(settings.autoSave, (v) => set('autoSave', v), 'Save favorites to Photos')} />
+      </Group>
+
+      <Group label="Help">
+        <Row label="How PicMe works" right={<Icon name="chev" size={22} color={t.text3} />} onPress={() => router.push('/welcome')} />
+        <Row label="See a sample shoot" right={<Icon name="chev" size={22} color={t.text3} />} onPress={() => router.push('/sample')} />
+        <Row
+          label="Tell a friend"
+          right={<Icon name="share" size={22} color={t.text3} />}
+          onPress={() => Share.share({ message: `PicMe: see their camera on your phone and direct the shot. ${WEBSITE}` }).catch(() => {})}
+        />
+      </Group>
+
+      <Group label="Preview build">
+        <Row label="Show demo shoots on Home" note="See how Home looks after a few shoots" right={toggle(settings.demoShoots, (v) => set('demoShoots', v), 'Show demo shoots on Home')} />
+      </Group>
+
+      <Text style={{ textAlign: 'center', fontSize: 12.5, color: t.text3 }}>PicMe {Constants.expoConfig?.version ?? ''} · preview build</Text>
+    </Animated.ScrollView>
+    <TopBar
+      y={y}
+      left={<RoundButton icon="left" label="Back" onPress={() => router.back()} />}
+      center={
+        <Animated.Text style={[{ fontSize: 17, fontWeight: '600', color: t.text }, smallTitle]} importantForAccessibility="no" accessibilityElementsHidden>
+          Settings
+        </Animated.Text>
+      }
+    />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { paddingHorizontal: 20, gap: 20 },
+});
