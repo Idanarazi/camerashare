@@ -42,6 +42,7 @@ export function ShootsSection() {
 const open = (s: Shoot) => router.push({ pathname: '/shoot/[id]', params: { id: s.id } });
 
 function Counts({ shoot }: { shoot: Shoot }) {
+  const heart = useTheme().heart;
   const favs = favCount(shoot);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -50,7 +51,7 @@ function Counts({ shoot }: { shoot: Shoot }) {
       </Text>
       {favs > 0 && (
         <>
-          <Icon name="heart" size={13} color="#FFD23F" fill="#FFD23F" strokeWidth={1.5} />
+          <Icon name="heart" size={13} color={heart} fill={heart} strokeWidth={1.5} />
           <Text style={styles.countText}>{favs}</Text>
         </>
       )}

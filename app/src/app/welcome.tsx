@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Backdrop } from '@/components/backdrop';
 import { Icon, IconName } from '@/components/icon';
 import { Button, Dots, Wordmark } from '@/components/ui';
 import { WelcomeDemo } from '@/components/welcome-demo';
@@ -97,7 +98,8 @@ export default function Welcome() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top, paddingBottom: insets.bottom + 24 }}>
+    <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom + 24 }}>
+      <Backdrop />
       <Animated.View style={{ flex: 1, paddingHorizontal: 20, opacity: fade }}>{page}</Animated.View>
       <View style={{ paddingHorizontal: 20, gap: 18 }}>
         <Dots count={steps} index={step} />

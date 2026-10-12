@@ -7,6 +7,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Backdrop } from './backdrop';
 import { Glass } from './glass';
 import { Icon } from './icon';
 import { PhotoViewer } from './photo-viewer';
@@ -16,8 +17,9 @@ import type { ShootPhoto } from '@/lib/shoots';
 import { useSettings } from '@/lib/settings';
 import { type } from '@/lib/theme';
 
-export function ShootView({ title, intro, photos, badge, footer }: {
+export function ShootView({ title, intro, photos, badge, footer, onFav }: {
   title: string;
+  onFav?: (key: string, fav: boolean) => void; // real shoots remember favorites
   intro?: string;
   photos: ShootPhoto[];
   badge?: string;
@@ -32,16 +34,18 @@ export function ShootView({ title, intro, photos, badge, footer }: {
   const [favs, setFavs] = useState(() => new Set(photos.filter((p) => p.fav).map((p) => p.key)));
 
   const cell = Math.floor((Math.min(width, 520) - 40 - 6) / 3);
-  const toggle = (key: string) =>
-    setFavs((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const toggle = (key: string) => {
+    const on = !favs.has(key);
+    const next = new Set(favs);
+    if (on) next.add(key);
+    else next.delete(key);
+    setFavs(next);
+    onFav?.(key, on);
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg }}>
+    <View style={{ flex: 1 }}>
+      <Backdrop />
       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={[styles.page, { paddingTop: barH + 4, paddingBottom: insets.bottom + (footer ? 110 : 32) }]}>
         <View style={{ gap: 6 }}>
           <Text style={[type.display(28), { color: t.text }]} accessibilityRole="header">
@@ -61,7 +65,7 @@ export function ShootView({ title, intro, photos, badge, footer }: {
               <Image source={p.src} style={StyleSheet.absoluteFill} contentFit="cover" />
               {favs.has(p.key) && (
                 <View style={styles.heart}>
-                  <Icon name="heart" size={13} color="#FFD23F" fill="#FFD23F" strokeWidth={1.5} />
+                  <Icon name="heart" size={13} color={t.heart} fill={t.heart} strokeWidth={1.5} />
                 </View>
               )}
             </Press>

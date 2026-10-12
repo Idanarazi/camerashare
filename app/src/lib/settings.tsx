@@ -1,11 +1,10 @@
-// App-wide settings, saved on the phone. Also decides dark or bright.
+// App-wide settings, saved on the phone. Also decides which of the four looks is used.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
 
-import { dark, light, Palette } from './theme';
+import { Palette, THEMES, ThemeId } from './theme';
 
-export type Appearance = 'auto' | 'dark' | 'light';
+export type Appearance = ThemeId;
 
 export type Settings = {
   onboarded: boolean;
@@ -19,7 +18,7 @@ export type Settings = {
 
 const DEFAULTS: Settings = {
   onboarded: false,
-  appearance: 'auto',
+  appearance: 'peach',
   beeps: true,
   grid: false,
   burst: 5,
@@ -41,12 +40,15 @@ const SettingsContext = createContext<Ctx | null>(null);
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
-  const system = useColorScheme();
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((raw) => {
-        if (raw) setSettings({ ...DEFAULTS, ...JSON.parse(raw) });
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        // Older builds saved 'auto' | 'light' | 'dark'. Keep Dark, move everyone else to Peach.
+        if (!(saved.appearance in THEMES)) saved.appearance = saved.appearance === 'dark' ? 'dark' : 'peach';
+        setSettings({ ...DEFAULTS, ...saved });
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
@@ -60,8 +62,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const mode = settings.appearance === 'auto' ? (system === 'light' ? 'light' : 'dark') : settings.appearance;
-  const t = mode === 'light' ? light : dark;
+  const t = THEMES[settings.appearance] ?? THEMES.peach;
 
   const value = useMemo(() => ({ loaded, settings, set, t }), [loaded, settings, set, t]);
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

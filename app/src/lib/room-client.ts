@@ -1,6 +1,7 @@
 // Pairing two phones through the PicMe server. Speaks the exact same messages as the website,
 // so an app phone can pair with a website phone and the other way round.
 // Plain TypeScript with no React, so it can be tested on its own.
+import type { Command } from './directing';
 
 export type Role = 'photographer' | 'director';
 export type Mode = 'photo' | 'tripod';
@@ -62,6 +63,7 @@ export class RoomClient {
       code?: string; // directing phone only
       key?: string; // directing phone only: the one-time key from the QR, skips the knock
       onState: (s: RoomState) => void;
+      onCommand?: (command: Command, data?: any) => void; // camera phone: the director guided or pressed the shutter
       WebSocketImpl?: typeof WebSocket;
     },
   ) {
@@ -81,6 +83,12 @@ export class RoomClient {
   answerKnock(allowed: boolean) {
     this.send({ type: 'knock-response', allowed });
     if (!allowed && this.state.kind === 'knock') this.set({ ...this.state, kind: 'waiting' });
+  }
+
+  /** Directing phone: guide the camera phone or start the countdown. False if not connected right now. */
+  sendCommand(command: Command, data?: object) {
+    if (this.opts.role !== 'director' || this.state.kind !== 'connected' || this.state.partnerAway) return false;
+    return this.send({ type: 'command', command, data });
   }
 
   /** End things cleanly: the server tells the other phone. */
@@ -117,7 +125,16 @@ export class RoomClient {
   }
 
   private send(msg: object) {
-    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(msg));
+    if (this.ws && this.ws.readyState === 1) {
+      this.ws.send(JSON.stringify(msg));
+      return true;
+    }
+    return false;
+  }
+
+  /** Camera phone: tell the directing phone there's no live picture yet, so a website director still unlocks its controls. */
+  private announceCamera() {
+    this.send({ type: 'camera-info', video: false });
   }
 
   private clearTimers() {
@@ -210,8 +227,10 @@ export class RoomClient {
         break;
       case 'room-resumed':
         this.key = msg.key;
-        if (msg.directorPresent) this.set({ kind: 'connected', code: msg.code, mode, partnerAway: false });
-        else this.set({ kind: 'waiting', code: msg.code, joinUrl: this.joinLink(msg.code), mode });
+        if (msg.directorPresent) {
+          this.set({ kind: 'connected', code: msg.code, mode, partnerAway: false });
+          this.announceCamera();
+        } else this.set({ kind: 'waiting', code: msg.code, joinUrl: this.joinLink(msg.code), mode });
         break;
       case 'room-key':
         this.key = msg.key; // each QR works once; the next scan needs the new key
@@ -225,6 +244,10 @@ export class RoomClient {
         break;
       case 'director-joined':
         if (this.session) this.set({ kind: 'connected', code: this.session.code, mode: this.session.mode, partnerAway: false });
+        this.announceCamera();
+        break;
+      case 'command':
+        if (this.state.kind === 'connected') this.opts.onCommand?.(msg.command, msg.data);
         break;
       case 'director-away':
         if (this.state.kind === 'connected') this.set({ ...this.state, partnerAway: true });

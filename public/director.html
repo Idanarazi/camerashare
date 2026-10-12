@@ -485,6 +485,7 @@ let pc = null;
 let pendingCandidates = [];
 let remoteDescSet = false;
 let isLive = false;
+let appCamera = false;   // partner's camera is the PicMe app (no live video yet)
 let torchOn = false;
 let micEnabled = false, audioSender = null, micStream = null;
 let joinCode = null;       // code we are joining (first join)
@@ -677,7 +678,19 @@ async function handleMessage(msg) {
 
     case 'photographer-away':
       photographerAway = true;
+      if (appCamera) setLive(false);
       setStatus('Your partner is reconnecting…');
+      break;
+
+    // The camera is the PicMe app, which has no live video yet: guiding and the shutter still work
+    case 'camera-info':
+      if (msg.video === false && !peerHealthy()) {
+        appCamera = true;
+        photographerAway = false;
+        setLive(true);
+        connectingMsg.style.display = 'block';
+        connectingMsg.textContent = 'Their camera is the PicMe app. Live view comes in its next update. You can already guide them and take the shot.';
+      }
       break;
 
     case 'photographer-back':

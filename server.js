@@ -451,6 +451,14 @@ wss.on('connection', (ws, req) => {
         break;
       }
 
+      // The PicMe app's camera says it has no live video yet, so the website director unlocks its controls anyway
+      case 'camera-info': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'photographer' || room.photographer !== ws) return;
+        send(room.director, { type: 'camera-info', video: !!msg.video });
+        break;
+      }
+
       // ── Swap roles: either side asks, the other approves ──
       case 'swap-request': {
         const room = rooms.get(ws.roomCode);

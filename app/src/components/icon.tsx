@@ -3,7 +3,8 @@ import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 
 export type IconName =
   | 'home' | 'scan' | 'cam' | 'tripod' | 'gear' | 'chev' | 'left' | 'heart'
-  | 'share' | 'close' | 'bolt' | 'level' | 'sound' | 'images' | 'sun' | 'globe' | 'key';
+  | 'share' | 'close' | 'bolt' | 'level' | 'sound' | 'images' | 'sun' | 'globe' | 'key' | 'arrow' | 'check'
+  | 'up' | 'down' | 'closer' | 'back' | 'hand';
 
 function shapes(name: IconName) {
   switch (name) {
@@ -39,6 +40,20 @@ function shapes(name: IconName) {
       return <><Circle cx="12" cy="12" r="4" /><Path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>;
     case 'key':
       return <><Rect x="3" y="6" width="18" height="12" rx="2" /><Path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" /></>;
+    case 'arrow':
+      return <Path d="M7 17 17 7M8 7h9v9" />;
+    case 'check':
+      return <Polyline points="5 12.5 10 17 19 7" />;
+    case 'up':
+      return <Polyline points="5 15 12 8 19 15" />;
+    case 'down':
+      return <Polyline points="5 9 12 16 19 9" />;
+    case 'closer':
+      return <><Path d="M15 3h6v6M9 21H3v-6" /><Path d="M21 3l-7 7M3 21l7-7" /></>;
+    case 'back':
+      return <><Path d="M4 14h6v6M20 10h-6V4" /><Path d="M14 10l7-7M3 21l7-7" /></>;
+    case 'hand':
+      return <><Path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8" /><Path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></>;
     case 'globe':
       return <><Circle cx="12" cy="12" r="9" /><Path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>;
   }

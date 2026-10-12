@@ -43,6 +43,22 @@
           "cameraPermission": "PicMe uses the camera to scan codes and, when you're taking the photo, to show the live view to the person you're photographing. Nothing is recorded or uploaded.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": "PicMe saves the photos you ♥ to your Photos.",
+          "isAccessMediaLocationEnabled": false
+        }
       ]
     ],
     "experiments": {

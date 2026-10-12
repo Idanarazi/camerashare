@@ -53,7 +53,7 @@ export function ShootInvite() {
           <Image source={photo.src} style={StyleSheet.absoluteFill} contentFit="cover" transition={front ? 0 : 200} />
           {front && (
             <View style={styles.heart}>
-              <Icon name="heart" size={14} color="#FFD23F" fill="#FFD23F" strokeWidth={1.5} />
+              <Icon name="heart" size={14} color={t.heart} fill={t.heart} strokeWidth={1.5} />
             </View>
           )}
         </View>
@@ -74,9 +74,9 @@ export function ShootInvite() {
           Every photo they take shows up on your phone instantly, and stays here.
         </Text>
       </View>
-      <View style={[styles.cta, { backgroundColor: t.accentSoft }]}>
-        <Text style={{ color: t.accentText, fontWeight: '700', fontSize: 15 }}>See a sample shoot</Text>
-        <Icon name="chev" size={18} color={t.accentText} strokeWidth={2.5} />
+      <View style={[styles.cta, { backgroundColor: t.primary }]}>
+        <Text style={{ color: t.onPrimary, fontWeight: '700', fontSize: 15 }}>See a sample shoot</Text>
+        <Icon name="chev" size={18} color={t.onPrimary} strokeWidth={2.5} />
       </View>
     </Press>
   );

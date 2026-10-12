@@ -1,19 +1,28 @@
 // The directing phone after scanning or typing a code: joining, waiting to be let in, connected.
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, Platform, View } from 'react-native';
 
+import { DirectorView } from '@/components/director-view';
 import { Message, Screen } from '@/components/status';
 import { Button } from '@/components/ui';
-import { haptic } from '@/lib/motion';
+import { useSettings } from '@/lib/settings';
+import { connectedFeedback, prepareSounds } from '@/lib/sounds';
 import { useRoom } from '@/lib/use-room';
 
 export default function Join() {
   const { code, k } = useLocalSearchParams<{ code: string; k?: string }>();
-  const { state, leave } = useRoom({ role: 'director', code, key: k });
+  const { state, leave, sendCommand } = useRoom({ role: 'director', code, key: k });
   const live = state.kind === 'connected' && !state.partnerAway;
+  const { settings } = useSettings();
+  // The connected moment: this phone builds up, theirs lands it. Sound only the first time.
+  const greeted = useRef(false);
+  useEffect(() => prepareSounds(), []);
   useEffect(() => {
-    if (live) haptic.success();
+    if (!live) return;
+    const first = !greeted.current;
+    greeted.current = true;
+    return connectedFeedback('director', first && settings.beeps);
   }, [live]);
 
   const goHome = () => {
@@ -29,6 +38,11 @@ export default function Join() {
     } else end();
   };
 
+  // Connected: the directing controls take the whole screen.
+  if (state.kind === 'connected') {
+    return <DirectorView mode={state.mode} partnerAway={state.partnerAway} send={sendCommand} onLeave={goHome} />;
+  }
+
   let body;
   switch (state.kind) {
     case 'connecting':
@@ -43,16 +57,6 @@ export default function Join() {
       break;
     case 'knocking':
       body = <Message busy title="Waiting for them" body="Ask them to let you in on their phone." />;
-      break;
-    case 'connected':
-      body = state.partnerAway ? (
-        <Message busy title="Their camera dropped out" body="Their connection dropped. If they open PicMe again, you'll reconnect by yourself." />
-      ) : (
-        <Message tone="good" icon="bolt" title="Connected!" body="Your phones are paired. Live video comes in the next build, so for now this is where pairing ends.">
-          <View style={{ height: 8 }} />
-          <Button kind="secondary" label="Leave session" onPress={goHome} />
-        </Message>
-      );
       break;
     case 'error':
     case 'ended':

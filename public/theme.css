@@ -60,7 +60,20 @@ button { font: inherit; color: inherit; }
 
 /* ── Wordmark ── */
 .wordmark { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
-.wordmark b { font-weight: inherit; color: var(--accent); }
+.wordmark b {
+  /* "Me" framed by camera focus brackets and tilted a little, like someone striking a pose */
+  --wm: var(--accent); --arm: .28em; --bar: .085em;
+  font-weight: inherit; color: inherit; display: inline-block; margin-left: .06em; padding: .08em .15em; transform: rotate(-7deg);
+  background:
+    linear-gradient(var(--wm), var(--wm)) left top / var(--arm) var(--bar) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) left top / var(--bar) var(--arm) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) right top / var(--arm) var(--bar) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) right top / var(--bar) var(--arm) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) left bottom / var(--arm) var(--bar) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) left bottom / var(--bar) var(--arm) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) right bottom / var(--arm) var(--bar) no-repeat,
+    linear-gradient(var(--wm), var(--wm)) right bottom / var(--bar) var(--arm) no-repeat;
+}
 
 /* ── Buttons ── */
 .btn {

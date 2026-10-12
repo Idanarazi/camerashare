@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Backdrop } from './backdrop';
 import { Icon, IconName } from './icon';
 import { RoundButton } from './ui';
 import { useReducedMotion } from '@/lib/motion';
@@ -13,7 +14,8 @@ export function Screen({ children, onHome, homeLabel = 'Home', homeIcon = 'home'
   const t = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 24 }}>
+    <View style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 24 }}>
+      <Backdrop />
       <View style={{ paddingHorizontal: 16, flexDirection: 'row' }}>
         <RoundButton icon={homeIcon} label={homeLabel} onPress={onHome} />
       </View>

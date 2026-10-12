@@ -13,6 +13,7 @@ import { Glass } from './glass';
 import { Icon } from './icon';
 import { Press } from './ui';
 import { haptic, project, spring, useReducedMotion } from '@/lib/motion';
+import { useTheme } from '@/lib/settings';
 
 export type ViewerPhoto = { key: string; src: ImageSource };
 
@@ -27,6 +28,7 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const still = useReducedMotion();
+  const t = useTheme();
   const [index, setIndex] = useState(start ?? 0);
   const [chromeOn, setChromeOn] = useState(true);
   const open = start !== null;
@@ -136,8 +138,8 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
             <Press onPress={toggleFav} accessibilityRole="button" accessibilityLabel={fav ? 'Remove from favorites' : 'Add to favorites'} accessibilityState={{ selected: fav }}>
               <Animated.View style={heartStyle}>
                 {fav ? (
-                  <View style={[styles.round, styles.big, { backgroundColor: '#FFD23F', borderColor: '#FFD23F' }]}>
-                    <Icon name="heart" size={26} color="#191400" fill="#191400" />
+                  <View style={[styles.round, styles.big, { backgroundColor: t.heart, borderColor: t.heart }]}>
+                    <Icon name="heart" size={26} color={t.heartInk} fill={t.heartInk} />
                   </View>
                 ) : (
                   <Glass style={[styles.round, styles.big]}>

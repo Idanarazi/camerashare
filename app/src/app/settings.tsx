@@ -5,11 +5,12 @@ import { Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Backdrop } from '@/components/backdrop';
 import { Icon } from '@/components/icon';
 import { TopBar, useScrollEdge, useTopBarHeight } from '@/components/top-bar';
-import { Group, Row, RoundButton, Segmented } from '@/components/ui';
+import { Group, Press, Row, RoundButton, Segmented } from '@/components/ui';
 import { Appearance, useSettings } from '@/lib/settings';
-import { type, WEBSITE } from '@/lib/theme';
+import { THEME_ORDER, THEMES, type, WEBSITE } from '@/lib/theme';
 
 export default function SettingsScreen() {
   const { settings, set, t } = useSettings();
@@ -31,33 +32,19 @@ export default function SettingsScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg }}>
+    <View style={{ flex: 1 }}>
+    <Backdrop />
     <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={[styles.page, { paddingTop: barH, paddingBottom: insets.bottom + 32 }]}>
       <Text style={[type.display(31), { color: t.text, marginBottom: -4 }]} accessibilityRole="header">
         Settings
       </Text>
 
       <Group label="Look">
-        <Row
-          icon="sun"
-          label="Appearance"
-          right={
-            <Segmented<Appearance>
-              label="Appearance"
-              value={settings.appearance}
-              onChange={(v) => set('appearance', v)}
-              options={[
-                { value: 'auto', label: 'Auto' },
-                { value: 'dark', label: 'Dark' },
-                { value: 'light', label: 'Bright' },
-              ]}
-            />
-          }
-        />
+        <LookPicker value={settings.appearance} onChange={(v) => set('appearance', v)} />
       </Group>
 
       <Group label="Shooting">
-        <Row icon="sound" label="Countdown beeps" note="A beep before each photo" right={toggle(settings.beeps, (v) => set('beeps', v), 'Countdown beeps')} />
+        <Row icon="sound" label="Sounds" note="When your phones connect, and before each photo" right={toggle(settings.beeps, (v) => set('beeps', v), 'Sounds')} />
         <Row icon="level" label="Grid & level" note="Helps keep photos straight" right={toggle(settings.grid, (v) => set('grid', v), 'Grid and level')} />
         <Row
           icon="cam"
@@ -111,6 +98,35 @@ export default function SettingsScreen() {
   );
 }
 
+/** The four looks as little previews: the screen's background with its three choice colors. */
+function LookPicker({ value, onChange }: { value: Appearance; onChange: (v: Appearance) => void }) {
+  const { t } = useSettings();
+  return (
+    <View style={styles.looks} accessibilityRole="radiogroup" accessibilityLabel="Appearance">
+      {THEME_ORDER.map((id) => {
+        const p = THEMES[id];
+        const on = id === value;
+        return (
+          <Press key={id} onPress={() => onChange(id)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={p.name} style={styles.look}>
+            <View style={[styles.preview, { backgroundColor: p.bg, borderColor: on ? t.text : t.line, borderWidth: on ? 2 : StyleSheet.hairlineWidth }]}>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: p.glow[0]?.color ?? p.surface2, opacity: 0.8 }} />
+              <View style={{ height: 12, borderRadius: 4, backgroundColor: p.roles.me.bg }} />
+              <View style={{ height: 12, borderRadius: 4, backgroundColor: p.roles.other.bg, borderWidth: p.roles.other.bg === p.bg || p.mode === 'dark' ? StyleSheet.hairlineWidth : 0, borderColor: p.line }} />
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: p.roles.group.bg, borderWidth: p.mode === 'dark' ? StyleSheet.hairlineWidth : 0, borderColor: p.line }} />
+            </View>
+            <Text style={{ fontSize: 12.5, lineHeight: 15, fontWeight: on ? '700' : '500', color: on ? t.text : t.text2, textAlign: 'center' }} numberOfLines={2}>
+              {p.name}
+            </Text>
+          </Press>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  looks: { flexDirection: 'row', gap: 10, padding: 14 },
+  look: { flex: 1, gap: 6, alignItems: 'stretch' },
+  preview: { height: 92, borderRadius: 14, padding: 8, gap: 5, justifyContent: 'center' },
   page: { paddingHorizontal: 20, gap: 20 },
 });

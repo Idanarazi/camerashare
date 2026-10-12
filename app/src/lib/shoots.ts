@@ -1,13 +1,112 @@
-// Your shoots: each one is a set of photos from one session, newest first.
-// Real shoots get saved here once photos arrive in the app (phase 3). Until then, the
-// "Show demo shoots" switch in Settings fills Home with sample ones so the layout can be tried.
+// Your shoots: each one is the photos from one session, newest photo first.
+// Photos are kept inside the app (Documents/shoots/<id>/), and the list lives in AsyncStorage.
+// The "Show demo shoots" switch in Settings adds sample ones so the layout can be tried.
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ImageSource } from 'expo-image';
+import { useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 
 import { useSettings } from './settings';
 import { SAMPLE_PHOTOS } from './samples';
 
 export type ShootPhoto = { key: string; src: ImageSource; fav: boolean };
 export type Shoot = { id: string; at: number; photos: ShootPhoto[]; demo?: boolean };
+
+// ── stored shoots ─────────────────────────────────────────────
+
+// `file` is relative to the app's Documents folder: iPhone moves that folder on every app update,
+// so a full path saved today would point nowhere next month. On the web, `file` is the photo itself.
+type StoredPhoto = { key: string; file: string; fav: boolean };
+type StoredShoot = { id: string; at: number; photos: StoredPhoto[] };
+
+const KEY = 'picme.shoots.v1';
+const WEB = Platform.OS === 'web';
+let stored: StoredShoot[] = [];
+let snapshot: Shoot[] = [];
+let loaded = false;
+const listeners = new Set<() => void>();
+
+function fs() {
+  return require('expo-file-system') as typeof import('expo-file-system');
+}
+
+function photoUri(shootId: string, file: string) {
+  if (WEB) return file;
+  const { File, Paths } = fs();
+  return new File(Paths.document, 'shoots', shootId, file).uri;
+}
+
+function publish() {
+  snapshot = stored.map((s) => ({ id: s.id, at: s.at, photos: s.photos.map((p) => ({ key: p.key, fav: p.fav, src: { uri: photoUri(s.id, p.file) } })) }));
+  listeners.forEach((l) => l());
+}
+
+function persist() {
+  publish();
+  if (WEB) return; // the web preview keeps shoots for the session only (photos are too big for its storage)
+  AsyncStorage.setItem(KEY, JSON.stringify(stored)).catch(() => {});
+}
+
+function load() {
+  if (loaded) return;
+  loaded = true;
+  if (WEB) return;
+  AsyncStorage.getItem(KEY)
+    .then((raw) => {
+      if (!raw) return;
+      const saved = JSON.parse(raw) as StoredShoot[];
+      const ids = new Set(stored.map((s) => s.id));
+      stored = [...stored, ...saved.filter((s) => !ids.has(s.id))].sort((a, b) => b.at - a.at);
+      publish();
+    })
+    .catch(() => {});
+}
+
+function subscribe(l: () => void) {
+  load();
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+
+/** Keep new photos (camera cache files) in a shoot. Newest first. Returns the photo keys. */
+export function addPhotos(shootId: string, uris: string[]) {
+  load();
+  const stamp = Date.now();
+  const photos: StoredPhoto[] = [];
+  uris.forEach((uri, i) => {
+    const key = `${shootId}-${stamp}-${i}`;
+    if (WEB) {
+      photos.push({ key, file: uri, fav: false });
+      return;
+    }
+    try {
+      const { Directory, File, Paths } = fs();
+      const dir = new Directory(Paths.document, 'shoots', shootId);
+      dir.create({ intermediates: true, idempotent: true });
+      const name = `${stamp}-${i}.jpg`;
+      new File(uri).moveSync(new File(dir, name));
+      photos.push({ key, file: name, fav: false });
+    } catch {
+      // A photo that couldn't be kept is skipped; the rest still land.
+    }
+  });
+  if (!photos.length) return [];
+  const existing = stored.find((s) => s.id === shootId);
+  if (existing) {
+    stored = stored.map((s) => (s.id === shootId ? { ...s, photos: [...photos.reverse(), ...s.photos] } : s));
+  } else {
+    stored = [{ id: shootId, at: stamp, photos: photos.reverse() }, ...stored];
+  }
+  persist();
+  return photos.map((p) => p.key);
+}
+
+export function setFav(shootId: string, key: string, fav: boolean) {
+  stored = stored.map((s) => (s.id !== shootId ? s : { ...s, photos: s.photos.map((p) => (p.key === key ? { ...p, fav } : p)) }));
+  persist();
+}
+
+// ── demo shoots ───────────────────────────────────────────────
 
 const DAY = 24 * 60 * 60 * 1000;
 const pick = (prefixes: string[]) => SAMPLE_PHOTOS.filter((p) => prefixes.some((x) => p.key.startsWith(x)));
@@ -24,8 +123,14 @@ function demoShoots(): Shoot[] {
 
 export function useShoots(): Shoot[] {
   const { settings } = useSettings();
-  const real: Shoot[] = [];
+  const real = useSyncExternalStore(subscribe, () => snapshot, () => snapshot);
   return settings.demoShoots ? [...real, ...demoShoots()] : real;
+}
+
+/** The photos of one shoot, live (empty until the first photo lands). */
+export function useShoot(id: string | undefined) {
+  const real = useSyncExternalStore(subscribe, () => snapshot, () => snapshot);
+  return real.find((s) => s.id === id);
 }
 
 export function findShoot(shoots: Shoot[], id: string | undefined) {

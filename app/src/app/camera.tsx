@@ -1,31 +1,40 @@
 // "Someone else" and "Group shot": this phone is the camera. It shows a code for the other phone to scan.
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
+import { CameraLive, type CameraLiveHandle } from '@/components/camera-live';
 import { Pulse, Message, Screen } from '@/components/status';
 import { Button } from '@/components/ui';
 import { haptic } from '@/lib/motion';
 import type { Mode } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
+import { connectedFeedback, prepareSounds } from '@/lib/sounds';
 import { type } from '@/lib/theme';
 import { useRoom } from '@/lib/use-room';
 
 export default function CameraPhone() {
-  const { t } = useSettings();
+  const { t, settings } = useSettings();
   const params = useLocalSearchParams<{ mode?: string }>();
   const mode: Mode = params.mode === 'tripod' ? 'tripod' : 'photo';
-  const { state, answerKnock, leave, retry } = useRoom({ role: 'photographer', mode });
+  const live$ = useRef<CameraLiveHandle>(null);
+  const { state, answerKnock, leave, retry } = useRoom({ role: 'photographer', mode, onCommand: (c, d) => live$.current?.command(c, d) });
   const live = state.kind === 'connected' && !state.partnerAway;
 
   // Feel the moments that matter: someone asking to join, and the two phones connecting.
   useEffect(() => {
     if (state.kind === 'knock') haptic.warning();
   }, [state.kind]);
+  // The connected moment: their phone builds up, this one lands it. Sound only the first time.
+  const greeted = useRef(false);
+  useEffect(() => prepareSounds(), []);
   useEffect(() => {
-    if (live) haptic.success();
+    if (!live) return;
+    const first = !greeted.current;
+    greeted.current = true;
+    return connectedFeedback('photographer', first && settings.beeps);
   }, [live]);
 
   const goHome = () => {
@@ -40,6 +49,11 @@ export default function CameraPhone() {
       ]);
     } else end();
   };
+
+  // Connected: the live camera takes the whole screen.
+  if (state.kind === 'connected') {
+    return <CameraLive ref={live$} code={state.code} mode={state.mode} partnerAway={state.partnerAway} onEnd={goHome} />;
+  }
 
   let body;
   switch (state.kind) {
@@ -79,17 +93,6 @@ export default function CameraPhone() {
             <Text style={{ color: t.text2, fontSize: 14.5, fontWeight: '600' }}>Waiting for them to scan…</Text>
           </View>
         </View>
-      );
-      break;
-
-    case 'connected':
-      body = state.partnerAway ? (
-        <Message busy title="Your partner dropped out" body="Their connection dropped. They'll be back in a moment if they open PicMe again." />
-      ) : (
-        <Message tone="good" icon="bolt" title="Connected!" body="Your phones are paired. Live video comes in the next build, so for now this is where pairing ends.">
-          <View style={{ height: 8 }} />
-          <Button kind="secondary" label="End session" onPress={goHome} />
-        </Message>
       );
       break;
 

@@ -38,30 +38,35 @@ export function Press({ style, children, onPressIn, onPressOut, pressScale = 0.9
   );
 }
 
+/**
+ * PicMe's name: "Pic", then "Me" framed by camera focus brackets and tilted a little,
+ * like someone striking a pose. (No filled box behind "Me": that read like another brand's logo.)
+ */
 export function Wordmark({ size = 26 }: { size?: number }) {
   const t = useTheme();
-  const base = { ...type.display(size), lineHeight: size * 1.15, color: t.text };
-  if (t.mode === 'light') {
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="header" accessibilityLabel="PicMe">
-        <Text style={base}>Pic</Text>
-        <View style={{ backgroundColor: t.accent, borderRadius: size * 0.14, paddingHorizontal: size * 0.06, marginLeft: size * 0.02 }}>
-          <Text style={[base, { color: t.accentInk }]}>Me</Text>
-        </View>
-      </View>
-    );
-  }
+  const base = { ...type.display(size), lineHeight: Math.round(size * 1.15), color: t.wordmark.text };
+  const c = Math.round(size * 0.28); // bracket arm length
+  const w = Math.max(2, Math.round(size * 0.085)); // bracket thickness
+  const r = Math.round(size * 0.12);
+  const col = t.wordmark.brackets;
   return (
-    <Text style={base} accessibilityRole="header" accessibilityLabel="PicMe">
-      Pic<Text style={{ color: t.accentText }}>Me</Text>
-    </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }} accessible accessibilityRole="header" accessibilityLabel="PicMe">
+      <Text style={base}>Pic</Text>
+      <View style={{ marginLeft: size * 0.06, paddingHorizontal: size * 0.15, paddingVertical: size * 0.08, transform: [{ rotate: '-7deg' }] }}>
+        <Text style={base}>Me</Text>
+        <View style={{ position: 'absolute', left: 0, top: 0, width: c, height: c, borderLeftWidth: w, borderTopWidth: w, borderTopLeftRadius: r, borderColor: col }} />
+        <View style={{ position: 'absolute', right: 0, top: 0, width: c, height: c, borderRightWidth: w, borderTopWidth: w, borderTopRightRadius: r, borderColor: col }} />
+        <View style={{ position: 'absolute', left: 0, bottom: 0, width: c, height: c, borderLeftWidth: w, borderBottomWidth: w, borderBottomLeftRadius: r, borderColor: col }} />
+        <View style={{ position: 'absolute', right: 0, bottom: 0, width: c, height: c, borderRightWidth: w, borderBottomWidth: w, borderBottomRightRadius: r, borderColor: col }} />
+      </View>
+    </View>
   );
 }
 
 export function Button({ label, onPress, kind = 'primary', icon }: { label: string; onPress: () => void; kind?: 'primary' | 'secondary' | 'ghost'; icon?: IconName }) {
   const t = useTheme();
-  const bg = kind === 'primary' ? t.accent : kind === 'secondary' ? t.surface2 : 'transparent';
-  const fg = kind === 'primary' ? t.accentInk : kind === 'secondary' ? t.text : t.text2;
+  const bg = kind === 'primary' ? t.primary : kind === 'secondary' ? t.surface2 : 'transparent';
+  const fg = kind === 'primary' ? t.onPrimary : kind === 'secondary' ? t.text : t.text2;
   return (
     <Press
       onPress={onPress}
@@ -81,35 +86,37 @@ export function RoundButton({ icon, label, onPress }: { icon: IconName; label: s
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
-      style={[styles.round, { backgroundColor: t.surface2, borderColor: t.line }]}>
+      style={[styles.round, t.mode === 'light' ? { backgroundColor: 'rgba(255,255,255,0.62)', borderColor: 'rgba(255,255,255,0.95)' } : { backgroundColor: t.surface2, borderColor: t.line }]}>
       <Icon name={icon} size={21} color={t.text} />
     </Press>
   );
 }
 
-export function RoleCard({ icon, name, desc, primary, compact, onPress }: { icon: IconName; name: string; desc: string; primary?: boolean; compact?: boolean; onPress: () => void }) {
+export function RoleCard({ icon, name, desc, role, compact, onPress }: { icon: IconName; name: string; desc: string; role: 'me' | 'other' | 'group'; compact?: boolean; onPress: () => void }) {
   const t = useTheme();
-  const fg = primary ? t.accentInk : t.text;
+  const c = t.roles[role];
   return (
     <Press
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${name}. ${desc}`}
-      style={[
-        styles.role,
-        compact && styles.roleCompact,
-        { backgroundColor: primary ? t.accent : t.surface, borderColor: primary ? t.accent : t.line },
-      ]}>
-      <View style={[styles.ri, compact && styles.riCompact, { backgroundColor: primary ? 'rgba(0,0,0,0.12)' : t.surface2 }]}>
-        <Icon name={icon} size={24} color={compact ? t.accentText : fg} />
+      style={[styles.role, compact && styles.roleCompact, { backgroundColor: c.bg, borderColor: c.border }]}>
+      <View style={[styles.ri, compact && styles.riCompact, { backgroundColor: c.chip }]}>
+        <Icon name={icon} size={compact ? 22 : 24} color={!t.arrowCircle && compact ? t.accentText : c.fg} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: fg, fontSize: compact ? 16.5 : 20, fontWeight: '700', letterSpacing: compact ? 0 : -0.2 }}>{name}</Text>
-        <Text style={{ color: fg, opacity: 0.75, fontSize: compact ? 13.5 : 14.5, marginTop: 2, lineHeight: compact ? 18 : 19 }}>{desc}</Text>
+        <Text style={{ color: c.fg, fontSize: compact ? 16.5 : 20, fontWeight: '800', letterSpacing: compact ? 0 : -0.2 }}>{name}</Text>
+        <Text style={{ color: c.fg, opacity: 0.78, fontSize: compact ? 13.5 : 14.5, marginTop: 2, lineHeight: compact ? 18 : 19 }}>{desc}</Text>
       </View>
-      <View style={{ opacity: 0.6 }}>
-        <Icon name="chev" size={24} color={fg} />
-      </View>
+      {t.arrowCircle && !compact ? (
+        <View style={[styles.arrow, { backgroundColor: t.mode === 'light' ? '#16131A' : '#16131A' }]}>
+          <Icon name="arrow" size={18} strokeWidth={2.6} color="#FFFFFF" />
+        </View>
+      ) : (
+        <View style={{ opacity: 0.6 }}>
+          <Icon name="chev" size={24} color={c.fg} />
+        </View>
+      )}
     </Press>
   );
 }
@@ -192,10 +199,11 @@ export function Segmented<T extends string | number>({ options, value, onChange,
 const styles = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, borderWidth: 1, alignSelf: 'stretch' },
   round: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  role: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 20, paddingHorizontal: 18, borderRadius: 22, borderWidth: 1 },
-  roleCompact: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 18, gap: 14 },
-  ri: { width: 52, height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  riCompact: { width: 40, height: 40, borderRadius: 12 },
+  role: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 18, paddingHorizontal: 18, borderRadius: 28, borderWidth: 1 },
+  roleCompact: { paddingVertical: 12, paddingHorizontal: 14, borderRadius: 24, gap: 12 },
+  ri: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  riCompact: { width: 44, height: 44, borderRadius: 22 },
+  arrow: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 58, paddingHorizontal: 16, paddingVertical: 10 },
   segShadow: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
 });
