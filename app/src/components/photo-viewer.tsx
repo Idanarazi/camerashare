@@ -1,7 +1,9 @@
 // Full-screen photo viewer, behaving like the iPhone's Photos app:
 // swipe sideways between photos, swipe down (or up) to close — the photo follows your finger 1:1,
 // keeps your flick's speed when you let go, and springs back if you didn't mean it.
-// Tap the photo to hide or show the buttons. Drag the thumbnail strip to scrub through the shoot.
+// Tap the photo to hide or show the buttons. Drag the thumbnail strip to scrub through the shoot:
+// while you scrub, the big photo shows its small copy (instant, a little soft, like Apple's Photos),
+// and a moment after you stop it fades into the full photo.
 // Buttons: save to Photos, ♥, delete.
 import { Image, ImageSource } from 'expo-image';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -40,6 +42,15 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note, o
   const [index, setIndex] = useState(start ?? 0);
   const [chromeOn, setChromeOn] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
+  const [fast, setFast] = useState(false); // scrubbing: show small copies only
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleSoon = (ms: number) => {
+    if (settle.current) clearTimeout(settle.current);
+    settle.current = setTimeout(() => setFast(false), ms);
+  };
+  useEffect(() => () => {
+    if (settle.current) clearTimeout(settle.current);
+  }, []);
   const list = useRef<FlatList<ViewerPhoto>>(null);
   const strip = useRef<FlatList<ViewerPhoto>>(null);
   const scrubbing = useRef(false);
@@ -178,7 +189,7 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note, o
               scrollEventThrottle={48}
               keyExtractor={(p) => p.key}
               renderItem={({ item, index: i }) => (
-                <Page src={item.src} label={`Photo ${i + 1} of ${photos.length}`} width={width} height={height} ty={ty} onDismiss={dismiss} onTap={toggleChrome} />
+                <Page src={item.src} thumb={item.thumb} fast={fast} label={`Photo ${i + 1} of ${photos.length}`} width={width} height={height} ty={ty} onDismiss={dismiss} onTap={toggleChrome} />
               )}
             />
           )}
@@ -231,15 +242,21 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note, o
                   const i = Math.max(0, Math.min(photos.length - 1, Math.round(e.nativeEvent.contentOffset.x / STEP)));
                   if (i !== indexRef.current) {
                     haptic.select();
+                    setFast(true);
                     goTo(i);
+                    settleSoon(220); // paused on a photo for a moment → full quality
                   }
                 }}
                 onMomentumScrollEnd={() => {
                   scrubbing.current = false;
+                  settleSoon(80);
                 }}
                 onScrollEndDrag={(e) => {
                   // no flick → no momentum phase to wait for
-                  if (Math.abs(e.nativeEvent.velocity?.x ?? 0) < 0.05) scrubbing.current = false;
+                  if (Math.abs(e.nativeEvent.velocity?.x ?? 0) < 0.05) {
+                    scrubbing.current = false;
+                    settleSoon(80);
+                  }
                 }}
                 initialNumToRender={12}
                 windowSize={5}
@@ -301,8 +318,10 @@ const Thumb = memo(function Thumb({ src, on, n, onPress }: { src: ImageSource; o
  * One photo. Its own vertical drag closes the viewer; sideways drags are left to the list,
  * so swiping between photos and swiping down never fight each other.
  */
-const Page = memo(function Page({ src, label, width, height, ty, onDismiss, onTap }: {
+const Page = memo(function Page({ src, thumb, fast, label, width, height, ty, onDismiss, onTap }: {
   src: ImageSource;
+  thumb?: ImageSource; // small copy: shown while scrubbing, and as the stand-in until the full photo is ready
+  fast: boolean;
   label: string;
   width: number;
   height: number;
@@ -335,7 +354,15 @@ const Page = memo(function Page({ src, label, width, height, ty, onDismiss, onTa
   return (
     <GestureDetector gesture={Gesture.Race(pan, tap)}>
       <View style={{ width, height }}>
-        <Image source={src} style={{ width, height }} contentFit="contain" accessibilityLabel={label} />
+        <Image
+          source={fast && thumb ? thumb : src}
+          placeholder={thumb}
+          placeholderContentFit="contain"
+          transition={fast ? 0 : 180}
+          style={{ width, height }}
+          contentFit="contain"
+          accessibilityLabel={label}
+        />
       </View>
     </GestureDetector>
   );
