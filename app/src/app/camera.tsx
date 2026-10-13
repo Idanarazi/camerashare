@@ -20,7 +20,12 @@ export default function CameraPhone() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const mode: Mode = params.mode === 'tripod' ? 'tripod' : 'photo';
   const live$ = useRef<CameraLiveHandle>(null);
-  const { state, answerKnock, leave, retry } = useRoom({ role: 'photographer', mode, onCommand: (c, d) => live$.current?.command(c, d) });
+  const { state, answerKnock, leave, retry, announceShot } = useRoom({
+    role: 'photographer',
+    mode,
+    onCommand: (c, d) => live$.current?.command(c, d),
+    onEvent: (e) => live$.current?.event(e),
+  });
   const live = state.kind === 'connected' && !state.partnerAway;
 
   // Feel the moments that matter: someone asking to join, and the two phones connecting.
@@ -52,7 +57,7 @@ export default function CameraPhone() {
 
   // Connected: the live camera takes the whole screen.
   if (state.kind === 'connected') {
-    return <CameraLive ref={live$} code={state.code} mode={state.mode} partnerAway={state.partnerAway} onEnd={goHome} />;
+    return <CameraLive ref={live$} code={state.code} mode={state.mode} partnerAway={state.partnerAway} onEnd={goHome} announceShot={announceShot} />;
   }
 
   let body;

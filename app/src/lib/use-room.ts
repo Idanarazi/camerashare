@@ -3,17 +3,20 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import type { Command } from './directing';
-import { Mode, Role, RoomClient, RoomState } from './room-client';
+import { Mode, PartnerEvent, Role, RoomClient, RoomState } from './room-client';
 import { SERVER } from './theme';
 
-export function useRoom(opts: { role: Role; mode?: Mode; code?: string; key?: string; onCommand?: (command: Command, data?: any) => void }) {
+export function useRoom(opts: { role: Role; mode?: Mode; code?: string; key?: string; onCommand?: (command: Command, data?: any) => void; onEvent?: (e: PartnerEvent) => void }) {
   const [state, setState] = useState<RoomState>({ kind: 'connecting', slow: false });
   const client = useRef<RoomClient | null>(null);
   const { role, mode, code, key } = opts;
   // The latest handler, without restarting the connection when it changes.
   const onCommand = useRef(opts.onCommand);
   onCommand.current = opts.onCommand;
-  const make = () => new RoomClient({ server: SERVER, role, mode, code, key, onState: setState, onCommand: (c, d) => onCommand.current?.(c, d) });
+  const onEvent = useRef(opts.onEvent);
+  onEvent.current = opts.onEvent;
+  const make = () =>
+    new RoomClient({ server: SERVER, role, mode, code, key, onState: setState, onCommand: (c, d) => onCommand.current?.(c, d), onEvent: (e) => onEvent.current?.(e) });
 
   useEffect(() => {
     const c = make();
@@ -32,6 +35,8 @@ export function useRoom(opts: { role: Role; mode?: Mode; code?: string; key?: st
     state,
     answerKnock: (allowed: boolean) => client.current?.answerKnock(allowed),
     sendCommand: (command: Command, data?: object) => client.current?.sendCommand(command, data) ?? false,
+    sendReference: (data: string | null) => client.current?.sendReference(data) ?? false,
+    announceShot: (count: number) => client.current?.announceShot(count) ?? false,
     leave: () => client.current?.leave(),
     retry: () => {
       client.current?.stop();

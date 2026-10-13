@@ -140,7 +140,7 @@ if (process.env.NODE_ENV === 'production') {
   server = https.createServer({ key: pems.private, cert: pems.cert }, app);
 }
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, maxPayload: 2 * 1024 * 1024 }); // a shrunk reference photo fits; nothing bigger is accepted
 
 // ── Word list for room codes (280 words) ─────────────────────────────
 const WORDS = [
@@ -456,6 +456,31 @@ wss.on('connection', (ws, req) => {
         const room = rooms.get(ws.roomCode);
         if (!room || ws.role !== 'photographer' || room.photographer !== ws) return;
         send(room.director, { type: 'camera-info', video: !!msg.video });
+        break;
+      }
+
+      // Reference photo from the director ("make it like this"). Relayed to the camera phone only, never stored.
+      // The website sends it phone-to-phone; the app (no live link yet) sends it this way.
+      case 'ref':
+      case 'ref-clear': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'director' || room.director !== ws) return;
+        if (msg.type === 'ref') {
+          if (typeof msg.data !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(msg.data) || msg.data.length > 1500000) return;
+          send(room.photographer, { type: 'ref', data: msg.data });
+        } else {
+          send(room.photographer, { type: 'ref-clear' });
+        }
+        break;
+      }
+
+      // Camera phone tells the director something happened (e.g. it took photos itself)
+      case 'camera-event': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'photographer' || room.photographer !== ws) return;
+        const event = msg.event === 'shot' ? 'shot' : null;
+        if (!event) return;
+        send(room.director, { type: 'camera-event', event, count: Math.max(0, Math.min(50, Number(msg.count) || 0)) });
         break;
       }
 

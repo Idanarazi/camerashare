@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Alert, Platform, View } from 'react-native';
 
-import { DirectorView } from '@/components/director-view';
+import { DirectorView, type DirectorViewHandle } from '@/components/director-view';
 import { Message, Screen } from '@/components/status';
 import { Button } from '@/components/ui';
 import { useSettings } from '@/lib/settings';
@@ -12,7 +12,8 @@ import { useRoom } from '@/lib/use-room';
 
 export default function Join() {
   const { code, k } = useLocalSearchParams<{ code: string; k?: string }>();
-  const { state, leave, sendCommand } = useRoom({ role: 'director', code, key: k });
+  const view = useRef<DirectorViewHandle>(null);
+  const { state, leave, sendCommand, sendReference } = useRoom({ role: 'director', code, key: k, onEvent: (e) => view.current?.event(e) });
   const live = state.kind === 'connected' && !state.partnerAway;
   const { settings } = useSettings();
   // The connected moment: this phone builds up, theirs lands it. Sound only the first time.
@@ -40,7 +41,7 @@ export default function Join() {
 
   // Connected: the directing controls take the whole screen.
   if (state.kind === 'connected') {
-    return <DirectorView mode={state.mode} partnerAway={state.partnerAway} send={sendCommand} onLeave={goHome} />;
+    return <DirectorView ref={view} mode={state.mode} partnerAway={state.partnerAway} send={sendCommand} sendReference={sendReference} onLeave={goHome} />;
   }
 
   let body;

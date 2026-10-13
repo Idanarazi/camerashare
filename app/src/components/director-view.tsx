@@ -3,9 +3,10 @@
 // or use the buttons. The shutter starts a 3-second countdown on both phones.
 // Live video arrives with the next build; until then the picture area says so, and everything else works.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
@@ -16,7 +17,8 @@ import { Icon, IconName } from './icon';
 import { Press } from './ui';
 import { Command, COUNTDOWN, SENT_LABEL, Steer, SWIPE_MIN } from '@/lib/directing';
 import { haptic } from '@/lib/motion';
-import type { Mode } from '@/lib/room-client';
+import { pickReference } from '@/lib/reference';
+import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
 import { countdownBeep } from '@/lib/sounds';
 import { sceneColors, sceneStops } from '@/lib/theme';
@@ -24,12 +26,15 @@ import { sceneColors, sceneStops } from '@/lib/theme';
 const HINT_KEY = 'picme.gestures.learned';
 const WHITE = '#F5F5F2';
 
-export function DirectorView({ mode, partnerAway, send, onLeave }: {
+export type DirectorViewHandle = { event: (e: PartnerEvent) => void };
+
+export const DirectorView = forwardRef<DirectorViewHandle, {
   mode: Mode;
   partnerAway: boolean;
   send: (command: Command, data?: object) => boolean;
+  sendReference: (data: string | null) => boolean;
   onLeave: () => void;
-}) {
+}>(function DirectorView({ mode, partnerAway, send, sendReference, onLeave }, ref) {
   const { settings } = useSettings();
   const insets = useSafeAreaInsets();
   const tripod = mode === 'tripod';
@@ -38,6 +43,8 @@ export function DirectorView({ mode, partnerAway, send, onLeave }: {
   const [toast, setToast] = useState<string | null>(null);
   const [torch, setTorch] = useState(false);
   const [hint, setHint] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const flash = useSharedValue(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sentCount = useRef(0);
@@ -96,6 +103,38 @@ export function DirectorView({ mode, partnerAway, send, onLeave }: {
       later(() => say('Photos taken! They’re on their phone for now.'), 700);
     };
     later(tick, 1000);
+  };
+
+  useImperativeHandle(ref, () => ({
+    event(e) {
+      if (e.kind === 'shot' && e.count) {
+        haptic.success();
+        say(`They took ${e.count} photo${e.count === 1 ? '' : 's'}`);
+      }
+    },
+  }));
+
+  // Reference photo: "make it like this"
+  const chooseReference = async () => {
+    if (partnerAway || picking) return;
+    setPicking(true);
+    try {
+      const data = await pickReference();
+      if (!data) return;
+      if (!sendReference(data)) return say('Reconnecting, try again in a second');
+      setReference(data);
+      haptic.light();
+      say('Reference sent. They can lay it over their camera.');
+    } catch {
+      say('Couldn’t open that photo. Try another one.');
+    } finally {
+      setPicking(false);
+    }
+  };
+  const removeReference = () => {
+    sendReference(null);
+    setReference(null);
+    say('Reference removed');
   };
 
   const toggleTorch = () => {
@@ -191,28 +230,54 @@ export function DirectorView({ mode, partnerAway, send, onLeave }: {
             {live ? (tripod ? 'Group shot' : 'Connected') : 'They dropped out…'}
           </Text>
         </Glass>
-        <Press onPress={toggleTorch} accessibilityRole="switch" accessibilityState={{ checked: torch }} accessibilityLabel="Their flashlight" style={styles.roundWrap}>
-          <Glass style={[styles.round, torch && { backgroundColor: '#FFD23F' }]}>
-            <Icon name="bolt" size={19} color={torch ? '#191400' : WHITE} />
-          </Glass>
-        </Press>
+        <View style={styles.topRight}>
+          <Press onPress={chooseReference} disabled={!live || picking} accessibilityRole="button" accessibilityLabel={reference ? 'Change the reference photo' : 'Send a reference photo'} style={styles.roundWrap}>
+            <Glass style={[styles.round, !!reference && { backgroundColor: '#FFAE85' }]}>
+              <Icon name="images" size={19} color={reference ? '#16131A' : WHITE} />
+            </Glass>
+          </Press>
+          <Press onPress={toggleTorch} accessibilityRole="switch" accessibilityState={{ checked: torch }} accessibilityLabel="Their flashlight" style={styles.roundWrap}>
+            <Glass style={[styles.round, torch && { backgroundColor: '#FFD23F' }]}>
+              <Icon name="bolt" size={19} color={torch ? '#191400' : WHITE} />
+            </Glass>
+          </Press>
+        </View>
       </View>
 
-      {/* What they were just told */}
-      {sent && (
-        <Animated.View key={sent.n} entering={FadeIn.duration(120)} exiting={FadeOut.duration(250)} style={[styles.sentWrap, { top: insets.top + 122 }]} pointerEvents="none">
-          <SentPill label={sent.label} />
+      {/* The reference they're copying, with a way to take it back */}
+      {reference && (
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={[styles.refWrap, { bottom: insets.bottom + 124 }]}>
+          <Image source={{ uri: reference }} style={styles.refImg} contentFit="cover" accessibilityLabel="Your reference photo" />
+          <Press onPress={removeReference} accessibilityRole="button" accessibilityLabel="Remove the reference photo" hitSlop={10} style={styles.refX}>
+            <Icon name="close" size={12} color="#16131A" strokeWidth={3} />
+          </Press>
         </Animated.View>
       )}
 
-      {/* First time: how to guide */}
-      {hint && live && count === null && (
-        <Animated.View entering={FadeIn.delay(400)} style={[styles.hintWrap, { top: insets.top + 122 }]} pointerEvents="none">
-          <Glass style={styles.hint}>
-            <Text style={styles.hintText}>Swipe to steer · Pinch for closer · Double-tap for “Hold it”</Text>
-          </Glass>
-        </Animated.View>
-      )}
+      {/* Messages, all in one place under the top arrow: how to guide, what was just sent, what happened */}
+      <View style={[styles.msgs, { top: insets.top + 122 }]} pointerEvents="none">
+        {hint && live && count === null && !sent && (
+          <Animated.View entering={FadeIn.delay(400)}>
+            <Glass style={styles.hint}>
+              <Text style={styles.hintText}>Swipe to steer · Pinch for closer · Double-tap for “Hold it”</Text>
+            </Glass>
+          </Animated.View>
+        )}
+        {sent && (
+          <Animated.View key={sent.n} entering={FadeIn.duration(120)} exiting={FadeOut.duration(250)}>
+            <SentPill label={sent.label} />
+          </Animated.View>
+        )}
+        {toast && (
+          <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(200)}>
+            <Glass style={styles.toast}>
+              <Text style={styles.toastText} accessibilityLiveRegion="polite">
+                {toast}
+              </Text>
+            </Glass>
+          </Animated.View>
+        )}
+      </View>
 
       {/* Countdown */}
       {count !== null && (
@@ -226,16 +291,7 @@ export function DirectorView({ mode, partnerAway, send, onLeave }: {
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }, flashStyle]} pointerEvents="none" />
 
       {/* Bottom: closer / shutter / step back, and Hold it */}
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 18 }]}>
-        {toast && (
-          <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(200)} style={styles.toastWrap}>
-            <Glass style={styles.toast}>
-              <Text style={styles.toastText} accessibilityLiveRegion="polite">
-                {toast}
-              </Text>
-            </Glass>
-          </Animated.View>
-        )}
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 18 }]} pointerEvents="box-none">
         {!tripod && (
           <Press onPress={() => guide('hold')} disabled={!live || count !== null} accessibilityRole="button" accessibilityLabel="Tell them to hold it" style={{ opacity: live ? 1 : 0.5 }}>
             <Glass style={styles.holdBtn}>
@@ -254,7 +310,7 @@ export function DirectorView({ mode, partnerAway, send, onLeave }: {
       </View>
     </View>
   );
-}
+});
 
 function SentPill({ label }: { label: string }) {
   return (
@@ -303,6 +359,11 @@ const styles = StyleSheet.create({
   status: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
   dot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { color: WHITE, fontSize: 14, fontWeight: '600' },
+  topRight: { flexDirection: 'row', gap: 10 },
+  refWrap: { position: 'absolute', right: 20, width: 52, height: 70 },
+  refImg: { width: 52, height: 70, borderRadius: 12, borderWidth: 2, borderColor: WHITE },
+  refX: { position: 'absolute', top: -7, right: -7, width: 22, height: 22, borderRadius: 11, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center' },
+  msgs: { position: 'absolute', left: 16, right: 16, alignItems: 'center', gap: 8 },
   sentWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   sent: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth },
   sentText: { color: WHITE, fontSize: 15, fontWeight: '700' },

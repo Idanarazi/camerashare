@@ -4,6 +4,11 @@
 import type { Command } from './directing';
 
 export type Role = 'photographer' | 'director';
+
+/** Things the other phone did, besides guiding. */
+export type PartnerEvent =
+  | { kind: 'reference'; data: string | null } // camera phone: the director sent (or removed) a reference photo
+  | { kind: 'shot'; count: number }; // directing phone: the camera person took photos themselves
 export type Mode = 'photo' | 'tripod';
 
 export type RoomState =
@@ -64,6 +69,7 @@ export class RoomClient {
       key?: string; // directing phone only: the one-time key from the QR, skips the knock
       onState: (s: RoomState) => void;
       onCommand?: (command: Command, data?: any) => void; // camera phone: the director guided or pressed the shutter
+      onEvent?: (e: PartnerEvent) => void;
       WebSocketImpl?: typeof WebSocket;
     },
   ) {
@@ -89,6 +95,18 @@ export class RoomClient {
   sendCommand(command: Command, data?: object) {
     if (this.opts.role !== 'director' || this.state.kind !== 'connected' || this.state.partnerAway) return false;
     return this.send({ type: 'command', command, data });
+  }
+
+  /** Directing phone: show the camera phone a photo to copy (a shrunk data URL), or null to take it away. */
+  sendReference(data: string | null) {
+    if (this.opts.role !== 'director' || this.state.kind !== 'connected') return false;
+    return data ? this.send({ type: 'ref', data }) : this.send({ type: 'ref-clear' });
+  }
+
+  /** Camera phone: let the director know photos were taken here. */
+  announceShot(count: number) {
+    if (this.opts.role !== 'photographer' || this.state.kind !== 'connected') return false;
+    return this.send({ type: 'camera-event', event: 'shot', count });
   }
 
   /** End things cleanly: the server tells the other phone. */
@@ -248,6 +266,15 @@ export class RoomClient {
         break;
       case 'command':
         if (this.state.kind === 'connected') this.opts.onCommand?.(msg.command, msg.data);
+        break;
+      case 'ref':
+        if (this.state.kind === 'connected' && typeof msg.data === 'string' && msg.data.startsWith('data:image/')) this.opts.onEvent?.({ kind: 'reference', data: msg.data });
+        break;
+      case 'ref-clear':
+        this.opts.onEvent?.({ kind: 'reference', data: null });
+        break;
+      case 'camera-event':
+        if (msg.event === 'shot') this.opts.onEvent?.({ kind: 'shot', count: Number(msg.count) || 0 });
         break;
       case 'director-away':
         if (this.state.kind === 'connected') this.set({ ...this.state, partnerAway: true });

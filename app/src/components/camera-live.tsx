@@ -19,18 +19,18 @@ import { Button, Press } from './ui';
 import { BURST_GAP_MS, Command, COUNTDOWN, CUE_LABEL, Steer } from '@/lib/directing';
 import { haptic, spring, useReducedMotion } from '@/lib/motion';
 import { favorite } from '@/lib/photos';
-import type { Mode } from '@/lib/room-client';
+import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
 import { addPhotos, useShoot } from '@/lib/shoots';
 
 const WHITE = '#F5F5F2';
 
-export type CameraLiveHandle = { command: (command: Command, data?: any) => void };
+export type CameraLiveHandle = { command: (command: Command, data?: any) => void; event: (e: PartnerEvent) => void };
 
 type Cue = { cmd: Steer; n: number };
 
-export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mode; partnerAway: boolean; onEnd: () => void }>(function CameraLive(
-  { code, mode, partnerAway, onEnd },
+export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mode; partnerAway: boolean; onEnd: () => void; announceShot: (count: number) => void }>(function CameraLive(
+  { code, mode, partnerAway, onEnd, announceShot },
   ref,
 ) {
   // A propped-up phone must not lock mid-shoot.
@@ -52,6 +52,8 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
   const [count, setCount] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [viewer, setViewer] = useState<number | null>(null);
+  const [reference, setReference] = useState<string | null>(null);
+  const [ghost, setGhost] = useState(false);
   const flash = useSharedValue(0);
   const busy = useRef(false);
   const cueN = useRef(0);
@@ -105,15 +107,29 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
         return;
       }
       setCount(null);
-      flash.value = withSequence(withTiming(0.85, { duration: 60 }), withTiming(0, { duration: 380 }));
-      const shots = await burst();
-      busy.current = false;
-      if (!shots.length) return say('Couldn’t take the photos. Is the camera allowed?');
-      addPhotos(code, shots);
-      haptic.success();
-      say(`${shots.length} photos saved on this phone`);
+      await capture(false);
     };
     later(tick, 1000);
+  };
+
+  // Flash, burst, keep. `mine` = the camera person pressed their own shutter.
+  const capture = async (mine: boolean) => {
+    flash.value = withSequence(withTiming(0.85, { duration: 60 }), withTiming(0, { duration: 380 }));
+    const shots = await burst();
+    busy.current = false;
+    if (!shots.length) return say('Couldn’t take the photos. Is the camera allowed?');
+    addPhotos(code, shots);
+    haptic.success();
+    say(`${shots.length} photos saved on this phone`);
+    if (mine) announceShot(shots.length);
+  };
+
+  const shootNow = () => {
+    if (busy.current) return;
+    busy.current = true;
+    setCue(null);
+    haptic.light();
+    void capture(true);
   };
 
   useImperativeHandle(ref, () => ({
@@ -127,6 +143,17 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
           break;
         default:
           if (command in CUE_LABEL) showCue(command as Steer);
+      }
+    },
+    event(e) {
+      if (e.kind !== 'reference') return;
+      setReference(e.data);
+      if (e.data) {
+        setGhost(false);
+        haptic.light();
+        say('They sent a reference. Tap it to match the pose.');
+      } else {
+        setGhost(false);
       }
     },
   }));
@@ -154,6 +181,9 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
       <StatusBar style="light" />
       <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="back" enableTorch={torch} mode="picture" animateShutter={false} />
 
+      {/* The reference laid over the live picture, to line up the pose */}
+      {reference && ghost && <Image source={{ uri: reference }} style={[StyleSheet.absoluteFill, { opacity: 0.4 }]} contentFit="cover" pointerEvents="none" />}
+
       {cue && <CueOverlay key={cue.n} cmd={cue.cmd} />}
 
       {/* Top: end, status */}
@@ -172,6 +202,17 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
         <View style={{ width: 44 }} />
       </View>
 
+      {reference && (
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={[styles.refWrap, { top: insets.top + 64 }]}>
+          <Press onPress={() => setGhost((g) => !g)} accessibilityRole="switch" accessibilityState={{ checked: ghost }} accessibilityLabel="Reference photo. Tap to lay it over the camera." pressScale={0.94}>
+            <Image source={{ uri: reference }} style={[styles.refImg, ghost && { borderColor: '#FFAE85' }]} contentFit="cover" />
+            <View style={[styles.refTag, ghost && { backgroundColor: '#FFAE85' }]}>
+              <Text style={[styles.refTagText, ghost && { color: '#16131A' }]}>{ghost ? 'On' : 'Match'}</Text>
+            </View>
+          </Press>
+        </Animated.View>
+      )}
+
       {/* Countdown */}
       {count !== null && (
         <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none" accessibilityLiveRegion="assertive">
@@ -184,7 +225,7 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }, flashStyle]} pointerEvents="none" />
 
       {/* Bottom: the latest photo, and what just happened */}
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 18 }]}>
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 18 }]} pointerEvents="box-none">
         {toast && (
           <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(200)} style={{ alignItems: 'center' }}>
             <Glass style={styles.toast}>
@@ -194,6 +235,7 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
             </Glass>
           </Animated.View>
         )}
+        {!photos.length && <Text style={styles.waitText}>{tripod ? 'They’ll tap the shutter when everyone’s ready' : 'Follow their guidance, or take the shot yourself'}</Text>}
         <View style={styles.bottomRow}>
           {photos.length > 0 ? (
             <Press onPress={() => setViewer(0)} accessibilityRole="imagebutton" accessibilityLabel={`Photos from this shoot, ${photos.length}`} style={styles.thumbWrap}>
@@ -204,8 +246,13 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
                 </View>
               )}
             </Press>
-          ) : null}
-          <Text style={styles.waitText}>{photos.length ? 'Tap to see this shoot' : tripod ? 'They’ll tap the shutter when everyone’s ready' : 'Follow their guidance on screen'}</Text>
+          ) : (
+            <View style={styles.thumbSpace} />
+          )}
+          <Press onPress={shootNow} disabled={count !== null} pressScale={0.92} accessibilityRole="button" accessibilityLabel="Take the photo now" style={[styles.shutter, count !== null && { opacity: 0.45 }]}>
+            <View style={styles.shutterInner} />
+          </Press>
+          <View style={styles.thumbSpace} />
         </View>
       </View>
 
@@ -330,10 +377,17 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 14, paddingHorizontal: 20 },
   toast: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth },
   toastText: { color: WHITE, fontSize: 14.5, fontWeight: '600', textAlign: 'center' },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 80 },
+  thumbSpace: { width: 56, height: 56 },
+  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: WHITE, alignItems: 'center', justifyContent: 'center' },
+  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: WHITE },
+  refWrap: { position: 'absolute', right: 16 },
+  refImg: { width: 64, height: 86, borderRadius: 12, borderWidth: 2, borderColor: WHITE },
+  refTag: { position: 'absolute', bottom: -9, alignSelf: 'center', paddingHorizontal: 8, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center' },
+  refTagText: { color: WHITE, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   thumbWrap: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: WHITE },
   thumb: { width: '100%', height: '100%' },
   thumbCount: { position: 'absolute', right: 3, top: 3, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   thumbCountText: { color: WHITE, fontSize: 11.5, fontWeight: '800' },
-  waitText: { flex: 1, color: WHITE, fontSize: 15, fontWeight: '600', ...shadow },
+  waitText: { color: WHITE, fontSize: 15, fontWeight: '600', textAlign: 'center', ...shadow },
 });

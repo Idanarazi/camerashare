@@ -484,6 +484,21 @@ async function getICE() {
 let pc = null;
 let pendingCandidates = [];
 let remoteDescSet = false;
+// ── The "connected" sound (same as the app): the directing phone builds up, the camera phone lands it ──
+const connectSounds = {};
+['connect-swell', 'connect-land'].forEach(n => { const a = new Audio('/sounds/' + n + '.wav'); a.preload = 'auto'; connectSounds[n] = a; });
+// Phones only allow sound after a tap, so quietly unlock both on the first touch
+document.addEventListener('pointerdown', () => {
+  Object.values(connectSounds).forEach(a => { a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); });
+}, { once: true });
+function playConnectSound(name) {
+  try { if (localStorage.getItem('picme_beeps') === '0') return; } catch {}
+  const a = connectSounds[name];
+  if (!a) return;
+  try { a.currentTime = 0; } catch {}
+  a.play().catch(() => {});
+}
+
 let isLive = false;
 let appCamera = false;   // partner's camera is the PicMe app (no live video yet)
 let torchOn = false;
@@ -644,6 +659,7 @@ async function handleMessage(msg) {
 
     case 'room-joined':
       joinCode = null; joinKey = null;
+      if (!msg.resumed) playConnectSound('connect-swell');
       applyPartnerMode(msg.mode);
       saveSession(msg.code, msg.token);
       if (shotsRoom !== msg.code) startFreshShots(msg.code, !msg.resumed);
@@ -680,6 +696,10 @@ async function handleMessage(msg) {
       photographerAway = true;
       if (appCamera) setLive(false);
       setStatus('Your partner is reconnecting…');
+      break;
+
+    case 'camera-event':
+      if (msg.event === 'shot' && msg.count) showToast(`They took ${msg.count} photo${msg.count === 1 ? '' : 's'}`);
       break;
 
     // The camera is the PicMe app, which has no live video yet: guiding and the shutter still work
@@ -1322,6 +1342,7 @@ $('ref-thumb').addEventListener('click', () => {
   $('ref-thumb').hidden = true;
   updateTools();
   if (photoCh?.readyState === 'open') photoCh.send(JSON.stringify({ type: 'ref-clear' }));
+  else if (appCamera) sendMsg({ type: 'ref-clear' });
   showToast('Reference removed');
 });
 
@@ -1345,6 +1366,13 @@ function shrinkImage(file, maxSide) {
 
 function sendRef(blob) {
   const ch = photoCh;
+  // The camera is the PicMe app (no phone-to-phone link yet): hand it over through the server
+  if (appCamera && (!ch || ch.readyState !== 'open')) {
+    const r = new FileReader();
+    r.onload = () => sendMsg({ type: 'ref', data: r.result });
+    r.readAsDataURL(blob);
+    return isLive;
+  }
   if (!ch || ch.readyState !== 'open') return false;
   (async () => {
     try {

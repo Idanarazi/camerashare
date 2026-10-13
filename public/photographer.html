@@ -571,6 +571,18 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) ensu
 
 async function handleMessage(msg) {
   switch (msg.type) {
+    // Reference photo relayed by the server (the director is the PicMe app)
+    case 'ref':
+      try {
+        const [head, b64] = msg.data.split(',');
+        const bin = atob(b64), bytes = new Uint8Array(bin.length);
+        for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+        showRef(new Blob([bytes], { type: head.slice(5, head.indexOf(';')) || 'image/jpeg' }));
+      } catch {}
+      break;
+    case 'ref-clear':
+      clearRef();
+      break;
 
     case 'room-created':
       applyMode(msg.mode);
@@ -621,6 +633,7 @@ async function handleMessage(msg) {
 
     case 'director-joined':
       hideKnock();
+      if (!msg.resumed) setTimeout(() => { playConnectSound('connect-land'); buzz(30); }, 400);
       directorConnected = true;
       showLive();
       if (msg.resumed && msg.peerAlive && peerHealthy()) {
@@ -847,6 +860,21 @@ async function startWebRTC() {
 }
 
 // ── Commands from the Director ──────────────────────────────────────
+
+// ── The "connected" sound (same as the app): the directing phone builds up, the camera phone lands it ──
+const connectSounds = {};
+['connect-swell', 'connect-land'].forEach(n => { const a = new Audio('/sounds/' + n + '.wav'); a.preload = 'auto'; connectSounds[n] = a; });
+// Phones only allow sound after a tap, so quietly unlock both on the first touch
+document.addEventListener('pointerdown', () => {
+  Object.values(connectSounds).forEach(a => { a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); });
+}, { once: true });
+function playConnectSound(name) {
+  try { if (localStorage.getItem('picme_beeps') === '0') return; } catch {}
+  const a = connectSounds[name];
+  if (!a) return;
+  try { a.currentTime = 0; } catch {}
+  a.play().catch(() => {});
+}
 
 function buzz(ms) { try { navigator.vibrate?.(ms); } catch {} }
 
