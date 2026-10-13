@@ -328,7 +328,7 @@
   </div>
   <div class="right photo-only">
   <button id="mic-btn" class="icon-btn" aria-pressed="false" aria-label="Talk to your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-  <button id="swap-btn" class="icon-btn" aria-label="Switch roles with your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+  <button id="swap-btn" class="icon-btn" aria-label="Switch roles with your partner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.6a3.2 3.2 0 0 1 0 6.2M21 20c0-2.9-1.8-5.3-4.4-6"/></svg></button>
   </div>
 </div>
 <div class="hud-bottom" id="live-hud-bottom" hidden>
@@ -583,6 +583,9 @@ async function handleMessage(msg) {
     case 'ref-clear':
       clearRef();
       break;
+    case 'director-info':
+      appDirector = msg.video === false;
+      break;
 
     case 'room-created':
       applyMode(msg.mode);
@@ -650,6 +653,7 @@ async function handleMessage(msg) {
 
     case 'director-gone':
       directorConnected = false;
+      appDirector = false;
       closePeer();
       showWaiting('Your partner left — waiting…');
       break;
@@ -1186,8 +1190,18 @@ function waitForDrain(ch) {
 const sendQueue = [];
 let sending = false, sendSeq = 0, lastSendWarn = 0;
 
+let appDirector = false;   // the director is the PicMe app: photos go through the server until it has a live link
 function sendShotsToDirector(shots) {
   const ch = photoChannel;
+  if ((!ch || ch.readyState !== 'open') && appDirector && directorConnected) {
+    const id = `${Date.now()}-${++sendSeq}`;
+    shots.forEach((sh, i) => {
+      const r = new FileReader();
+      r.onload = () => { if (r.result.length < 4900000) sendMsg({ type: 'photo', burst: id, index: i, count: shots.length, data: r.result }); };
+      r.readAsDataURL(sh.blob);
+    });
+    return true;
+  }
   if (!ch || ch.readyState !== 'open') {
     if (directorConnected && Date.now() - lastSendWarn > 4000) {
       lastSendWarn = Date.now();

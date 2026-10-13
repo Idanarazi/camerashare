@@ -40,7 +40,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "PicMe uses the camera to scan codes and, when you're taking the photo, to show the live view to the person you're photographing. Nothing is recorded or uploaded.",
+          "cameraPermission": "PicMe uses the camera to scan codes and, when you're taking the photo, to show the person you're photographing what you see and send them the photos. PicMe never keeps your photos.",
           "recordAudioAndroid": false
         }
       ],

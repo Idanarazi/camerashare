@@ -1,7 +1,7 @@
 // The camera phone once connected: the live camera fills the screen, the director's guidance
 // appears on top of it ("Left", "Move closer", "Hold it"), and their shutter runs a countdown
-// here and takes a burst. Photos are kept on this phone for now; sending them to the director
-// comes with live video in the next build.
+// here and takes a burst. The camera person can also shoot themselves, one photo per tap.
+// Every photo is kept here and sent to the director's phone too.
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,8 @@ import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-nati
 import { Glass } from './glass';
 import { Icon, IconName } from './icon';
 import { PhotoViewer } from './photo-viewer';
+import { SessionMenu } from './session-menu';
+import { SwapSheet } from './swap-sheet';
 import { Button, Press } from './ui';
 import { BURST_GAP_MS, Command, COUNTDOWN, CUE_LABEL, Steer } from '@/lib/directing';
 import { haptic, spring, useReducedMotion } from '@/lib/motion';
@@ -22,6 +24,7 @@ import { favorite } from '@/lib/photos';
 import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
 import { addPhotos, useShoot } from '@/lib/shoots';
+import { shrinkForSending } from '@/lib/transfer';
 
 const WHITE = '#F5F5F2';
 
@@ -29,8 +32,19 @@ export type CameraLiveHandle = { command: (command: Command, data?: any) => void
 
 type Cue = { cmd: Steer; n: number };
 
-export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mode; partnerAway: boolean; onEnd: () => void; announceShot: (count: number) => void }>(function CameraLive(
-  { code, mode, partnerAway, onEnd, announceShot },
+export const CameraLive = forwardRef<
+  CameraLiveHandle,
+  {
+    code: string;
+    mode: Mode;
+    partnerAway: boolean;
+    onEnd: () => void;
+    sendPhoto: (burst: string, index: number, count: number, data: string) => boolean;
+    requestSwap: () => boolean;
+    answerSwap: (accept: boolean) => void;
+  }
+>(function CameraLive(
+  { code, mode, partnerAway, onEnd, sendPhoto, requestSwap, answerSwap },
   ref,
 ) {
   // A propped-up phone must not lock mid-shoot.
@@ -42,7 +56,7 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
         .catch(() => {});
     };
   }, []);
-  const { settings } = useSettings();
+  const { settings, set } = useSettings();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
@@ -54,6 +68,7 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
   const [viewer, setViewer] = useState<number | null>(null);
   const [reference, setReference] = useState<string | null>(null);
   const [ghost, setGhost] = useState(false);
+  const [swapAsk, setSwapAsk] = useState(false);
   const flash = useSharedValue(0);
   const busy = useRef(false);
   const cueN = useRef(0);
@@ -77,16 +92,17 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
     later(() => setCue((c) => (c?.n === n ? null : c)), cmd === 'hold' ? 1800 : 1300);
   };
 
-  const burst = async () => {
-    const shots: string[] = [];
-    for (let i = 0; i < settings.burst; i++) {
+  type Shot = { uri: string; width?: number; height?: number };
+  const burst = async (n: number) => {
+    const shots: Shot[] = [];
+    for (let i = 0; i < n; i++) {
       try {
         const pic = await camera.current?.takePictureAsync({ quality: 0.9, shutterSound: false });
-        if (pic?.uri) shots.push(pic.uri);
+        if (pic?.uri) shots.push({ uri: pic.uri, width: pic.width, height: pic.height });
       } catch {
         // skip a frame that failed; keep the rest
       }
-      if (i < settings.burst - 1) await new Promise((r) => setTimeout(r, BURST_GAP_MS));
+      if (i < n - 1) await new Promise((r) => setTimeout(r, BURST_GAP_MS));
     }
     return shots;
   };
@@ -112,16 +128,27 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
     later(tick, 1000);
   };
 
-  // Flash, burst, keep. `mine` = the camera person pressed their own shutter.
+  // Flash, take the photos, keep them here and send them to the director.
+  // The director's shutter takes a burst; the camera person's own shutter takes one photo per tap.
   const capture = async (mine: boolean) => {
     flash.value = withSequence(withTiming(0.85, { duration: 60 }), withTiming(0, { duration: 380 }));
-    const shots = await burst();
+    const shots = await burst(mine ? 1 : settings.burst);
     busy.current = false;
-    if (!shots.length) return say('Couldn’t take the photos. Is the camera allowed?');
-    addPhotos(code, shots);
+    if (!shots.length) return say('Couldn’t take the photo. Is the camera allowed?');
+    // Shrink copies for sending before the originals are filed away
+    const copies = await Promise.all(shots.map((s) => shrinkForSending(s.uri, s.width, s.height)));
+    addPhotos(
+      code,
+      shots.map((s) => s.uri),
+    );
     haptic.success();
-    say(`${shots.length} photos saved on this phone`);
-    if (mine) announceShot(shots.length);
+    const id = `${Date.now()}`;
+    let sent = 0;
+    copies.forEach((data, i) => {
+      if (data && sendPhoto(id, i, shots.length, data)) sent++;
+    });
+    const n = shots.length;
+    say(sent ? (n > 1 ? `${n} photos sent to them` : 'Photo sent to them') : n > 1 ? `${n} photos saved on this phone` : 'Photo saved on this phone');
   };
 
   const shootNow = () => {
@@ -146,6 +173,15 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
       }
     },
     event(e) {
+      if (e.kind === 'swap-request') {
+        haptic.warning();
+        setSwapAsk(true);
+        return;
+      }
+      if (e.kind === 'swap-declined') {
+        say('They’d rather keep their roles');
+        return;
+      }
       if (e.kind !== 'reference') return;
       setReference(e.data);
       if (e.data) {
@@ -167,7 +203,7 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
       <View style={[styles.root, styles.center, { padding: 32, gap: 14 }]}>
         <Icon name="cam" size={40} color={WHITE} strokeWidth={1.8} />
         <Text style={[styles.title, { textAlign: 'center' }]}>PicMe needs your camera</Text>
-        <Text style={[styles.body, { textAlign: 'center' }]}>This phone is the camera for this shoot. Nothing is recorded or uploaded.</Text>
+        <Text style={[styles.body, { textAlign: 'center' }]}>This phone is the camera for this shoot. PicMe never keeps your photos.</Text>
         <View style={{ alignSelf: 'stretch', gap: 10 }}>
           <Button label="Allow camera" onPress={() => requestPermission().catch(() => null)} />
           <Button kind="ghost" label="End session" onPress={onEnd} />
@@ -184,6 +220,18 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
       {/* The reference laid over the live picture, to line up the pose */}
       {reference && ghost && <Image source={{ uri: reference }} style={[StyleSheet.absoluteFill, { opacity: 0.4 }]} contentFit="cover" pointerEvents="none" />}
 
+      {/* Rule-of-thirds grid */}
+      {settings.grid && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {[1, 2].map((k) => (
+            <View key={`v${k}`} style={[styles.gridLine, { left: `${(k * 100) / 3}%`, top: 0, bottom: 0, width: StyleSheet.hairlineWidth * 2 }]} />
+          ))}
+          {[1, 2].map((k) => (
+            <View key={`h${k}`} style={[styles.gridLine, { top: `${(k * 100) / 3}%`, left: 0, right: 0, height: StyleSheet.hairlineWidth * 2 }]} />
+          ))}
+        </View>
+      )}
+
       {cue && <CueOverlay key={cue.n} cmd={cue.cmd} />}
 
       {/* Top: end, status */}
@@ -199,7 +247,17 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
             {partnerAway ? 'They dropped out…' : tripod ? 'They’re directing the group' : 'They’re directing'}
           </Text>
         </Glass>
-        <View style={{ width: 44 }} />
+        <View>
+          <SessionMenu
+            top={52}
+            items={[
+              { icon: 'grid', label: 'Grid', note: 'Lines to line up the shot', on: settings.grid, onPress: () => set('grid', !settings.grid) },
+              ...(tripod
+                ? []
+                : [{ icon: 'people' as const, label: 'Switch roles', note: 'You’re in the photo, they take it', onPress: () => (requestSwap() ? say('Asked them to switch roles') : say('Reconnecting, try again in a second')) }]),
+            ]}
+          />
+        </View>
       </View>
 
       {reference && (
@@ -255,6 +313,17 @@ export const CameraLive = forwardRef<CameraLiveHandle, { code: string; mode: Mod
           <View style={styles.thumbSpace} />
         </View>
       </View>
+
+      {swapAsk && (
+        <SwapSheet
+          bottom={insets.bottom + 16}
+          youWould="You’d be in the photo and direct. They’d hold the camera."
+          onAnswer={(ok) => {
+            setSwapAsk(false);
+            answerSwap(ok);
+          }}
+        />
+      )}
 
       <PhotoViewer
         photos={photos}
@@ -360,7 +429,7 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   title: { color: WHITE, fontSize: 22, fontWeight: '800' },
   body: { color: 'rgba(245,245,242,0.78)', fontSize: 15.5, lineHeight: 21 },
-  top: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  top: { position: 'absolute', zIndex: 20, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   round: { width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
   dot: { width: 8, height: 8, borderRadius: 4 },
@@ -389,5 +458,6 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', height: '100%' },
   thumbCount: { position: 'absolute', right: 3, top: 3, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   thumbCountText: { color: WHITE, fontSize: 11.5, fontWeight: '800' },
+  gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.45)' },
   waitText: { color: WHITE, fontSize: 15, fontWeight: '600', textAlign: 'center', ...shadow },
 });

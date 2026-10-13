@@ -91,14 +91,44 @@ export function addPhotos(shootId: string, uris: string[]) {
     }
   });
   if (!photos.length) return [];
+  insert(shootId, photos.reverse());
+  return photos.map((p) => p.key);
+}
+
+/** Keep a photo that arrived from the other phone (a JPEG data URL). Returns its key, or null. */
+export function addPhotoData(shootId: string, dataUrl: string) {
+  load();
+  const stamp = Date.now();
+  const tag = Math.random().toString(36).slice(2, 7);
+  const key = `${shootId}-${stamp}-${tag}`;
+  let file = dataUrl;
+  if (!WEB) {
+    try {
+      const { Directory, File, Paths } = fs();
+      const dir = new Directory(Paths.document, 'shoots', shootId);
+      dir.create({ intermediates: true, idempotent: true });
+      const name = `${stamp}-${tag}.jpg`;
+      const f = new File(dir, name);
+      f.create();
+      f.write(dataUrl.slice(dataUrl.indexOf(',') + 1), { encoding: 'base64' } as any);
+      file = name;
+    } catch {
+      return null;
+    }
+  }
+  insert(shootId, [{ key, file, fav: false }]);
+  return key;
+}
+
+/** New photos go to the front of their shoot (a new shoot goes to the front of the list). */
+function insert(shootId: string, photos: StoredPhoto[]) {
   const existing = stored.find((s) => s.id === shootId);
   if (existing) {
-    stored = stored.map((s) => (s.id === shootId ? { ...s, photos: [...photos.reverse(), ...s.photos] } : s));
+    stored = stored.map((s) => (s.id === shootId ? { ...s, photos: [...photos, ...s.photos] } : s));
   } else {
-    stored = [{ id: shootId, at: stamp, photos: photos.reverse() }, ...stored];
+    stored = [{ id: shootId, at: Date.now(), photos }, ...stored];
   }
   persist();
-  return photos.map((p) => p.key);
 }
 
 export function setFav(shootId: string, key: string, fav: boolean) {

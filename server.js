@@ -140,7 +140,7 @@ if (process.env.NODE_ENV === 'production') {
   server = https.createServer({ key: pems.private, cert: pems.cert }, app);
 }
 
-const wss = new WebSocket.Server({ server, maxPayload: 2 * 1024 * 1024 }); // a shrunk reference photo fits; nothing bigger is accepted
+const wss = new WebSocket.Server({ server, maxPayload: 6 * 1024 * 1024 }); // a shrunk photo fits; nothing bigger is accepted
 
 // ── Word list for room codes (280 words) ─────────────────────────────
 const WORDS = [
@@ -471,6 +471,24 @@ wss.on('connection', (ws, req) => {
         } else {
           send(room.photographer, { type: 'ref-clear' });
         }
+        break;
+      }
+
+      // A photo from the camera phone to the director (an app on either side has no phone-to-phone link yet).
+      // Shrunk by the sender, handed over, never stored here.
+      case 'photo': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'photographer' || room.photographer !== ws) return;
+        if (typeof msg.data !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(msg.data) || msg.data.length > 5000000) return;
+        send(room.director, { type: 'photo', burst: String(msg.burst).slice(0, 40), index: Number(msg.index) || 0, count: Math.max(1, Math.min(20, Number(msg.count) || 1)), data: msg.data });
+        break;
+      }
+
+      // The director is the PicMe app (no live link yet): a website camera then sends photos through the server
+      case 'director-info': {
+        const room = rooms.get(ws.roomCode);
+        if (!room || ws.role !== 'director' || room.director !== ws) return;
+        send(room.photographer, { type: 'director-info', video: !!msg.video });
         break;
       }
 

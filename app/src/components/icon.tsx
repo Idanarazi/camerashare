@@ -4,7 +4,7 @@ import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 export type IconName =
   | 'home' | 'scan' | 'cam' | 'tripod' | 'gear' | 'chev' | 'left' | 'heart'
   | 'share' | 'close' | 'bolt' | 'level' | 'sound' | 'images' | 'sun' | 'globe' | 'key' | 'arrow' | 'check'
-  | 'up' | 'down' | 'closer' | 'back' | 'hand';
+  | 'up' | 'down' | 'closer' | 'back' | 'hand' | 'more' | 'grid' | 'people';
 
 function shapes(name: IconName) {
   switch (name) {
@@ -54,6 +54,12 @@ function shapes(name: IconName) {
       return <><Path d="M4 14h6v6M20 10h-6V4" /><Path d="M14 10l7-7M3 21l7-7" /></>;
     case 'hand':
       return <><Path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8" /><Path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></>;
+    case 'more':
+      return <><Circle cx="5" cy="12" r="1.2" /><Circle cx="12" cy="12" r="1.2" /><Circle cx="19" cy="12" r="1.2" /></>;
+    case 'grid':
+      return <><Rect x="3" y="3" width="18" height="18" rx="2.5" /><Path d="M9 3v18M15 3v18M3 9h18M3 15h18" /></>;
+    case 'people':
+      return <><Circle cx="9" cy="8" r="3.2" /><Path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><Path d="M16 4.6a3.2 3.2 0 0 1 0 6.2M21 20c0-2.9-1.8-5.3-4.4-6" /></>;
     case 'globe':
       return <><Circle cx="12" cy="12" r="9" /><Path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>;
   }

@@ -11,9 +11,9 @@ import { connectedFeedback, prepareSounds } from '@/lib/sounds';
 import { useRoom } from '@/lib/use-room';
 
 export default function Join() {
-  const { code, k } = useLocalSearchParams<{ code: string; k?: string }>();
+  const { code, k, token } = useLocalSearchParams<{ code: string; k?: string; token?: string }>();
   const view = useRef<DirectorViewHandle>(null);
-  const { state, leave, sendCommand, sendReference } = useRoom({ role: 'director', code, key: k, onEvent: (e) => view.current?.event(e) });
+  const { state, leave, sendCommand, sendReference, requestSwap, answerSwap } = useRoom({ role: 'director', code, key: k, token, onEvent: (e) => view.current?.event(e) });
   const live = state.kind === 'connected' && !state.partnerAway;
   const { settings } = useSettings();
   // The connected moment: this phone builds up, theirs lands it. Sound only the first time.
@@ -25,6 +25,14 @@ export default function Join() {
     greeted.current = true;
     return connectedFeedback('director', first && settings.beeps);
   }, [live]);
+
+  // Roles switched: reopen as the other side of the same session.
+  useEffect(() => {
+    if (state.kind !== 'swap') return;
+    const params = { code: state.code, token: state.token };
+    if (state.role === 'photographer') router.replace({ pathname: '/camera', params });
+    else router.replace({ pathname: '/join', params });
+  }, [state]);
 
   const goHome = () => {
     const end = () => {
@@ -41,11 +49,27 @@ export default function Join() {
 
   // Connected: the directing controls take the whole screen.
   if (state.kind === 'connected') {
-    return <DirectorView ref={view} mode={state.mode} partnerAway={state.partnerAway} send={sendCommand} sendReference={sendReference} onLeave={goHome} />;
+    return (
+      <DirectorView
+        ref={view}
+        code={state.code}
+        mode={state.mode}
+        partnerAway={state.partnerAway}
+        send={sendCommand}
+        sendReference={sendReference}
+        requestSwap={requestSwap}
+        answerSwap={answerSwap}
+        onLeave={goHome}
+      />
+    );
   }
 
   let body;
   switch (state.kind) {
+    case 'switching':
+    case 'swap':
+      body = <Message busy title="Switching roles…" body="One moment while your phones swap places." />;
+      break;
     case 'connecting':
       body = state.slow ? (
         <Message busy title="Waking up PicMe…" body="The first connection of the day can take up to a minute. Keep this screen open." />

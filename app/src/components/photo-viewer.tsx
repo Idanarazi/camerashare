@@ -3,7 +3,7 @@
 // keeps your flick's speed when you let go, and springs back if you didn't mean it.
 // Tap the photo to hide or show the buttons. Tap ♥ to keep it.
 import { Image, ImageSource } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { runOnJS, SharedValue, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -31,6 +31,8 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
   const t = useTheme();
   const [index, setIndex] = useState(start ?? 0);
   const [chromeOn, setChromeOn] = useState(true);
+  const list = useRef<FlatList<ViewerPhoto>>(null);
+  const strip = useRef<FlatList<ViewerPhoto>>(null);
   const open = start !== null;
   const current = photos[index];
   const fav = current ? favs.has(current.key) : false;
@@ -67,6 +69,18 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
   };
   const toggleChrome = () => setChromeOn((v) => !v);
 
+  // The thumbnail strip follows the photo you're on, and jumps to any photo you tap.
+  useEffect(() => {
+    if (!open) return;
+    strip.current?.scrollToOffset({ offset: index * (THUMB_W + THUMB_GAP), animated: !still });
+  }, [index, open, still]);
+  const jumpTo = (i: number) => {
+    if (i === index) return;
+    haptic.light();
+    setIndex(i);
+    list.current?.scrollToIndex({ index: i, animated: false });
+  };
+
   const bgStyle = useAnimatedStyle(() => ({
     opacity: appear.value * (1 - Math.min(Math.abs(ty.value) / (height * 0.5), 1) * 0.85),
   }));
@@ -99,6 +113,7 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
         <Animated.View style={[{ flex: 1 }, photoStyle]}>
             {open && (
               <FlatList
+                ref={list}
                 data={photos}
                 horizontal
                 pagingEnabled
@@ -132,6 +147,25 @@ export function PhotoViewer({ photos, start, favs, onToggleFav, onClose, note }:
             </Glass>
             <View style={{ width: 44 }} />
           </View>
+
+          {photos.length > 1 && (
+            <View style={[styles.stripWrap, { bottom: insets.bottom + 90 }]}>
+              <FlatList
+                ref={strip}
+                data={photos}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(p) => `t-${p.key}`}
+                getItemLayout={(_, i) => ({ length: THUMB_W + THUMB_GAP, offset: (THUMB_W + THUMB_GAP) * i, index: i })}
+                contentContainerStyle={{ paddingHorizontal: width / 2 - THUMB_W / 2 }}
+                renderItem={({ item, index: i }) => (
+                  <Press onPress={() => jumpTo(i)} pressScale={0.92} accessibilityRole="imagebutton" accessibilityLabel={`Go to photo ${i + 1}`} accessibilityState={{ selected: i === index }} style={{ marginRight: THUMB_GAP }}>
+                    <Image source={item.src} style={[styles.thumb, i === index && styles.thumbOn]} contentFit="cover" />
+                  </Press>
+                )}
+              />
+            </View>
+          )}
 
           <View style={[styles.bottom, { bottom: insets.bottom + 18 }]}>
             {note ? <Text style={styles.note}>{note}</Text> : <View />}
@@ -199,7 +233,13 @@ function Page({ src, label, width, height, ty, onDismiss, onTap }: {
   );
 }
 
+const THUMB_W = 40;
+const THUMB_GAP = 4;
+
 const styles = StyleSheet.create({
+  stripWrap: { position: 'absolute', left: 0, right: 0, height: 56 },
+  thumb: { width: THUMB_W, height: 54, borderRadius: 6, opacity: 0.6 },
+  thumbOn: { opacity: 1, borderWidth: 2, borderColor: '#F5F5F2' },
   top: { position: 'absolute', left: 14, right: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bottom: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   round: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

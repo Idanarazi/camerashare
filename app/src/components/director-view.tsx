@@ -14,12 +14,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass } from './glass';
 import { Icon, IconName } from './icon';
+import { PhotoViewer } from './photo-viewer';
+import { SessionMenu } from './session-menu';
+import { SwapSheet } from './swap-sheet';
 import { Press } from './ui';
 import { Command, COUNTDOWN, SENT_LABEL, Steer, SWIPE_MIN } from '@/lib/directing';
 import { haptic } from '@/lib/motion';
+import { favorite } from '@/lib/photos';
 import { pickReference } from '@/lib/reference';
 import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
+import { addPhotoData, useShoot } from '@/lib/shoots';
 import { countdownBeep } from '@/lib/sounds';
 import { sceneColors, sceneStops } from '@/lib/theme';
 
@@ -29,13 +34,16 @@ const WHITE = '#F5F5F2';
 export type DirectorViewHandle = { event: (e: PartnerEvent) => void };
 
 export const DirectorView = forwardRef<DirectorViewHandle, {
+  code: string;
   mode: Mode;
   partnerAway: boolean;
   send: (command: Command, data?: object) => boolean;
   sendReference: (data: string | null) => boolean;
+  requestSwap: () => boolean;
+  answerSwap: (accept: boolean) => void;
   onLeave: () => void;
-}>(function DirectorView({ mode, partnerAway, send, sendReference, onLeave }, ref) {
-  const { settings } = useSettings();
+}>(function DirectorView({ code, mode, partnerAway, send, sendReference, requestSwap, answerSwap, onLeave }, ref) {
+  const { settings, set } = useSettings();
   const insets = useSafeAreaInsets();
   const tripod = mode === 'tripod';
   const [sent, setSent] = useState<{ label: string; n: number } | null>(null);
@@ -45,6 +53,11 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
   const [hint, setHint] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [swapAsk, setSwapAsk] = useState(false);
+  const [viewer, setViewer] = useState<number | null>(null);
+  const lastBurst = useRef('');
+  const photos = useShoot(code)?.photos ?? [];
+  const favs = new Set(photos.filter((p) => p.fav).map((p) => p.key));
   const flash = useSharedValue(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sentCount = useRef(0);
@@ -100,16 +113,24 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
       flash.value = withSequence(withTiming(0.85, { duration: 60 }), withTiming(0, { duration: 380 }));
       haptic.success();
       if (settings.beeps) countdownBeep(true);
-      later(() => say('Photos taken! They’re on their phone for now.'), 700);
     };
     later(tick, 1000);
   };
 
   useImperativeHandle(ref, () => ({
     event(e) {
-      if (e.kind === 'shot' && e.count) {
-        haptic.success();
-        say(`They took ${e.count} photo${e.count === 1 ? '' : 's'}`);
+      if (e.kind === 'photo') {
+        if (!addPhotoData(code, e.data)) return;
+        if (e.burst !== lastBurst.current) {
+          lastBurst.current = e.burst;
+          haptic.success();
+          say(e.count > 1 ? `${e.count} new photos from them` : 'New photo from them');
+        }
+      } else if (e.kind === 'swap-request') {
+        haptic.warning();
+        setSwapAsk(true);
+      } else if (e.kind === 'swap-declined') {
+        say('They’d rather keep their roles');
       }
     },
   }));
@@ -200,7 +221,7 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
               <Text style={styles.placeholderBody}>
                 {tripod
                   ? 'Their phone is propped up. Get everyone in, then tap the shutter.'
-                  : 'Live view comes in the next update. You can already guide them: they see every swipe on their screen.'}
+                  : 'Live view comes in the next update. Guide them with swipes; every photo they take lands here.'}
               </Text>
             </Glass>
           </View>
@@ -236,11 +257,18 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
               <Icon name="images" size={19} color={reference ? '#16131A' : WHITE} />
             </Glass>
           </Press>
-          <Press onPress={toggleTorch} accessibilityRole="switch" accessibilityState={{ checked: torch }} accessibilityLabel="Their flashlight" style={styles.roundWrap}>
-            <Glass style={[styles.round, torch && { backgroundColor: '#FFD23F' }]}>
-              <Icon name="bolt" size={19} color={torch ? '#191400' : WHITE} />
-            </Glass>
-          </Press>
+          <View>
+            <SessionMenu
+              top={52}
+              items={[
+                { icon: 'bolt', label: 'Their flashlight', note: 'For low light', on: torch, onPress: toggleTorch },
+                { icon: 'sound', label: 'Countdown sounds', note: 'The 3-2-1 beeps', on: settings.beeps, onPress: () => set('beeps', !settings.beeps) },
+                ...(tripod
+                  ? []
+                  : [{ icon: 'people' as const, label: 'Switch roles', note: 'You take the photo, they’re in it', onPress: () => (requestSwap() ? say('Asked them to switch roles') : say('Reconnecting, try again in a second')) }]),
+              ]}
+            />
+          </View>
         </View>
       </View>
 
@@ -250,6 +278,20 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
           <Image source={{ uri: reference }} style={styles.refImg} contentFit="cover" accessibilityLabel="Your reference photo" />
           <Press onPress={removeReference} accessibilityRole="button" accessibilityLabel="Remove the reference photo" hitSlop={10} style={styles.refX}>
             <Icon name="close" size={12} color="#16131A" strokeWidth={3} />
+          </Press>
+        </Animated.View>
+      )}
+
+      {/* Photos they took, as they arrive */}
+      {photos.length > 0 && (
+        <Animated.View entering={FadeIn.duration(180)} style={[styles.shotsWrap, { bottom: insets.bottom + 124 }]}>
+          <Press onPress={() => setViewer(0)} accessibilityRole="imagebutton" accessibilityLabel={`Photos from this shoot, ${photos.length}`} style={styles.shotsBtn}>
+            <Image source={photos[0].src} style={styles.refImg} contentFit="cover" />
+            {photos.length > 1 && (
+              <View style={styles.shotsCount}>
+                <Text style={styles.shotsCountText}>{photos.length}</Text>
+              </View>
+            )}
           </Press>
         </Animated.View>
       )}
@@ -308,6 +350,29 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
           {!tripod ? <Side icon="closer" label="Closer" onPress={() => guide('move-closer')} disabled={!live} /> : <View style={styles.sideSpace} />}
         </View>
       </View>
+
+      <PhotoViewer
+        photos={photos}
+        start={viewer}
+        favs={favs}
+        onToggleFav={(key) => {
+          const p = photos.find((x) => x.key === key);
+          const uri = p && typeof p.src === 'object' && 'uri' in p.src ? (p.src.uri ?? undefined) : undefined;
+          favorite(code, key, uri, !favs.has(key), settings.autoSave);
+        }}
+        onClose={() => setViewer(null)}
+      />
+
+      {swapAsk && (
+        <SwapSheet
+          bottom={insets.bottom + 16}
+          youWould="You’d hold the camera and take the photo. They’d be in it and direct you."
+          onAnswer={(ok) => {
+            setSwapAsk(false);
+            answerSwap(ok);
+          }}
+        />
+      )}
     </View>
   );
 });
@@ -353,13 +418,17 @@ const styles = StyleSheet.create({
   placeholderCard: { borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, padding: 20, gap: 8, alignItems: 'center', maxWidth: 320 },
   placeholderTitle: { color: WHITE, fontSize: 17, fontWeight: '700' },
   placeholderBody: { color: 'rgba(245,245,242,0.8)', fontSize: 14.5, lineHeight: 20, textAlign: 'center' },
-  top: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  top: { position: 'absolute', zIndex: 20, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   roundWrap: { borderRadius: 22 },
   round: { width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth },
   dot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { color: WHITE, fontSize: 14, fontWeight: '600' },
   topRight: { flexDirection: 'row', gap: 10 },
+  shotsWrap: { position: 'absolute', left: 20 },
+  shotsBtn: { width: 52, height: 70 },
+  shotsCount: { position: 'absolute', right: -6, top: -6, minWidth: 22, height: 22, paddingHorizontal: 5, borderRadius: 11, backgroundColor: '#FFAE85', alignItems: 'center', justifyContent: 'center' },
+  shotsCountText: { color: '#16131A', fontSize: 12, fontWeight: '800' },
   refWrap: { position: 'absolute', right: 20, width: 52, height: 70 },
   refImg: { width: 52, height: 70, borderRadius: 12, borderWidth: 2, borderColor: WHITE },
   refX: { position: 'absolute', top: -7, right: -7, width: 22, height: 22, borderRadius: 11, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center' },

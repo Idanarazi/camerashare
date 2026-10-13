@@ -17,16 +17,26 @@ import { useRoom } from '@/lib/use-room';
 
 export default function CameraPhone() {
   const { t, settings } = useSettings();
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; code?: string; token?: string }>();
   const mode: Mode = params.mode === 'tripod' ? 'tripod' : 'photo';
   const live$ = useRef<CameraLiveHandle>(null);
-  const { state, answerKnock, leave, retry, announceShot } = useRoom({
+  const { state, answerKnock, leave, retry, sendPhoto, requestSwap, answerSwap } = useRoom({
     role: 'photographer',
     mode,
+    code: params.code, // with a token: continuing a session after switching roles
+    token: params.token,
     onCommand: (c, d) => live$.current?.command(c, d),
     onEvent: (e) => live$.current?.event(e),
   });
   const live = state.kind === 'connected' && !state.partnerAway;
+
+  // Roles switched: reopen as the other side of the same session.
+  useEffect(() => {
+    if (state.kind !== 'swap') return;
+    const p = { code: state.code, token: state.token };
+    if (state.role === 'director') router.replace({ pathname: '/join', params: p });
+    else router.replace({ pathname: '/camera', params: p });
+  }, [state]);
 
   // Feel the moments that matter: someone asking to join, and the two phones connecting.
   useEffect(() => {
@@ -57,7 +67,18 @@ export default function CameraPhone() {
 
   // Connected: the live camera takes the whole screen.
   if (state.kind === 'connected') {
-    return <CameraLive ref={live$} code={state.code} mode={state.mode} partnerAway={state.partnerAway} onEnd={goHome} announceShot={announceShot} />;
+    return (
+      <CameraLive
+        ref={live$}
+        code={state.code}
+        mode={state.mode}
+        partnerAway={state.partnerAway}
+        onEnd={goHome}
+        sendPhoto={sendPhoto}
+        requestSwap={requestSwap}
+        answerSwap={answerSwap}
+      />
+    );
   }
 
   let body;
@@ -68,6 +89,11 @@ export default function CameraPhone() {
       ) : (
         <Message busy title="Getting your code…" />
       );
+      break;
+
+    case 'switching':
+    case 'swap':
+      body = <Message busy title="Switching roles…" body="One moment while your phones swap places." />;
       break;
 
     case 'reconnecting':

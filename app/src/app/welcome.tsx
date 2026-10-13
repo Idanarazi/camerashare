@@ -79,7 +79,7 @@ export default function Welcome() {
           Let PicMe use{'\n'}your camera
         </Text>
         <Text style={{ color: t.text2, fontSize: 16, lineHeight: 22, textAlign: 'center', maxWidth: 300 }}>
-          For scanning codes and for when you're the one taking the photo. Nothing is recorded or uploaded.
+          For scanning codes and for when you're the one taking the photo. Your photos go only to the two phones in the session.
         </Text>
       </View>
     );

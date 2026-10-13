@@ -8,7 +8,10 @@ export type Role = 'photographer' | 'director';
 /** Things the other phone did, besides guiding. */
 export type PartnerEvent =
   | { kind: 'reference'; data: string | null } // camera phone: the director sent (or removed) a reference photo
-  | { kind: 'shot'; count: number }; // directing phone: the camera person took photos themselves
+  | { kind: 'shot'; count: number } // directing phone: the camera person took photos themselves
+  | { kind: 'photo'; burst: string; index: number; count: number; data: string } // directing phone: a photo arrived
+  | { kind: 'swap-request' } // the other phone wants to switch roles
+  | { kind: 'swap-declined' };
 export type Mode = 'photo' | 'tripod';
 
 export type RoomState =
@@ -18,6 +21,8 @@ export type RoomState =
   | { kind: 'knocking'; code: string } // directing phone: waiting to be let in
   | { kind: 'connected'; code: string; mode: Mode; partnerAway: boolean }
   | { kind: 'reconnecting' }
+  | { kind: 'switching' } // roles were just switched; waiting for the other phone to come back in its new role
+  | { kind: 'swap'; role: Role; code: string; token: string } // open the other screen with this session
   | { kind: 'error'; message: string } // something to fix and try again
   | { kind: 'ended'; message: string }; // session over
 
@@ -67,6 +72,7 @@ export class RoomClient {
       mode?: Mode; // camera phone only
       code?: string; // directing phone only
       key?: string; // directing phone only: the one-time key from the QR, skips the knock
+      session?: { code: string; token: string; mode: Mode }; // continue a session in a new role (after switching roles)
       onState: (s: RoomState) => void;
       onCommand?: (command: Command, data?: any) => void; // camera phone: the director guided or pressed the shutter
       onEvent?: (e: PartnerEvent) => void;
@@ -74,7 +80,12 @@ export class RoomClient {
     },
   ) {
     this.key = opts.key;
+    if (opts.session) {
+      this.session = opts.session;
+      this.switching = true;
+    }
   }
+  private switching = false;
 
   get current() {
     return this.state;
@@ -107,6 +118,22 @@ export class RoomClient {
   announceShot(count: number) {
     if (this.opts.role !== 'photographer' || this.state.kind !== 'connected') return false;
     return this.send({ type: 'camera-event', event: 'shot', count });
+  }
+
+  /** Camera phone: hand one photo to the directing phone (a shrunk JPEG data URL). */
+  sendPhoto(burst: string, index: number, count: number, data: string) {
+    if (this.opts.role !== 'photographer' || this.state.kind !== 'connected') return false;
+    return this.send({ type: 'photo', burst, index, count, data });
+  }
+
+  /** Ask to switch roles; the other phone decides. */
+  requestSwap() {
+    if (this.state.kind !== 'connected' || this.state.mode !== 'photo') return false;
+    return this.send({ type: 'swap-request' });
+  }
+
+  answerSwap(accept: boolean) {
+    this.send({ type: 'swap-response', accept });
   }
 
   /** End things cleanly: the server tells the other phone. */
@@ -169,7 +196,9 @@ export class RoomClient {
     this.clearTimers();
     const WS = this.opts.WebSocketImpl ?? WebSocket;
     const url = this.opts.server.replace(/^http/, 'ws');
-    if (!this.session) {
+    if (this.switching) {
+      this.set({ kind: 'switching' });
+    } else if (!this.session) {
       this.set({ kind: 'connecting', slow: false });
       this.slowTimer = setTimeout(() => {
         if (this.state.kind === 'connecting') this.set({ kind: 'connecting', slow: true });
@@ -246,8 +275,11 @@ export class RoomClient {
       case 'room-resumed':
         this.key = msg.key;
         if (msg.directorPresent) {
+          this.switching = false;
           this.set({ kind: 'connected', code: msg.code, mode, partnerAway: false });
           this.announceCamera();
+        } else if (this.switching) {
+          this.set({ kind: 'switching' }); // the other phone is on its way in its new role
         } else this.set({ kind: 'waiting', code: msg.code, joinUrl: this.joinLink(msg.code), mode });
         break;
       case 'room-key':
@@ -261,6 +293,7 @@ export class RoomClient {
         if (this.state.kind === 'knock' && this.session) this.set({ kind: 'waiting', code: this.session.code, joinUrl: this.joinLink(this.session.code), mode: this.session.mode });
         break;
       case 'director-joined':
+        this.switching = false;
         if (this.session) this.set({ kind: 'connected', code: this.session.code, mode: this.session.mode, partnerAway: false });
         this.announceCamera();
         break;
@@ -273,6 +306,22 @@ export class RoomClient {
       case 'ref-clear':
         this.opts.onEvent?.({ kind: 'reference', data: null });
         break;
+      case 'photo':
+        if (this.state.kind === 'connected' && typeof msg.data === 'string' && msg.data.startsWith('data:image/'))
+          this.opts.onEvent?.({ kind: 'photo', burst: String(msg.burst), index: Number(msg.index) || 0, count: Number(msg.count) || 1, data: msg.data });
+        break;
+      case 'swap-request':
+        this.opts.onEvent?.({ kind: 'swap-request' });
+        break;
+      case 'swap-declined':
+        this.opts.onEvent?.({ kind: 'swap-declined' });
+        break;
+      case 'swap-go':
+        // Both phones reopen in their new role with the session's new key
+        this.session = null;
+        this.stop();
+        this.set({ kind: 'swap', role: msg.role === 'director' ? 'director' : 'photographer', code: String(msg.code), token: String(msg.token) });
+        break;
       case 'camera-event':
         if (msg.event === 'shot') this.opts.onEvent?.({ kind: 'shot', count: Number(msg.count) || 0 });
         break;
@@ -280,6 +329,7 @@ export class RoomClient {
         if (this.state.kind === 'connected') this.set({ ...this.state, partnerAway: true });
         break;
       case 'director-gone':
+        this.switching = false;
         if (this.session) this.set({ kind: 'waiting', code: this.session.code, joinUrl: this.joinLink(this.session.code), mode: this.session.mode });
         break;
       case 'resume-failed':
@@ -296,8 +346,10 @@ export class RoomClient {
         break;
       case 'room-joined':
         this.clearTimers();
+        this.switching = false;
         this.session = { code: msg.code, token: msg.token, mode };
-        this.set({ kind: 'connected', code: msg.code, mode, partnerAway: false });
+        this.set({ kind: 'connected', code: msg.code, mode, partnerAway: msg.photographerPresent === false });
+        this.send({ type: 'director-info', video: false }); // a website camera then sends photos through the server
         break;
       case 'knock-denied':
         this.stop();
