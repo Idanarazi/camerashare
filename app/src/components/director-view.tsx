@@ -20,11 +20,11 @@ import { SwapSheet } from './swap-sheet';
 import { Press } from './ui';
 import { Command, COUNTDOWN, SENT_LABEL, Steer, SWIPE_MIN } from '@/lib/directing';
 import { haptic } from '@/lib/motion';
-import { favorite } from '@/lib/photos';
+import { favorite, saveToPhotos } from '@/lib/photos';
 import { pickReference } from '@/lib/reference';
 import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
-import { addPhotoData, useShoot } from '@/lib/shoots';
+import { addPhotoData, removePhotos, useShoot } from '@/lib/shoots';
 import { countdownBeep } from '@/lib/sounds';
 import { sceneColors, sceneStops } from '@/lib/theme';
 
@@ -286,7 +286,7 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
       {photos.length > 0 && (
         <Animated.View entering={FadeIn.duration(180)} style={[styles.shotsWrap, { bottom: insets.bottom + 124 }]}>
           <Press onPress={() => setViewer(0)} accessibilityRole="imagebutton" accessibilityLabel={`Photos from this shoot, ${photos.length}`} style={styles.shotsBtn}>
-            <Image source={photos[0].src} style={styles.refImg} contentFit="cover" />
+            <Image source={photos[0].thumb ?? photos[0].src} style={styles.refImg} contentFit="cover" />
             {photos.length > 1 && (
               <View style={styles.shotsCount}>
                 <Text style={styles.shotsCountText}>{photos.length}</Text>
@@ -361,6 +361,8 @@ export const DirectorView = forwardRef<DirectorViewHandle, {
           favorite(code, key, uri, !favs.has(key), settings.autoSave);
         }}
         onClose={() => setViewer(null)}
+        onSave={async (key) => (await saveToPhotos([photos.find((x) => x.key === key)?.uri])) > 0}
+        onDelete={(key) => removePhotos(code, [key])}
       />
 
       {swapAsk && (

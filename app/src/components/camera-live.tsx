@@ -20,10 +20,10 @@ import { SwapSheet } from './swap-sheet';
 import { Button, Press } from './ui';
 import { BURST_GAP_MS, Command, COUNTDOWN, CUE_LABEL, Steer } from '@/lib/directing';
 import { haptic, spring, useReducedMotion } from '@/lib/motion';
-import { favorite } from '@/lib/photos';
+import { favorite, saveToPhotos } from '@/lib/photos';
 import type { Mode, PartnerEvent } from '@/lib/room-client';
 import { useSettings } from '@/lib/settings';
-import { addPhotos, useShoot } from '@/lib/shoots';
+import { addPhotos, removePhotos, useShoot } from '@/lib/shoots';
 import { shrinkForSending } from '@/lib/transfer';
 
 const WHITE = '#F5F5F2';
@@ -297,7 +297,7 @@ export const CameraLive = forwardRef<
         <View style={styles.bottomRow}>
           {photos.length > 0 ? (
             <Press onPress={() => setViewer(0)} accessibilityRole="imagebutton" accessibilityLabel={`Photos from this shoot, ${photos.length}`} style={styles.thumbWrap}>
-              <Image source={photos[0].src} style={styles.thumb} contentFit="cover" />
+              <Image source={photos[0].thumb ?? photos[0].src} style={styles.thumb} contentFit="cover" />
               {photos.length > 1 && (
                 <View style={styles.thumbCount}>
                   <Text style={styles.thumbCountText}>{photos.length}</Text>
@@ -335,6 +335,8 @@ export const CameraLive = forwardRef<
           favorite(code, key, uri, !favs.has(key), settings.autoSave);
         }}
         onClose={() => setViewer(null)}
+        onSave={async (key) => (await saveToPhotos([photos.find((x) => x.key === key)?.uri])) > 0}
+        onDelete={(key) => removePhotos(code, [key])}
       />
     </View>
   );

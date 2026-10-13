@@ -42,6 +42,6 @@ export function TopBar({ y, left, center, right }: { y: SharedValue<number>; lef
 const styles = StyleSheet.create({
   bar: { position: 'absolute', left: 0, right: 0, top: 0, paddingBottom: 10, paddingHorizontal: 16, zIndex: 10 },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
-  side: { width: 88 },
+  side: { minWidth: 88, maxWidth: 120 },
   center: { flex: 1, alignItems: 'center' },
 });

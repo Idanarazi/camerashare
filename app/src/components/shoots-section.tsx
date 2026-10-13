@@ -93,7 +93,7 @@ function SmallCard({ shoot }: { shoot: Shoot }) {
       accessibilityRole="button"
       accessibilityLabel={`Shoot from ${shootLabel(shoot.at, false)}, ${shoot.photos.length} photos`}
       style={[styles.small, { backgroundColor: t.surface2 }]}>
-      {c && <Image source={c.src} style={StyleSheet.absoluteFill} contentFit="cover" />}
+      {c && <Image source={c.thumb ?? c.src} style={StyleSheet.absoluteFill} contentFit="cover" />}
       <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={styles.shadeSmall} />
       <View style={styles.smallText}>
         <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>{shootLabel(shoot.at, false)}</Text>

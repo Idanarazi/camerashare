@@ -41,6 +41,7 @@ const run = (fn: () => Promise<void>) => {
 };
 export const haptic = {
   light: () => run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)), // a ♥, a snap into place
+  select: () => run(() => Haptics.selectionAsync()), // ticking past items while scrubbing
   success: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)), // scanned, connected
   warning: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)), // someone is asking to join
 };
